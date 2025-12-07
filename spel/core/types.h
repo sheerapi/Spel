@@ -55,6 +55,6 @@ typedef struct spel_context
 	spel_events events;
 } spel_context;
 
-sp_api extern spel_context spel_ctx;
+sp_api extern spel_context spel;
 
 #endif

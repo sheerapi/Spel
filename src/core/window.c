@@ -4,33 +4,31 @@
 
 void spel_window_create()
 {
-	spel_ctx.window.handle =
-		SDL_CreateWindow(spel_ctx.window.title, spel_ctx.window.width,
-						 spel_ctx.window.height, SDL_WINDOW_OPENGL);
+	spel.window.handle = SDL_CreateWindow(spel.window.title, spel.window.width,
+										  spel.window.height, SDL_WINDOW_OPENGL);
 
 	if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") != 0)
 	{
-		SDL_SetWindowPosition(spel_ctx.window.handle, spel_ctx.window.x,
-							  spel_ctx.window.y);
+		SDL_SetWindowPosition(spel.window.handle, spel.window.x, spel.window.y);
 	}
 
-	SDL_SetWindowFullscreen(spel_ctx.window.handle, spel_ctx.window.fullscreen);
-	SDL_SetWindowResizable(spel_ctx.window.handle, spel_ctx.window.resizable);
+	SDL_SetWindowFullscreen(spel.window.handle, spel.window.fullscreen);
+	SDL_SetWindowResizable(spel.window.handle, spel.window.resizable);
 
-	spel_ctx.window.running = true;
+	spel.window.running = true;
 }
 
 void spel_window_close()
 {
-	spel_ctx.window.running = false;
+	spel.window.running = false;
 }
 
 void spel_window_cleanup()
 {
-	SDL_DestroyWindow(spel_ctx.window.handle);
+	SDL_DestroyWindow(spel.window.handle);
 }
 
 bool spel_window_running()
 {
-	return spel_ctx.window.running;
+	return spel.window.running;
 }

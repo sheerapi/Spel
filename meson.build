@@ -1,0 +1,18 @@
+project('spel', 'c', version: '0.0.1')
+
+if get_option('debug')
+    add_project_arguments(['-DDEBUG'], language: 'c')
+endif
+
+cc = meson.get_compiler('c')
+m_dep = cc.find_library('m', required : false)
+
+sources = []
+dependencies = [dependency('sdl3'), m_dep]
+
+spel_lib = library('spel', sources: sources, include_directories: include_directories('spel'), dependencies: dependencies)
+
+spel_dep = declare_dependency(link_with: spel_lib, dependencies: dependencies, include_directories: include_directories('spel'))
+
+sandbox_src = ['sandbox/main.c']
+executable('sandbox', sources: sandbox_src, dependencies: spel_dep)

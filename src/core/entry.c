@@ -3,6 +3,7 @@
 #include "core/event.h"
 #include "core/types.h"
 #include "core/window.h"
+#include "utils/time.h"
 
 spel_context spel = {0};
 
@@ -18,6 +19,8 @@ int main(int argc, const char** argv)
 		spel_error("Failed to initialize windowing backend");
 		return -1;
 	}
+
+	spel_time_init(&spel.time);
 
 	spel_window_create();
 	sp_callback(spel_load);
@@ -35,11 +38,12 @@ sp_weak void spel_run()
 {
 	while (spel_window_running())
 	{
+		spel_time_frame_begin(&spel.time);
 		spel_event_poll();
 
 		if (spel_update)
 		{
-			spel_update(0.0);
+			spel_update(spel.time.delta_unscaled);
 		}
 
 		sp_callback(spel_draw);

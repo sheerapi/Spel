@@ -8,14 +8,14 @@ typedef struct
 	bool borderless;
 	bool resizable;
 	bool fullscreen;
-	bool useDpiScaling;
+	bool use_dpi_scaling;
 	bool running;
 
 	int width;
 	int height;
 
-	int minWidth;
-	int minHeight;
+	int min_width;
+	int min_height;
 
 	int display;
 	int x;
@@ -46,6 +46,26 @@ typedef struct
 	int capacity;
 } spel_events;
 
+typedef struct spel_time
+{
+	double delta;
+	double delta_unscaled;
+	double delta_smoothed;
+	double time;
+
+	uint64_t frame_index;
+
+	double fps;
+	double fps_raw;
+
+	double time_scale;
+	double fixed_dt;
+	double accumulator;
+
+	uint64_t stamp_now;
+	uint64_t stamp_last;
+} spel_time;
+
 typedef struct spel_context
 {
 	int argc;
@@ -53,6 +73,7 @@ typedef struct spel_context
 
 	spel_window window;
 	spel_events events;
+	spel_time time;
 } spel_context;
 
 sp_api extern spel_context spel;

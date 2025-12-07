@@ -31,12 +31,12 @@ typedef void (*log_LockFn)(bool lock, void* udata);
 
 enum
 {
-	LogTrace,
-	LogDebug,
-	LogInfo,
-	LogWarn,
-	LogError,
-	LogFatal
+	LOG_TRACE,
+	LOG_DEBUG,
+	LOG_INFO,
+	LOG_WARN,
+	LOG_ERROR,
+	LOG_FATAL
 };
 
 #define log_trace(...) log_log(LogTrace, __FILE__, __LINE__, __VA_ARGS__)

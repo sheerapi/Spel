@@ -4,9 +4,9 @@
 #	define sp_debug 1
 #endif
 
-#ifdef sp_debug
-#	include <stdlib.h>
-#endif
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #if defined(_WIN32)
 #	if defined(sp_build)

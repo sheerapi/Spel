@@ -26,4 +26,7 @@ sp_hidden void spel_event_ensure_capacity(spel_event_id id);
 sp_api void spel_event_register(const char* name, spel_event_callback cb);
 sp_api void spel_event_emit(const char* name, void* data);
 
+sp_api void spel_event_poll();
+sp_hidden void spel_event_handle(void* event);
+
 #endif

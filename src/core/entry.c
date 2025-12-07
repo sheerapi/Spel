@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "core/event.h"
 #include "core/types.h"
 #include "SDL3/SDL_init.h"
 #include "core/window.h"
@@ -34,6 +35,8 @@ sp_weak void spel_run()
 {
 	while (spel_window_running())
 	{
+		spel_event_poll();
+		
 		if (spel_update)
 		{
 			spel_update(0.0);

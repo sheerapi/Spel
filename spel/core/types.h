@@ -33,12 +33,26 @@ typedef struct
 	} swapchain;
 } spel_window;
 
+typedef struct spel_string_intern spel_string_intern;
+typedef struct spel_event_list spel_event_list;
+typedef uint32_t spel_event_id;
+
+typedef struct
+{
+	spel_string_intern* interns;
+	spel_event_list* events;
+
+	spel_event_id counter;
+	int capacity;
+} spel_events;
+
 typedef struct spel_context
 {
 	int argc;
 	const char** argv;
 
 	spel_window window;
+	spel_events events;
 } spel_context;
 
 sp_api extern spel_context spel_ctx;

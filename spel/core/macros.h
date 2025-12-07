@@ -1,12 +1,13 @@
-#pragma once
+#ifndef SPEL_MACROS
+#define SPEL_MACROS
 
 #ifdef DEBUG
 #	define sp_debug 1
 #endif
 
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined(_WIN32)
 #	if defined(sp_build)
@@ -109,3 +110,4 @@
 	{                                                                                    \
 		return (Color){r, g, b, 255};                                                    \
 	}
+#endif

@@ -7,7 +7,7 @@ endif
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 
-sources = ['src/core/entry.c', 'src/core/log.c', 'src/core/window.c']
+sources = ['src/core/entry.c', 'src/core/log.c', 'src/core/window.c', 'src/core/event.c']
 dependencies = [dependency('sdl3'), m_dep]
 
 spel_lib = library('spel', sources: sources, include_directories: include_directories('spel'), dependencies: dependencies)

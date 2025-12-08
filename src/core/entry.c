@@ -3,9 +3,11 @@
 #include "core/event.h"
 #include "core/types.h"
 #include "core/window.h"
+#include "gfx/gfx.h"
 #include "utils/time.h"
 
-spel_context spel = {0};
+spel_context spel = {
+	.window = {.title = "Spël", .width = 800, .height = 600, .swapchain = {.vsync = 1}, .resizable = true}};
 
 int main(int argc, const char** argv)
 {
@@ -22,12 +24,17 @@ int main(int argc, const char** argv)
 
 	spel_time_init(&spel.time);
 
+	spel_gfx_context_conf(GFX_BACKEND_OPENGL);
+
 	spel_window_create();
+	spel.gfx = spel_gfx_context_create(GFX_BACKEND_OPENGL);
+
 	sp_callback(spel_load);
 
 	sp_callback(spel_run);
 	sp_callback(spel_quit);
 
+	spel_gfx_context_destroy(spel.gfx);
 	spel_window_cleanup();
 
 	return 0;
@@ -46,7 +53,9 @@ sp_weak void spel_run()
 			spel_update(spel.time.delta_unscaled);
 		}
 
+		spel_gfx_frame_begin(spel.gfx);
 		sp_callback(spel_draw);
+		spel_gfx_frame_end(spel.gfx);
 	}
 }
 #endif

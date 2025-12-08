@@ -66,14 +66,18 @@ typedef struct spel_time
 	uint64_t stamp_last;
 } spel_time;
 
+typedef struct spel_gfx_context spel_gfx_context;
+
 typedef struct spel_context
 {
 	int argc;
 	const char** argv;
+	bool debug;
 
 	spel_window window;
 	spel_events events;
 	spel_time time;
+	spel_gfx_context* gfx;
 } spel_context;
 
 sp_api extern spel_context spel;

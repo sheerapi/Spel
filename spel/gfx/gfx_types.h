@@ -3,7 +3,7 @@
 
 typedef struct spel_gfx_context_t* spel_gfx_context;
 typedef struct spel_gfx_buffer_t* spel_gfx_buffer;
-typedef struct spel_gfx_cmdlist* spel_gfx_cmdlist;
+typedef struct spel_gfx_cmdlist_t* spel_gfx_cmdlist;
 
 typedef enum
 {

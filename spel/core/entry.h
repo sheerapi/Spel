@@ -1,7 +1,8 @@
 #ifndef SPEL_ENTRY
-#	define SPEL_ENTRY
+#define SPEL_ENTRY
 
 #include "core/macros.h"
+#include "core/types.h"
 
 int main(int argc, const char** argv);
 

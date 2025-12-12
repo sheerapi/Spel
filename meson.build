@@ -14,7 +14,8 @@ sources = [
     'src/core/event.c', 
     'src/utils/time.c', 
     'src/gfx/gfx.c', 
-    'src/gfx/backends/gl/gfx_context_gl.c']
+    'src/gfx/backends/gl/gfx_context_gl.c',
+    'src/gfx/backends/gl/gfx_context_cmdlist_gl.c']
 dependencies = [dependency('sdl3'), m_dep]
 
 spel_lib = library('spel', sources: sources, include_directories: include_directories('spel'), dependencies: dependencies)

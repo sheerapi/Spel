@@ -61,7 +61,9 @@ sp_weak void spel_run()
 			spel_update(spel.time.delta_unscaled);
 		}
 
+		spel_gfx_frame_begin(spel.gfx);
 		sp_callback(spel_draw);
+		spel_gfx_frame_present(spel.gfx);
 	}
 }
 #endif

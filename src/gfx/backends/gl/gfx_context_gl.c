@@ -57,3 +57,15 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
 }
+
+void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
+{
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
+void spel_gfx_frame_end_gl(spel_gfx_context ctx)
+{
+	glFlush();
+	SDL_GL_SwapWindow(spel.window.handle);
+}

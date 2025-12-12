@@ -1,6 +1,7 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
 #include "core/macros.h"
+#include "gfx/gfx_types.h"
 #include <stdbool.h>
 
 typedef struct
@@ -66,8 +67,6 @@ typedef struct spel_time
 	uint64_t stamp_last;
 } spel_time;
 
-typedef struct spel_gfx_context spel_gfx_context;
-
 typedef struct spel_context
 {
 	int argc;
@@ -77,7 +76,7 @@ typedef struct spel_context
 	spel_window window;
 	spel_events events;
 	spel_time time;
-	spel_gfx_context* gfx;
+	spel_gfx_context gfx;
 } spel_context;
 
 sp_api extern spel_context spel;

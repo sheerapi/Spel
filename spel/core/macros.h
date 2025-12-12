@@ -104,10 +104,10 @@
 		callback();                                                                      \
 	}
 
-#define sp_color_declare(name) sp_api Color spel_color_##name()
+#define sp_color_declare(name) sp_api spel_color spel_color_##name()
 #define sp_color_define(name, r, g, b)                                                   \
-	sp_api Color spel_color_##name()                                                     \
+	sp_api spel_color spel_color_##name()                                                \
 	{                                                                                    \
-		return (Color){r, g, b, 255};                                                    \
+		return (spel_color){r, g, b, 255};                                               \
 	}
 #endif

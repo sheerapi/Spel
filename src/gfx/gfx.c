@@ -1,7 +1,7 @@
 #include "backends/gl/gfx_vtable_gl.h"
 #include "core/types.h"
+#include "gfx/gfx_buffer.h"
 #include "gfx/gfx_context.h"
-#include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 
@@ -59,4 +59,32 @@ void spel_gfx_cmdlist_destroy(spel_gfx_cmdlist cmdlist)
 void spel_gfx_cmdlist_submit(spel_gfx_cmdlist cmdlist)
 {
 	cmdlist->ctx->vt->cmdlist_submit(cmdlist);
+}
+
+spel_gfx_buffer spel_gfx_buffer_create(spel_gfx_context ctx,
+									   const spel_gfx_buffer_desc* desc)
+{
+	return ctx->vt->buffer_create(ctx, desc);
+}
+
+void spel_gfx_buffer_destroy(spel_gfx_buffer buf)
+{
+	buf->ctx->vt->buffer_destroy(buf);
+}
+
+void spel_gfx_buffer_update(spel_gfx_buffer buf, const void* data, size_t size,
+							size_t offset)
+{
+	buf->ctx->vt->buffer_update(buf, data, size, offset);
+}
+
+void* spel_gfx_buffer_map(spel_gfx_buffer buf, size_t offset, size_t size,
+						  spel_gfx_buffer_access access)
+{
+	return buf->ctx->vt->buffer_map(buf, offset, size, access);
+}
+
+void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
+{
+	buf->ctx->vt->buffer_unmap(buf);
 }

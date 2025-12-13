@@ -1,5 +1,5 @@
 #include "core/entry.h"
-#include "gfx/gfx_cmdlist.h"
+#include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)

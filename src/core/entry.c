@@ -17,6 +17,15 @@ int main(int argc, const char** argv)
 	spel.argc = argc;
 	spel.argv = argv;
 
+#ifdef DEBUG
+	spel.debug = true;
+#endif
+
+	if (spel_args_has("--debug"))
+	{
+		spel.debug = true;
+	}
+
 	sp_callback(spel_conf);
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
@@ -67,3 +76,16 @@ sp_weak void spel_run()
 	}
 }
 #endif
+
+bool spel_args_has(const char* arg)
+{
+	for (int i = 1; i < spel.argc; i++)
+	{
+		if (strcmp(spel.argv[i], arg) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

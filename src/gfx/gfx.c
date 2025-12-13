@@ -1,4 +1,5 @@
 #include "backends/gl/gfx_vtable_gl.h"
+#include "core/entry.h"
 #include "core/types.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_cmdlist.h"
@@ -6,6 +7,7 @@
 #include "gfx/gfx_context.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
+#include <shaderc/shaderc.h>
 
 void spel_gfx_context_conf(spel_gfx_backend backend)
 {
@@ -93,6 +95,17 @@ void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
 	buf->ctx->vt->buffer_unmap(buf);
 }
 
+spel_gfx_shader spel_gfx_shader_create(spel_gfx_context ctx,
+									   const spel_gfx_shader_desc* desc)
+{
+	return ctx->vt->shader_create(ctx, desc);
+}
+
+void spel_gfx_shader_destroy(spel_gfx_shader shader)
+{
+	shader->ctx->vt->shader_destroy(shader);
+}
+
 void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 {
 	spel_gfx_clear_cmd* cmd = (spel_gfx_clear_cmd*)cl->ctx->vt->cmdlist_alloc(
@@ -114,7 +127,8 @@ void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf, size_t o
 	cmd->offset = offset;
 }
 
-void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf, spel_gfx_index_type type, size_t offset)
+void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
+							 spel_gfx_index_type type, size_t offset)
 {
 	spel_gfx_bind_index_cmd* cmd = (spel_gfx_bind_index_cmd*)cl->ctx->vt->cmdlist_alloc(
 		cl, sizeof(*cmd), alignof(spel_gfx_bind_index_cmd));

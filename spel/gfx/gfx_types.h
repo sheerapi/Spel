@@ -107,6 +107,14 @@ typedef enum
 	SPEL_GFX_COMPARE_ALWAYS
 } spel_gfx_compare_func;
 
+typedef enum
+{
+	SPEL_GFX_SHADER_VERTEX,
+	SPEL_GFX_SHADER_FRAGMENT,
+	SPEL_GFX_SHADER_GEOMETRY,
+	SPEL_GFX_SHADER_COMPUTE
+} spel_gfx_shader_stage;
+
 typedef uint32_t spel_gfx_vertex_format;
 
 #endif

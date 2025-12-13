@@ -165,7 +165,10 @@ void spel_gfx_debug_callback(unsigned int source, unsigned int type, unsigned in
 
 	if (severity == GL_DEBUG_SEVERITY_HIGH || type == GL_DEBUG_TYPE_ERROR)
 	{
-		log_error("[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id, message);
+		char buffer[256];
+		snprintf(buffer, 256, "[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id,
+				  message);
+		spel_error(buffer);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
 	{

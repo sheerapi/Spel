@@ -1,10 +1,12 @@
 #include "core/entry.h"
 #include "SDL3/SDL_init.h"
 #include "core/event.h"
+#include "core/log.h"
 #include "core/types.h"
 #include "core/window.h"
 #include "gfx/gfx.h"
 #include "utils/time.h"
+#include <stdlib.h>
 
 spel_context spel = {.window = {.title = "Spël",
 								.width = 800,
@@ -74,6 +76,12 @@ sp_weak void spel_run()
 		sp_callback(spel_draw);
 		spel_gfx_frame_present(spel.gfx);
 	}
+}
+
+sp_weak void spel_error(const char* msg)
+{
+	log_error(msg);
+	exit(-1);
 }
 #endif
 

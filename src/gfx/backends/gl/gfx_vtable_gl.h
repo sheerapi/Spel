@@ -44,6 +44,7 @@ static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl
 									  .cmdlist_create = spel_gfx_cmdlist_create_gl,
 									  .cmdlist_destroy = spel_gfx_cmdlist_destroy_gl,
 									  .cmdlist_submit = spel_gfx_cmdlist_submit_gl,
+									  .cmdlist_alloc = spel_gfx_cmdlist_alloc_gl,
 
 									  .buffer_create = spel_gfx_buffer_create_gl,
 									  .buffer_destroy = spel_gfx_buffer_destroy_gl,

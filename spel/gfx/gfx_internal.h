@@ -1,7 +1,8 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
-#include "gfx/gfx_buffer.h"
-#include "gfx/gfx_types.h"
+#include "gfx_buffer.h"
+#include "gfx_commands.h"
+#include "gfx_types.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -16,13 +17,7 @@ typedef struct spel_gfx_cmdlist_t
 	void* data;
 } spel_gfx_cmdlist_t;
 
-typedef struct spel_gfx_cmd_header
-{
-	uint16_t type;
-	uint16_t size;
-} spel_gfx_cmd_header;
-
-#define sp_cmdlist_default_size (4 * 1024) // 4 KB
+#define sp_cmdlist_default_size (8 * 1024) // 8 KB
 
 // buffers
 typedef struct spel_gfx_buffer_t
@@ -30,6 +25,7 @@ typedef struct spel_gfx_buffer_t
 	spel_gfx_context ctx;
 	void* data;
 	bool persistent;
+	spel_gfx_buffer_type type;
 } spel_gfx_buffer_t;
 
 // initialization
@@ -55,6 +51,7 @@ typedef struct spel_gfx_vtable_t
 	spel_gfx_cmdlist (*cmdlist_create)(spel_gfx_context);
 	void (*cmdlist_destroy)(spel_gfx_cmdlist);
 	void (*cmdlist_submit)(spel_gfx_cmdlist);
+	void* (*cmdlist_alloc)(spel_gfx_cmdlist, size_t, size_t);
 
 	spel_gfx_buffer (*buffer_create)(spel_gfx_context, const spel_gfx_buffer_desc*);
 	void (*buffer_destroy)(spel_gfx_buffer);

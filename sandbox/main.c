@@ -1,5 +1,6 @@
 #include "core/entry.h"
 #include "gfx/gfx.h"
+#include "gfx/gfx_types.h"
 
 spel_gfx_cmdlist cmdlist;
 spel_gfx_buffer vbuffer;
@@ -10,6 +11,8 @@ void spel_load()
 	cmdlist = spel_gfx_cmdlist_create(spel.gfx);
 
 	spel_gfx_buffer_desc vbuffer_desc;
+	vbuffer_desc.type = SPEL_GFX_BUFFER_VERTEX;
+	vbuffer_desc.access = SPEL_GFX_BUFFER_DRAW;
 	vbuffer_desc.size = 64;
 	vbuffer_desc.data = nullptr;
 
@@ -18,6 +21,7 @@ void spel_load()
 
 void spel_draw()
 {
+	spel_gfx_cmd_clear(cmdlist, spel_color_cyan());
 	spel_gfx_cmdlist_submit(cmdlist);
 }
 

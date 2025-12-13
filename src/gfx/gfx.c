@@ -1,6 +1,8 @@
 #include "backends/gl/gfx_vtable_gl.h"
 #include "core/types.h"
 #include "gfx/gfx_buffer.h"
+#include "gfx/gfx_cmdlist.h"
+#include "gfx/gfx_commands.h"
 #include "gfx/gfx_context.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
@@ -87,4 +89,14 @@ void* spel_gfx_buffer_map(spel_gfx_buffer buf, size_t offset, size_t size,
 void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
 {
 	buf->ctx->vt->buffer_unmap(buf);
+}
+
+void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
+{
+	spel_gfx_clear_cmd* cmd = (spel_gfx_clear_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_clear_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_CLEAR;
+	cmd->hdr.size = sizeof(*cmd);
+	cmd->color = color;
 }

@@ -13,6 +13,14 @@ typedef enum
 
 typedef enum
 {
+	SPEL_GFX_BUFFER_VERTEX,
+	SPEL_GFX_BUFFER_INDEX,
+	SPEL_GFX_BUFFER_UNIFORM,
+	SPEL_GFX_BUFFER_STORAGE
+} spel_gfx_buffer_type;
+
+typedef enum
+{
 	SPEL_GFX_BUFFER_DRAW,
 	SPEL_GFX_BUFFER_READ,
 	SPEL_GFX_BUFFER_COPY,

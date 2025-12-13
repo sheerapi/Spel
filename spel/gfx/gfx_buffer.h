@@ -6,6 +6,7 @@
 
 typedef struct spel_gfx_buffer_desc
 {
+	spel_gfx_buffer_type type;
 	spel_gfx_buffer_usage usage;
 	spel_gfx_buffer_access access;
 	size_t size;

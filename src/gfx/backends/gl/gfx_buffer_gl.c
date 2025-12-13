@@ -14,6 +14,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	spel_gfx_buffer buf = (spel_gfx_buffer)malloc(sizeof(*buf));
 	buf->ctx = ctx;
 	buf->data = malloc(sizeof(GLuint));
+	buf->type = desc->type;
 
 	glCreateBuffers(1, (GLuint*)buf->data);
 	glNamedBufferData(*(GLuint*)buf->data, desc->size, desc->data,

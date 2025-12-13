@@ -1,6 +1,9 @@
 #include "core/entry.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
+#include "gl.h"
+
+void exec_cmd_clear(spel_gfx_clear_cmd* cmd);
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 {
@@ -42,4 +45,29 @@ void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 
 void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 {
+	uint8_t* ptr = cl->buffer;
+	while (ptr < cl->buffer + cl->offset)
+	{
+		spel_gfx_cmd_header* hdr = (spel_gfx_cmd_header*)ptr;
+
+		switch (hdr->type)
+		{
+		case SPEL_GFX_CMD_CLEAR:
+			exec_cmd_clear((spel_gfx_clear_cmd*)ptr);
+			break;
+		default:
+			break;
+		}
+
+		ptr += hdr->size;
+	}
+
+	cl->offset = 0;
+}
+
+void exec_cmd_clear(spel_gfx_clear_cmd* cmd)
+{
+	glClearColor((float)cmd->color.r / 255, (float)cmd->color.g / 255,
+				 (float)cmd->color.b / 255, (float)cmd->color.a / 255);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }

@@ -73,6 +73,7 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 
 void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
+	glViewport(0, 0, spel.window.width, spel.window.height);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }

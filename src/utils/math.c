@@ -8,9 +8,9 @@ sp_color_define(red, 255, 0, 0);
 sp_color_define(green, 0, 255, 0);
 sp_color_define(blue, 0, 0, 255);
 
-sp_color_define(cyan, 0, 127, 127);
-sp_color_define(yellow, 127, 127, 0);
-sp_color_define(magenta, 127, 0, 127);
+sp_color_define(cyan, 0, 255, 255);
+sp_color_define(yellow, 255, 255, 0);
+sp_color_define(magenta, 255, 0, 255);
 
 sp_api spel_color spel_color_hsv(int h, float s, float v, uint8_t a)
 {

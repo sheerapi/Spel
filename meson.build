@@ -20,7 +20,7 @@ sources = [
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
     'src/gfx/backends/gl/gfx_buffer_gl.c'
 ]
-dependencies = [dependency('sdl3'), m_dep]
+dependencies = [dependency('sdl3'), m_dep, dependency('shaderc')]
 
 spel_lib = library('spel', sources: sources, include_directories: include_directories('spel'), dependencies: dependencies)
 

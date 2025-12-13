@@ -102,3 +102,26 @@ void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 	cmd->hdr.size = sizeof(*cmd);
 	cmd->color = color;
 }
+
+void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf, size_t offset)
+{
+	spel_gfx_bind_vertex_cmd* cmd = (spel_gfx_bind_vertex_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_bind_vertex_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BIND_VERTEX;
+	cmd->hdr.size = sizeof(*cmd);
+	cmd->buf = buf;
+	cmd->offset = offset;
+}
+
+void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf, spel_gfx_index_type type, size_t offset)
+{
+	spel_gfx_bind_index_cmd* cmd = (spel_gfx_bind_index_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_bind_index_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BIND_INDEX;
+	cmd->hdr.size = sizeof(*cmd);
+	cmd->buf = buf;
+	cmd->offset = offset;
+	cmd->type = type;
+}

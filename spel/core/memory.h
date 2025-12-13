@@ -33,8 +33,10 @@ typedef struct spel_memory
 	spel_memory_tag_stats tags[SPEL_MEM_TAG_COUNT];
 } spel_memory;
 
-sp_api void* spel_malloc(size_t size, spel_memory_tag tag);
-sp_api void spel_free(void* ptr);
-sp_api void* spel_realloc(void* ptr, size_t newSize, spel_memory_tag tag);
+sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag);
+sp_api void spel_memory_free(void* ptr);
+sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag);
+
+sp_api void spel_memory_dump();
 
 #endif

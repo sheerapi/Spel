@@ -9,8 +9,11 @@ sp_api void spel_gfx_cmdlist_destroy(spel_gfx_cmdlist cmdlist);
 
 sp_api void spel_gfx_cmdlist_submit(spel_gfx_cmdlist cmdlist);
 
-sp_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf);
-sp_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf);
+sp_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
+									 size_t offset);
+
+sp_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
+									spel_gfx_index_type type, size_t offset);
 
 sp_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color);
 

@@ -1,5 +1,7 @@
 #include "core/memory.h"
+#include "core/log.h"
 #include "core/types.h"
+#include <stdio.h>
 
 typedef struct spel_alloc_header
 {
@@ -7,7 +9,7 @@ typedef struct spel_alloc_header
 	spel_memory_tag tag;
 } spel_alloc_header;
 
-void* spel_malloc(size_t size, spel_memory_tag tag)
+void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
 	size_t total = sizeof(spel_alloc_header) + size;
 	spel_alloc_header* h = malloc(total);
@@ -40,7 +42,7 @@ void* spel_malloc(size_t size, spel_memory_tag tag)
 	return (void*)(h + 1);
 }
 
-void spel_free(void* ptr)
+void spel_memory_free(void* ptr)
 {
 	if (!ptr)
 	{
@@ -60,17 +62,17 @@ void spel_free(void* ptr)
 	free(h);
 }
 
-void* spel_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
+void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 {
 
 	if (!ptr)
 	{
-		return spel_malloc(newSize, tag);
+		return sp_malloc(newSize, tag);
 	}
 
 	if (newSize == 0)
 	{
-		spel_free(ptr);
+		sp_free(ptr);
 		return NULL;
 	}
 
@@ -122,4 +124,76 @@ void* spel_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	new_h->tag = use_tag;
 
 	return (void*)(new_h + 1);
+}
+
+static const char* spel_mem_fmt_size(size_t bytes, char buf[32])
+{
+	const char* units[] = {"B", "KB", "MB", "GB"};
+	double size = (double)bytes;
+	int unit = 0;
+
+	while (size >= 1024.0 && unit < 3)
+	{
+		size /= 1024.0;
+		unit++;
+	}
+
+	snprintf(buf, 32, "%.2f %s", size, units[unit]);
+	return buf;
+}
+
+static const char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
+	[SPEL_MEM_TAG_CORE] = "core",
+	[SPEL_MEM_TAG_GFX] = "gfx",
+	[SPEL_MEM_TAG_MISC] = "misc",
+	[SPEL_MEM_TAG_TEMP] = "temp",
+};
+
+void spel_memory_dump()
+{
+#if !DEBUG
+	log_info("spël memory management disabled.");
+	return;
+#else
+	char cur[32];
+	char peak[32];
+	char total[32];
+	char freed[32];
+
+	log_info("<=== spël Memory Dump ===>");
+
+	log_info("global:");
+	log_info("  current: %s", spel_mem_fmt_size(spel.memory.current, cur));
+
+	log_info("  peak:    %s", spel_mem_fmt_size(spel.memory.peak, peak));
+
+	log_info("  total allocated: %s (%s freed)",
+			 spel_mem_fmt_size(spel.memory.total_allocated, total),
+			 spel_mem_fmt_size(spel.memory.total_freed, freed));
+
+	log_info("  allocs: %u  frees: %u", spel.memory.alloc_count, spel.memory.free_count);
+
+	log_info("");
+
+	log_info("by tag:");
+
+	for (int i = 0; i < SPEL_MEM_TAG_COUNT; ++i)
+	{
+		const spel_memory_tag_stats* ts = &spel.memory.tags[i];
+
+		if (ts->alloc_count == 0)
+		{
+			continue;
+		}
+
+		char tag_cur[32];
+		char tag_peak[32];
+
+		log_info("  %-10s  %s (peak %s)  allocs %u", spel_mem_tag_names[i],
+				 spel_mem_fmt_size(ts->bytes_current, tag_cur),
+				 spel_mem_fmt_size(ts->bytes_peak, tag_peak), ts->alloc_count);
+	}
+
+	log_info("</=======================>");
+#endif
 }

@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "core/memory.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_types.h"
 
@@ -18,11 +19,14 @@ void spel_load()
 	vbuffer_desc.data = nullptr;
 
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
+
+	spel_memory_dump();
 }
 
 void spel_draw()
 {
-	spel_gfx_cmd_clear(cmdlist, spel_color_cyan());
+	spel_gfx_cmd_clear(cmdlist, spel_color_magenta());
+
 	spel_gfx_cmdlist_submit(cmdlist);
 }
 

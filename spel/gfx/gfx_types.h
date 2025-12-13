@@ -5,6 +5,8 @@
 typedef struct spel_gfx_context_t* spel_gfx_context;
 typedef struct spel_gfx_buffer_t* spel_gfx_buffer;
 typedef struct spel_gfx_cmdlist_t* spel_gfx_cmdlist;
+typedef struct spel_gfx_graphic_pipeline_t* spel_gfx_graphic_pipeline;
+typedef struct spel_gfx_shader_t* spel_gfx_shader;
 
 typedef enum
 {
@@ -44,5 +46,67 @@ typedef enum
 	SPEL_GFX_USAGE_STATIC,
 	SPEL_GFX_USAGE_DYNAMIC,
 } spel_gfx_buffer_usage;
+
+typedef enum
+{
+	SPEL_GFX_INDEX_U16,
+	SPEL_GFX_INDEX_U32
+} spel_gfx_index_type;
+
+typedef enum
+{
+	SPEL_GFX_VERTEX_FLOAT,
+	SPEL_GFX_VERTEX_HALF,
+	SPEL_GFX_VERTEX_INT,
+	SPEL_GFX_VERTEX_UINT
+} spel_gfx_vertex_base_format;
+
+typedef enum
+{
+	SPEL_GFX_VERTEX_NORMALIZED = 1 << 0,
+	SPEL_GFX_VERTEX_INTEGER = 1 << 1,
+} spel_gfx_vertex_flags;
+
+typedef enum
+{
+	SPEL_GFX_VERTEX_PER_VERTEX,
+	SPEL_GFX_VERTEX_PER_INSTANCE
+} spel_gfx_vertex_rate;
+
+typedef enum
+{
+	SPEL_GFX_TOPOLOGY_POINTS,
+	SPEL_GFX_TOPOLOGY_LINES,
+	SPEL_GFX_TOPOLOGY_LINE_STRIP,
+	SPEL_GFX_TOPOLOGY_TRIANGLES,
+	SPEL_GFX_TOPOLOGY_TRIANGLE_STRIP
+} spel_gfx_primitive_topology;
+
+typedef enum
+{
+	SPEL_GFX_CULL_NONE,
+	SPEL_GFX_CULL_FRONT,
+	SPEL_GFX_CULL_BACK
+} spel_gfx_cull_mode;
+
+typedef enum
+{
+	SPEL_GFX_WINDING_CLOCKWISE,
+	SPEL_GFX_WINDING_COUNTER_CLOCKWISE
+} spel_gfx_winding_mode;
+
+typedef enum
+{
+	SPEL_GFX_COMPARE_NEVER,
+	SPEL_GFX_COMPARE_LESS,
+	SPEL_GFX_COMPARE_EQUAL,
+	SPEL_GFX_COMPARE_LEQUAL,
+	SPEL_GFX_COMPARE_GREATER,
+	SPEL_GFX_COMPARE_NOTEQUAL,
+	SPEL_GFX_COMPARE_GEQUAL,
+	SPEL_GFX_COMPARE_ALWAYS
+} spel_gfx_compare_func;
+
+typedef uint32_t spel_gfx_vertex_format;
 
 #endif

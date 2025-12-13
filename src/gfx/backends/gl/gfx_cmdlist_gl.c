@@ -1,9 +1,12 @@
 #include "core/entry.h"
+#include "core/log.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
 
 void exec_cmd_clear(spel_gfx_clear_cmd* cmd);
+void exec_cmd_bind_vertex(spel_gfx_bind_vertex_cmd* cmd);
+void exec_cmd_bind_index(spel_gfx_bind_index_cmd* cmd);
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 {
@@ -55,6 +58,12 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		case SPEL_GFX_CMD_CLEAR:
 			exec_cmd_clear((spel_gfx_clear_cmd*)ptr);
 			break;
+		case SPEL_GFX_CMD_BIND_VERTEX:
+			exec_cmd_bind_vertex((spel_gfx_bind_vertex_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_BIND_INDEX:
+			exec_cmd_bind_index((spel_gfx_bind_index_cmd*)ptr);
+			break;
 		default:
 			break;
 		}
@@ -70,4 +79,15 @@ void exec_cmd_clear(spel_gfx_clear_cmd* cmd)
 	glClearColor((float)cmd->color.r / 255, (float)cmd->color.g / 255,
 				 (float)cmd->color.b / 255, (float)cmd->color.a / 255);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
+void exec_cmd_bind_vertex(spel_gfx_bind_vertex_cmd* cmd)
+{
+	if (cmd->buf->type != SPEL_GFX_BUFFER_VERTEX)
+	{
+		log_warn("gfx: buffer type does not correspond to binding cmd (vertex). this is "
+				 "allowed, but discouraged");
+	}
+
+	
 }

@@ -40,9 +40,9 @@ typedef uint32_t spel_gfx_access;
 
 typedef enum
 {
+	SPEL_GFX_USAGE_STREAM,
 	SPEL_GFX_USAGE_STATIC,
 	SPEL_GFX_USAGE_DYNAMIC,
-	SPEL_GFX_USAGE_STREAM
 } spel_gfx_buffer_usage;
 
 #endif

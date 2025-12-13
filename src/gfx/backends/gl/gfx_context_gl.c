@@ -21,7 +21,8 @@ typedef struct spel_gfx_context_gl
 
 void spel_gfx_context_create_gl(spel_gfx_context ctx)
 {
-	spel_gfx_context_gl* gl = (ctx->data = malloc(sizeof(spel_gfx_context_gl)));
+	spel_gfx_context_gl* gl =
+		(ctx->data = sp_malloc(sizeof(spel_gfx_context_gl), SPEL_MEM_TAG_GFX));
 
 	gl->ctx = SDL_GL_CreateContext(spel.window.handle);
 	if (!gl->ctx)
@@ -69,6 +70,8 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
+	sp_free(gl);
+	ctx->data = NULL;
 }
 
 void spel_gfx_frame_begin_gl(spel_gfx_context ctx)

@@ -9,6 +9,7 @@ m_dep = cc.find_library('m', required : false)
 
 sources = [
     'src/core/entry.c', 
+    'src/core/memory.c',
     'src/core/log.c', 
     'src/core/window.c', 
     'src/core/event.c',

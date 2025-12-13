@@ -31,6 +31,7 @@ sp_weak_alias(spel_quit, spel_fallback);
 sp_weak_alias(spel_run, spel_run_fallback);
 sp_weak_alias(spel_low_memory, spel_fallback);
 
-sp_api bool spel_args_has( const char* arg);
+// core functions
+sp_api bool spel_args_has(const char* arg);
 
 #endif

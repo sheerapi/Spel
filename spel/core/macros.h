@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+#	include <stdlib.h>
 
 #if defined(_WIN32)
 #	if defined(sp_build)
@@ -110,4 +110,14 @@
 	{                                                                                    \
 		return (spel_color){r, g, b, 255};                                               \
 	}
+
+#	ifdef DEBUG
+#		define sp_malloc(size, tag) spel_malloc(size, tag)
+#		define sp_free(ptr) spel_free(ptr)
+#		define sp_realloc(ptr, size, tag) spel_realloc(ptr, size, tag)
+#	else
+#	define sp_malloc(size, tag) malloc(size)
+#	define sp_free(ptr) free(ptr)
+#	define sp_realloc(ptr, size, tag) realloc(ptr, size)
+#endif
 #endif

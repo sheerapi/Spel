@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "core/log.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
@@ -11,9 +12,9 @@ GLbitfield spel_gfx_gl_map_access(spel_gfx_access access);
 spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 										  const spel_gfx_buffer_desc* desc)
 {
-	spel_gfx_buffer buf = (spel_gfx_buffer)malloc(sizeof(*buf));
+	spel_gfx_buffer buf = (spel_gfx_buffer)sp_malloc(sizeof(*buf), SPEL_MEM_TAG_GFX);
 	buf->ctx = ctx;
-	buf->data = malloc(sizeof(GLuint));
+	buf->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	buf->type = desc->type;
 
 	glCreateBuffers(1, (GLuint*)buf->data);
@@ -64,7 +65,7 @@ GLenum spel_gfx_gl_buffer_usage(spel_gfx_buffer_access access,
 		{GL_STREAM_DRAW, GL_STREAM_READ, GL_STREAM_COPY},
 		{GL_STATIC_DRAW, GL_STATIC_READ, GL_STATIC_COPY},
 		{GL_DYNAMIC_DRAW, GL_DYNAMIC_READ, GL_DYNAMIC_COPY}};
-
+	
 	return SPEL_GL_USAGE_TABLE[usage][access];
 }
 

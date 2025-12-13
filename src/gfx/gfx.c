@@ -19,7 +19,8 @@ void spel_gfx_context_conf(spel_gfx_backend backend)
 
 spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 {
-	spel_gfx_context ctx = (spel_gfx_context)malloc(sizeof(spel_gfx_context_t));
+	spel_gfx_context ctx =
+		(spel_gfx_context)sp_malloc(sizeof(spel_gfx_context_t), SPEL_MEM_TAG_GFX);
 	ctx->backend = desc->backend;
 	ctx->debug = desc->debug;
 
@@ -36,6 +37,7 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 void spel_gfx_context_destroy(spel_gfx_context ctx)
 {
 	ctx->vt->ctx_destroy(ctx);
+	sp_free(ctx);
 }
 
 void spel_gfx_frame_begin(spel_gfx_context ctx)

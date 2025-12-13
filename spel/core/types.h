@@ -1,6 +1,7 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
 #include "core/macros.h"
+#include "core/memory.h"
 #include "gfx/gfx_types.h"
 #include <stdbool.h>
 
@@ -77,6 +78,7 @@ typedef struct spel_context
 	spel_events events;
 	spel_time time;
 	spel_gfx_context gfx;
+	spel_memory memory;
 } spel_context;
 
 sp_api extern spel_context spel;

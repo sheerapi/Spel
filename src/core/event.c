@@ -18,7 +18,7 @@ spel_event_id spel_event_intern(const char* name)
 		return found->id;
 	}
 
-	found = malloc(sizeof(*found));
+	found = sp_malloc(sizeof(*found), SPEL_MEM_TAG_CORE);
 	found->key = strdup(name);
 	found->id = spel.events.counter++;
 

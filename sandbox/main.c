@@ -13,6 +13,7 @@ void spel_load()
 	spel_gfx_buffer_desc vbuffer_desc;
 	vbuffer_desc.type = SPEL_GFX_BUFFER_VERTEX;
 	vbuffer_desc.access = SPEL_GFX_BUFFER_DRAW;
+	vbuffer_desc.usage = SPEL_GFX_USAGE_STATIC;
 	vbuffer_desc.size = 64;
 	vbuffer_desc.data = nullptr;
 

@@ -1,4 +1,4 @@
-project('spel', 'c', version: '0.0.1', default_options: ['c_std=c2x'])
+project('spel', ['c', 'cpp'], version: '0.0.1', default_options: ['c_std=c2x'])
 
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
@@ -16,17 +16,22 @@ sources = [
     'src/utils/math.c',
     'src/utils/time.c', 
     'src/gfx/gfx.c', 
+    'src/utils/path.c',
     
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
     'src/gfx/backends/gl/gfx_buffer_gl.c',
     'src/gfx/backends/gl/gfx_shader_gl.c'
 ]
+
 dependencies = [dependency('sdl3'), m_dep]
 
 spel_lib = library('spel', sources: sources, include_directories: include_directories('spel'), dependencies: dependencies)
 
 spel_dep = declare_dependency(link_with: spel_lib, dependencies: dependencies, include_directories: include_directories('spel'))
+
+# tools
+sh2spv = executable('spel-sh2spv', sources: ['tools/sh2spv.cpp'], dependencies: [dependency('shaderc')])
 
 sandbox_src = ['sandbox/main.c']
 executable('sandbox', sources: sandbox_src, dependencies: spel_dep)

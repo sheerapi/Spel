@@ -160,7 +160,7 @@ void spel_memory_dump()
 	char total[32];
 	char freed[32];
 
-	log_info("<=== spël Memory Dump ===>");
+	log_info("<=== spël memory dump ===>");
 
 	log_info("global:");
 	log_info("  current: %s", spel_mem_fmt_size(spel.memory.current, cur));

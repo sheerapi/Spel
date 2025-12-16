@@ -14,11 +14,21 @@ void spel_time_init(spel_time* t)
 					 .fps_raw = 60.0,
 					 .time_scale = 1.0,
 					 .fixed_dt = 1.0 / 60.0,
-					 .accumulator = 0.0};
+					 .accumulator = 0.0,
+					 .stamp_last = 0,
+					 .stamp_now = 0};
 }
 
 void spel_time_frame_begin(spel_time* t)
 {
+	if (t->stamp_now == 0)
+	{
+		spel.time.stamp_now = SDL_GetPerformanceCounter();
+		spel.time.stamp_last = spel.time.stamp_now;
+		spel.time.delta_unscaled = 0.0;
+		spel.time.delta = 0.0;
+	}
+	
 	t->stamp_last = t->stamp_now;
 	t->stamp_now = SDL_GetPerformanceCounter();
 

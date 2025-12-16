@@ -1,5 +1,6 @@
 #include "backends/gl/gfx_vtable_gl.h"
 #include "core/entry.h"
+#include "core/macros.h"
 #include "core/types.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_cmdlist.h"
@@ -7,7 +8,9 @@
 #include "gfx/gfx_context.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
+#include "utils/path.h"
 #include <shaderc/shaderc.h>
+#include <stdio.h>
 
 void spel_gfx_context_conf(spel_gfx_backend backend)
 {
@@ -104,6 +107,46 @@ spel_gfx_shader spel_gfx_shader_create(spel_gfx_context ctx,
 void spel_gfx_shader_destroy(spel_gfx_shader shader)
 {
 	shader->ctx->vt->shader_destroy(shader);
+}
+
+spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
+									 const char* entry, spel_gfx_shader_stage stage)
+{
+	if (!spel_path_exists(path))
+	{
+		char buffer[512];
+		snprintf(buffer, 512, "File %s does not exist", path);
+		spel_error(buffer);
+		return nullptr;
+	}
+
+	char* buffer = nullptr;
+	long length = 0;
+	FILE* f = fopen(path, "rb");
+
+	if (f)
+	{
+		fseek(f, 0, SEEK_END);
+		length = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		buffer = sp_malloc(length, SPEL_MEM_TAG_GFX);
+		if (buffer)
+		{
+			fread(buffer, 1, length, f);
+		}
+		fclose(f);
+	}
+
+	spel_gfx_shader_desc shader_desc;
+	shader_desc.stage = stage;
+	shader_desc.entry = entry;
+	shader_desc.debug_name = spel_path_filename(path);
+	shader_desc.source = buffer;
+	shader_desc.source_size = length;
+
+	spel_gfx_shader shader = spel_gfx_shader_create(spel.gfx, &shader_desc);
+	sp_free(buffer);
+	return shader;
 }
 
 void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)

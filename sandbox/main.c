@@ -9,40 +9,27 @@ spel_gfx_cmdlist cmdlist;
 spel_gfx_buffer vbuffer;
 spel_gfx_shader vertex_shader;
 
+double dumpTime = 0;
+
 void spel_load()
 {
 	cmdlist = spel_gfx_cmdlist_create(spel.gfx);
 
-	char* buffer = 0;
-	long length;
-	FILE* f = fopen("vert.spv", "rb");
-
-	if (f)
-	{
-		fseek(f, 0, SEEK_END);
-		length = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		buffer = malloc(length);
-		if (buffer)
-		{
-			fread(buffer, 1, length, f);
-		}
-		fclose(f);
-	}
-
-	spel_gfx_shader_desc shader_desc;
-	shader_desc.stage = SPEL_GFX_SHADER_VERTEX;
-	shader_desc.entry = "main";
-	shader_desc.debug_name = "test_vertex";
-	shader_desc.source = buffer;
-	shader_desc.source_size = length;
-	
-	vertex_shader = spel_gfx_shader_create(spel.gfx, &shader_desc);
+	vertex_shader =
+		spel_gfx_shader_load(spel.gfx, "test.vert.spv", "main", SPEL_GFX_SHADER_VERTEX);
 	spel_memory_dump();
 }
 
 void spel_draw()
 {
+	dumpTime += spel.time.delta;
+
+	if (dumpTime >= 5)
+	{
+		log_info("%f", spel.time.delta);
+		spel_memory_dump();
+		dumpTime = 0;
+	}
 	spel_gfx_cmd_clear(cmdlist, spel_color_magenta());
 
 	spel_gfx_cmdlist_submit(cmdlist);

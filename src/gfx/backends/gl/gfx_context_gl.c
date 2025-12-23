@@ -73,6 +73,17 @@ void spel_gfx_context_conf_gl()
 
 void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 {
+	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
+	{
+		if (ctx->shaders[i] == nullptr)
+		{
+			continue;
+		}
+
+		ctx->shaders[i]->internal = false;
+		spel_gfx_shader_destroy_gl(ctx->shaders[i]);
+	}
+
 	spel_gfx_cmdlist_destroy_gl(ctx->cmdlist);
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();

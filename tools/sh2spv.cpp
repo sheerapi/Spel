@@ -9,6 +9,7 @@
 #include <iostream>
 #include <libgen.h>
 #include <optional>
+#include <shaderc/env.h>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>

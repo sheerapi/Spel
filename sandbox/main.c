@@ -8,8 +8,6 @@
 
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
-spel_gfx_shader vertex_shader;
-spel_gfx_shader fragment_shader;
 spel_gfx_pipeline pipeline;
 
 void spel_conf()
@@ -19,26 +17,24 @@ void spel_conf()
 
 void spel_load()
 {
-	vertex_shader =
-		spel_gfx_shader_load(spel.gfx, "test.vert.spv", "main", SPEL_GFX_SHADER_VERTEX);
-
-	fragment_shader =
-		spel_gfx_shader_load(spel.gfx, "test.frag.spv", "main", SPEL_GFX_SHADER_FRAGMENT);
-
-	spel_gfx_pipeline_desc pipeline_desc =
-		spel_gfx_pipeline_minimal(vertex_shader, fragment_shader);
+	spel_gfx_pipeline_desc pipeline_desc = spel_gfx_pipeline_default_2d(spel.gfx);
 	pipeline = spel_gfx_pipeline_create(spel.gfx, &pipeline_desc);
 
-	float vertices[] = {
-		0.5f,  0.5f,  0.0f, // top right
-		0.5f,  -0.5f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, // bottom left
-		-0.5f, 0.5f,
-		0.0f // top left
+	typedef struct
+	{
+		float pos[2];
+		float uv[2];
+		spel_color color;
+	} Vertex;
+
+	Vertex vertices[] = {
+		{{0.5f, 0.5f}, {1.0f, 1.0f}, spel_color_white()},
+		{{0.5f, -0.5f}, {1.0f, 0.0f}, spel_color_white()},
+		{{-0.5f, -0.5f}, {0.0f, 0.0f}, spel_color_white()},
+		{{-0.5f, 0.5f}, {0.0f, 1.0f}, spel_color_white()},
 	};
 
-	unsigned int indices[] = {// note that we start from 0!
-							  3, 2, 1, 3, 1, 0};
+	unsigned int indices[] = {3, 2, 1, 3, 1, 0};
 
 	spel_gfx_buffer_desc vbuffer_desc;
 	vbuffer_desc.type = SPEL_GFX_BUFFER_VERTEX;
@@ -63,7 +59,7 @@ void spel_load()
 void spel_draw()
 {
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
-	spel_gfx_cmd_clear(cl, spel_color_black());
+	spel_gfx_cmd_clear(cl, spel_color_cyan());
 
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
@@ -77,8 +73,6 @@ void spel_draw()
 void spel_quit()
 {
 	spel_gfx_pipeline_destroy(pipeline);
-	spel_gfx_shader_destroy(fragment_shader);
-	spel_gfx_shader_destroy(vertex_shader);
 	spel_gfx_buffer_destroy(vbuffer);
 	spel_gfx_buffer_destroy(ibuffer);
 }

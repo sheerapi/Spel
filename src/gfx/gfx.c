@@ -29,6 +29,11 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	ctx->backend = desc->backend;
 	ctx->debug = desc->debug;
 
+	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
+	{
+		ctx->shaders[i] = nullptr;
+	}
+
 	switch (ctx->backend)
 	{
 	case SPEL_GFX_BACKEND_OPENGL:

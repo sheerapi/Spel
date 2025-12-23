@@ -83,6 +83,7 @@ typedef struct spel_gfx_context_t
 
 	spel_gfx_cmdlist cmdlist;
 	spel_gfx_pipeline_cache pipeline_cache;
+	spel_gfx_shader shaders[3];
 	void* data;
 } spel_gfx_context_t;
 

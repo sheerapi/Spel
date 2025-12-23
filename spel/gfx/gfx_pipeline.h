@@ -91,10 +91,13 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader ver
 sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
 														 spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_shader vertex,
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 														   spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx, const spel_gfx_pipeline_desc* desc);
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx);
+
+sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
+												  const spel_gfx_pipeline_desc* desc);
 sp_api void spel_gfx_pipeline_name(spel_gfx_pipeline pipeline, const char* name);
 sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline);
 

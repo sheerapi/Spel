@@ -19,6 +19,12 @@ spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
 
 void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 {
+	if (shader->internal)
+	{
+		log_error("you can't delete an internal shader!");
+		return;
+	}
+	
 	glDeleteProgram((*(spel_gfx_shader_gl*)shader->data).program);
 	sp_free(shader->data);
 	sp_free(shader);

@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
+#include "gfx/gfx_pipeline.h"
 #include "gfx/gfx_shader.h"
 #include "gfx_buffer.h"
 #include "gfx_commands.h"
@@ -30,12 +31,32 @@ typedef struct spel_gfx_buffer_t
 	spel_gfx_buffer_type type;
 } spel_gfx_buffer_t;
 
+// shaders
 typedef struct spel_gfx_shader_t
 {
 	spel_gfx_shader_stage type;
 	spel_gfx_context ctx;
 	void* data;
+	uint64_t hash;
 } spel_gfx_shader_t;
+
+// pipelines
+typedef enum
+{
+	SPEL_GFX_PIPELINE_GRAPHIC,
+	SPEL_GFX_PIPELINE_COMPUTE // NOT supported yet lol
+} spel_gfx_pipeline_type;
+
+typedef struct spel_gfx_pipeline_t
+{
+	spel_gfx_context ctx;
+	spel_gfx_pipeline_type type;
+
+	const char* name;
+	uint64_t hash;
+
+	void* data;
+} spel_gfx_pipeline_t;
 
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
@@ -72,6 +93,10 @@ typedef struct spel_gfx_vtable_t
 
 	spel_gfx_shader (*shader_create)(spel_gfx_context, const spel_gfx_shader_desc* desc);
 	void (*shader_destroy)(spel_gfx_shader);
+
+	spel_gfx_pipeline (*pipeline_create)(spel_gfx_context,
+										 const spel_gfx_pipeline_desc* desc);
+	void (*pipeline_destroy)(spel_gfx_pipeline);
 } spel_gfx_vtable_t;
 
 extern void spel_gfx_context_create_gl(spel_gfx_context ctx);

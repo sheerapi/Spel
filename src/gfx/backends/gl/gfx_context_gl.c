@@ -33,6 +33,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 
 	ctx->vt = &GL_VTABLE;
 	ctx->data = gl;
+	ctx->debug = spel.debug;
 
 	SDL_GL_MakeCurrent(spel.window.handle, gl->ctx);
 	SDL_GL_SetSwapInterval(ctx->vsync);
@@ -61,6 +62,9 @@ void spel_gfx_context_conf_gl()
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth != 0
 											   ? spel.window.swapchain.depth
 											   : 16);
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, spel.window.swapchain.stencil);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,

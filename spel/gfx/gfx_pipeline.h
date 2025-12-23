@@ -62,7 +62,7 @@ typedef struct
 	spel_gfx_compare_func depth_compare;
 } spel_gfx_depth_state;
 
-typedef struct spel_gfx_graphic_pipeline_desc
+typedef struct spel_gfx_pipeline_desc
 {
 	spel_gfx_shader vertex_shader;
 	spel_gfx_shader fragment_shader;
@@ -78,8 +78,24 @@ typedef struct spel_gfx_graphic_pipeline_desc
 	spel_gfx_depth_state depth_state;
 	spel_gfx_stencil_state stencil;
 
-} spel_gfx_graphic_pipeline_desc;
+} spel_gfx_pipeline_desc;
 
-sp_api spel_gfx_graphic_pipeline_desc spel_gfx_pipeline_default();
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default();
+
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
+														spel_gfx_shader fragment);
+
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
+															 spel_gfx_shader fragment);
+
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
+														 spel_gfx_shader fragment);
+
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_shader vertex,
+														   spel_gfx_shader fragment);
+
+sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx, const spel_gfx_pipeline_desc* desc);
+sp_api void spel_gfx_pipeline_name(spel_gfx_pipeline pipeline, const char* name);
+sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline);
 
 #endif

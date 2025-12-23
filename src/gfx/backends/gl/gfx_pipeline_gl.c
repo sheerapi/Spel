@@ -1,0 +1,350 @@
+#include "core/entry.h"
+#include "core/macros.h"
+#include "core/memory.h"
+#include "gfx/gfx_internal.h"
+#include "gfx/gfx_types.h"
+#include "gfx_vtable_gl.h"
+
+static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits);
+static GLenum spel_gl_primitive(spel_gfx_primitive_topology t);
+static GLenum spel_gl_cull(spel_gfx_cull_mode c);
+static GLenum spel_gl_winding(spel_gfx_winding_mode w);
+static GLenum spel_gl_compare(spel_gfx_compare_func f);
+static GLenum spel_gl_stencil_op(spel_gfx_stencil_op op);
+static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f);
+static GLenum spel_gl_blend_op(spel_gfx_blend_op op);
+
+static void spel_gl_use_program_stage(GLuint pipeline, GLenum stageBit,
+									  spel_gfx_shader shader)
+{
+	if (shader == nullptr)
+	{
+		return;
+	}
+
+	spel_gfx_shader_gl* shader_gl = (spel_gfx_shader_gl*)shader->data;
+	glUseProgramStages(pipeline, stageBit, shader_gl->program);
+}
+
+static void spel_gl_configure_vertex_layout(GLuint vao,
+											const spel_gfx_vertex_layout* layout)
+{
+	for (uint32_t i = 0; i < layout->stream_count; i++)
+	{
+		const spel_gfx_vertex_stream* stream = &layout->streams[i];
+		glVertexArrayVertexBuffer(vao, i, 0, 0, (int)stream->stride);
+		glVertexArrayBindingDivisor(
+			vao, i, (stream->rate == SPEL_GFX_VERTEX_RATE_INSTANCE) ? 1 : 0);
+	}
+
+	for (uint32_t i = 0; i < layout->attrib_count; i++)
+	{
+		const spel_gfx_vertex_attrib* attrib = &layout->attribs[i];
+
+		const uint32_t FLAGS = spel_vtx_flags(attrib->format);
+		const bool INTEGER = (FLAGS & SPEL_GFX_VERTEX_INTEGER) != 0;
+		const bool NORMALIZED = (FLAGS & SPEL_GFX_VERTEX_NORMALIZED) != 0;
+
+		const GLenum TYPE = spel_gl_vertex_type(spel_vtx_base(attrib->format),
+												spel_vtx_bits(attrib->format));
+		const GLint SIZE = (GLint)spel_vtx_comps(attrib->format);
+
+		glEnableVertexArrayAttrib(vao, attrib->location);
+
+		if (INTEGER)
+		{
+			glVertexArrayAttribIFormat(vao, attrib->location, SIZE, TYPE, attrib->offset);
+		}
+		else
+		{
+			glVertexArrayAttribFormat(vao, attrib->location, SIZE, TYPE,
+									  (int)NORMALIZED ? GL_TRUE : GL_FALSE,
+									  attrib->offset);
+		}
+
+		glVertexArrayAttribBinding(vao, attrib->location, attrib->stream);
+	}
+}
+
+static void spel_gl_cache_pipeline_state(spel_gfx_pipeline_gl* glPipeline,
+										 const spel_gfx_pipeline_desc* desc)
+{
+	glPipeline->depth_state.test = desc->depth_state.depth_test;
+	glPipeline->depth_state.write = desc->depth_state.depth_write;
+	glPipeline->depth_state.clamp = desc->depth_state.depth_clamp;
+	glPipeline->depth_state.func = spel_gl_compare(desc->depth_state.depth_compare);
+
+	glPipeline->stencil_state.test = desc->stencil.enabled;
+	glPipeline->stencil_state.func = spel_gl_compare(desc->stencil.compare);
+	glPipeline->stencil_state.read_mask = desc->stencil.read_mask;
+	glPipeline->stencil_state.write_mask = desc->stencil.write_mask;
+	glPipeline->stencil_state.reference = desc->stencil.reference;
+	glPipeline->stencil_state.fail_op = spel_gl_stencil_op(desc->stencil.fail_op);
+	glPipeline->stencil_state.depth_op = spel_gl_stencil_op(desc->stencil.depth_fail_op);
+	glPipeline->stencil_state.pass_op = spel_gl_stencil_op(desc->stencil.pass_op);
+
+	glPipeline->blend_state.enabled = desc->blend_state.enabled;
+	glPipeline->blend_state.src_rgb = spel_gl_blend_factor(desc->blend_state.src_factor);
+	glPipeline->blend_state.dst_rgb = spel_gl_blend_factor(desc->blend_state.dst_factor);
+	glPipeline->blend_state.op_rgb = spel_gl_blend_op(desc->blend_state.operation);
+	glPipeline->blend_state.src_a =
+		spel_gl_blend_factor(desc->blend_state.src_alpha_factor);
+	glPipeline->blend_state.dst_a =
+		spel_gl_blend_factor(desc->blend_state.dst_alpha_factor);
+	glPipeline->blend_state.op_a = spel_gl_blend_op(desc->blend_state.alpha_op);
+	glPipeline->blend_state.write_mask = desc->blend_state.color_write_mask;
+
+	glPipeline->topology.primitives = spel_gl_primitive(desc->topology);
+	glPipeline->topology.cull_mode = spel_gl_cull(desc->cull_mode);
+	glPipeline->topology.winding = spel_gl_winding(desc->winding);
+}
+
+spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
+											  const spel_gfx_pipeline_desc* desc)
+{
+	spel_gfx_pipeline pipeline =
+		(spel_gfx_pipeline)sp_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
+
+	pipeline->ctx = ctx;
+	pipeline->type = SPEL_GFX_PIPELINE_GRAPHIC;
+
+	pipeline->data =
+		(spel_gfx_pipeline_gl*)sp_malloc(sizeof(spel_gfx_pipeline_gl), SPEL_MEM_TAG_GFX);
+
+	spel_gfx_pipeline_gl* gl_pipeline = (spel_gfx_pipeline_gl*)pipeline->data;
+
+	glCreateProgramPipelines(1, &gl_pipeline->pipeline);
+
+	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_VERTEX_SHADER_BIT,
+							  desc->vertex_shader);
+	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_FRAGMENT_SHADER_BIT,
+							  desc->fragment_shader);
+	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_GEOMETRY_SHADER_BIT,
+							  desc->geometry_shader);
+
+	glCreateVertexArrays(1, &gl_pipeline->vao);
+	spel_gl_configure_vertex_layout(gl_pipeline->vao, &desc->vertex_layout);
+
+	spel_gl_cache_pipeline_state(gl_pipeline, desc);
+
+	gl_pipeline->strides =
+		sp_malloc(sizeof(GLsizei) * desc->vertex_layout.stream_count, SPEL_MEM_TAG_GFX);
+
+	for (size_t i = 0; i < desc->vertex_layout.stream_count; i++)
+	{
+		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
+	}
+
+	return pipeline;
+}
+
+void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
+{
+	spel_gfx_pipeline_gl* glp = (spel_gfx_pipeline_gl*)pipeline->data;
+
+	if (glp->strides)
+	{
+		sp_free(glp->strides);
+	}
+
+	if (glp->vao)
+	{
+		glDeleteVertexArrays(1, &glp->vao);
+	}
+
+	if (glp->pipeline)
+	{
+		glDeleteProgramPipelines(1, &glp->pipeline);
+	}
+
+	sp_free(pipeline->data);
+	sp_free(pipeline);
+}
+
+static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits)
+{
+	switch (base)
+	{
+	case SPEL_GFX_VERTEX_FLOAT:
+		return GL_FLOAT; // bits must be 32
+
+	case SPEL_GFX_VERTEX_HALF:
+		return GL_HALF_FLOAT; // bits must be 16
+
+	case SPEL_GFX_VERTEX_INT:
+		switch (bits)
+		{
+		case 8:
+			return GL_BYTE;
+		case 16:
+			return GL_SHORT;
+		case 32:
+		default:
+			return GL_INT;
+		}
+		break;
+
+	case SPEL_GFX_VERTEX_UINT:
+		switch (bits)
+		{
+		case 8:
+			return GL_UNSIGNED_BYTE;
+		case 16:
+			return GL_UNSIGNED_SHORT;
+		case 32:
+		default:
+			return GL_UNSIGNED_INT;
+		}
+		break;
+	}
+
+	spel_error("invalid vertex format");
+	return GL_FLOAT;
+}
+
+static GLenum spel_gl_primitive(spel_gfx_primitive_topology t)
+{
+	switch (t)
+	{
+	case SPEL_GFX_TOPOLOGY_TRIANGLES:
+		return GL_TRIANGLES;
+	case SPEL_GFX_TOPOLOGY_TRIANGLE_STRIP:
+		return GL_TRIANGLE_STRIP;
+	case SPEL_GFX_TOPOLOGY_LINES:
+		return GL_LINES;
+	case SPEL_GFX_TOPOLOGY_LINE_STRIP:
+		return GL_LINE_STRIP;
+	case SPEL_GFX_TOPOLOGY_POINTS:
+		return GL_POINTS;
+	default:
+		return GL_TRIANGLES;
+	}
+}
+
+static GLenum spel_gl_cull(spel_gfx_cull_mode c)
+{
+	switch (c)
+	{
+	case SPEL_GFX_CULL_NONE:
+		return 0;
+	case SPEL_GFX_CULL_BACK:
+		return GL_BACK;
+	case SPEL_GFX_CULL_FRONT:
+		return GL_FRONT;
+	default:
+		return GL_BACK;
+	}
+}
+
+static GLenum spel_gl_winding(spel_gfx_winding_mode w)
+{
+	switch (w)
+	{
+	case SPEL_GFX_WINDING_COUNTER_CLOCKWISE:
+		return GL_CCW;
+	case SPEL_GFX_WINDING_CLOCKWISE:
+		return GL_CW;
+	default:
+		return GL_CCW;
+	}
+}
+
+static GLenum spel_gl_compare(spel_gfx_compare_func f)
+{
+	switch (f)
+	{
+	case SPEL_GFX_COMPARE_NEVER:
+		return GL_NEVER;
+	case SPEL_GFX_COMPARE_LESS:
+		return GL_LESS;
+	case SPEL_GFX_COMPARE_LEQUAL:
+		return GL_LEQUAL;
+	case SPEL_GFX_COMPARE_EQUAL:
+		return GL_EQUAL;
+	case SPEL_GFX_COMPARE_GREATER:
+		return GL_GREATER;
+	case SPEL_GFX_COMPARE_GEQUAL:
+		return GL_GEQUAL;
+	case SPEL_GFX_COMPARE_NOTEQUAL:
+		return GL_NOTEQUAL;
+	case SPEL_GFX_COMPARE_ALWAYS:
+		return GL_ALWAYS;
+	default:
+		return GL_LESS;
+	}
+}
+
+static GLenum spel_gl_stencil_op(spel_gfx_stencil_op op)
+{
+	switch (op)
+	{
+	case SPEL_GFX_STENCIL_KEEP:
+		return GL_KEEP;
+	case SPEL_GFX_STENCIL_ZERO:
+		return GL_ZERO;
+	case SPEL_GFX_STENCIL_REPLACE:
+		return GL_REPLACE;
+	case SPEL_GFX_STENCIL_INCREASE:
+		return GL_INCR;
+	case SPEL_GFX_STENCIL_INCR_WRAP:
+		return GL_INCR_WRAP;
+	case SPEL_GFX_STENCIL_DECREASE:
+		return GL_DECR;
+	case SPEL_GFX_STENCIL_DECR_WRAP:
+		return GL_DECR_WRAP;
+	case SPEL_GFX_STENCIL_INVERT:
+		return GL_INVERT;
+	default:
+		return GL_KEEP;
+	}
+}
+
+static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f)
+{
+	switch (f)
+	{
+	case SPEL_GFX_BLEND_ZERO:
+		return GL_ZERO;
+	case SPEL_GFX_BLEND_ONE:
+		return GL_ONE;
+	case SPEL_GFX_BLEND_SRC_ALPHA:
+		return GL_SRC_ALPHA;
+	case SPEL_GFX_BLEND_ONE_MINUS_SRC_ALPHA:
+		return GL_ONE_MINUS_SRC_ALPHA;
+	case SPEL_GFX_BLEND_DST_ALPHA:
+		return GL_DST_ALPHA;
+	case SPEL_GFX_BLEND_ONE_MINUS_DST_ALPHA:
+		return GL_ONE_MINUS_DST_ALPHA;
+	case SPEL_GFX_BLEND_SRC_COLOR:
+		return GL_SRC_COLOR;
+	case SPEL_GFX_BLEND_ONE_MINUS_SRC_COLOR:
+		return GL_ONE_MINUS_SRC_COLOR;
+	case SPEL_GFX_BLEND_DST_COLOR:
+		return GL_DST_COLOR;
+	case SPEL_GFX_BLEND_ONE_MINUS_DST_COLOR:
+		return GL_ONE_MINUS_DST_COLOR;
+	}
+
+	spel_error("invalid blend factor");
+	return GL_ONE;
+}
+
+static GLenum spel_gl_blend_op(spel_gfx_blend_op op)
+{
+	switch (op)
+	{
+	case SPEL_GFX_BLEND_OP_ADD:
+		return GL_FUNC_ADD;
+	case SPEL_GFX_BLEND_OP_SUBTRACT:
+		return GL_FUNC_SUBTRACT;
+	case SPEL_GFX_BLEND_OP_REV_SUBTRACT:
+		return GL_FUNC_REVERSE_SUBTRACT;
+	case SPEL_GFX_BLEND_OP_MIN:
+		return GL_MIN;
+	case SPEL_GFX_BLEND_OP_MAX:
+		return GL_MAX;
+	}
+
+	spel_error("invalid blend op");
+	return GL_FUNC_ADD;
+}

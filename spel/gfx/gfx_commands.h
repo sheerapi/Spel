@@ -8,7 +8,10 @@ typedef enum
 {
 	SPEL_GFX_CMD_BIND_VERTEX,
 	SPEL_GFX_CMD_BIND_INDEX,
-	SPEL_GFX_CMD_CLEAR
+	SPEL_GFX_CMD_BIND_PIPELINE,
+	SPEL_GFX_CMD_CLEAR,
+	SPEL_GFX_CMD_DRAW,
+	SPEL_GFX_CMD_DRAW_INDEXED
 } spel_gfx_cmd_type;
 
 typedef struct spel_gfx_cmd_header
@@ -28,6 +31,7 @@ typedef struct spel_gfx_bind_vertex_cmd
 	spel_gfx_cmd_header hdr;
 	spel_gfx_buffer buf;
 	size_t offset;
+	uint32_t stream;
 } spel_gfx_bind_vertex_cmd;
 
 typedef struct spel_gfx_bind_index_cmd
@@ -37,5 +41,26 @@ typedef struct spel_gfx_bind_index_cmd
 	size_t offset;
 	spel_gfx_index_type type;
 } spel_gfx_bind_index_cmd;
+
+typedef struct spel_gfx_bind_pipeline_cmd
+{
+	spel_gfx_cmd_header hdr;
+	spel_gfx_pipeline pipeline;
+} spel_gfx_bind_pipeline_cmd;
+
+typedef struct spel_gfx_draw_cmd
+{
+	spel_gfx_cmd_header hdr;
+	uint32_t vertex_count;
+	uint32_t first_vertex;
+} spel_gfx_draw_cmd;
+
+typedef struct spel_gfx_draw_indexed_cmd
+{
+	spel_gfx_cmd_header hdr;
+	uint32_t index_count;
+	uint32_t first_index;
+	int32_t vertex_offset;
+} spel_gfx_draw_indexed_cmd;
 
 #endif

@@ -115,7 +115,7 @@ spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
 	if (!spel_path_exists(path))
 	{
 		char buffer[512];
-		snprintf(buffer, 512, "File %s does not exist", path);
+		snprintf(buffer, 512, "file %s does not exist", path);
 		spel_error(buffer);
 		return nullptr;
 	}
@@ -151,21 +151,25 @@ spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
 
 void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 {
+	uint64_t start_offset = cl->offset;
 	spel_gfx_clear_cmd* cmd = (spel_gfx_clear_cmd*)cl->ctx->vt->cmdlist_alloc(
 		cl, sizeof(*cmd), alignof(spel_gfx_clear_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_CLEAR;
-	cmd->hdr.size = sizeof(*cmd);
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->color = color;
 }
 
-void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf, size_t offset)
+void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream, spel_gfx_buffer buf,
+							  size_t offset)
 {
+	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_vertex_cmd* cmd = (spel_gfx_bind_vertex_cmd*)cl->ctx->vt->cmdlist_alloc(
 		cl, sizeof(*cmd), alignof(spel_gfx_bind_vertex_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_VERTEX;
-	cmd->hdr.size = sizeof(*cmd);
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->stream = stream;
 	cmd->buf = buf;
 	cmd->offset = offset;
 }
@@ -173,17 +177,68 @@ void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_buffer buf, size_t o
 void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 							 spel_gfx_index_type type, size_t offset)
 {
+	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_index_cmd* cmd = (spel_gfx_bind_index_cmd*)cl->ctx->vt->cmdlist_alloc(
 		cl, sizeof(*cmd), alignof(spel_gfx_bind_index_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_INDEX;
-	cmd->hdr.size = sizeof(*cmd);
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->buf = buf;
 	cmd->offset = offset;
 	cmd->type = type;
 }
 
+void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_bind_pipeline_cmd* cmd =
+		(spel_gfx_bind_pipeline_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), alignof(spel_gfx_bind_pipeline_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BIND_PIPELINE;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->pipeline = pipeline;
+}
+
+void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount, uint32_t firstVertex)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_draw_cmd* cmd = (spel_gfx_draw_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_draw_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_DRAW;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->vertex_count = vertexCount;
+	cmd->first_vertex = firstVertex;
+}
+
+void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
+							   uint32_t firstIndex, int32_t vertexOffset)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_draw_indexed_cmd* cmd =
+		(spel_gfx_draw_indexed_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), alignof(spel_gfx_draw_indexed_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_DRAW_INDEXED;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->index_count = indexCount;
+	cmd->first_index = firstIndex;
+	cmd->vertex_offset = vertexOffset;
+}
+
 spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
 {
 	return ctx->cmdlist;
+}
+
+spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
+										   const spel_gfx_pipeline_desc* desc)
+{
+	return ctx->vt->pipeline_create(ctx, desc);
+}
+
+void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
+{
+	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }

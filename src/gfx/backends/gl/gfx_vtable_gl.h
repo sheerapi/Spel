@@ -20,8 +20,8 @@ sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
 
 // command lists
 sp_hidden spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx);
-sp_hidden void spel_gfx_cmdlist_destroy_gl(spel_gfx_cmdlist cmd);
-sp_hidden void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cmd);
+sp_hidden void spel_gfx_cmdlist_destroy_gl(spel_gfx_cmdlist cl);
+sp_hidden void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl);
 
 sp_hidden void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align);
 
@@ -43,31 +43,87 @@ sp_hidden spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
 
 sp_hidden void spel_gfx_shader_destroy_gl(spel_gfx_shader shader);
 
+sp_hidden spel_gfx_pipeline
+spel_gfx_pipeline_create_gl(spel_gfx_context ctx, const spel_gfx_pipeline_desc* desc);
+
+sp_hidden void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline);
+
 typedef struct
 {
 	GLuint shader;
 	GLuint program;
 } spel_gfx_shader_gl;
 
-static spel_gfx_vtable_t GL_VTABLE = {
-	.ctx_destroy = spel_gfx_context_destroy_gl,
+typedef struct
+{
+	GLuint pipeline;
+	GLuint vao;
 
-	.frame_begin = spel_gfx_frame_begin_gl,
-	.frame_end = spel_gfx_frame_end_gl,
+	GLsizei* strides;
 
-	.cmdlist_create = spel_gfx_cmdlist_create_gl,
-	.cmdlist_destroy = spel_gfx_cmdlist_destroy_gl,
-	.cmdlist_submit = spel_gfx_cmdlist_submit_gl,
-	.cmdlist_alloc = spel_gfx_cmdlist_alloc_gl,
+	struct
+	{
+		bool test;
+		bool write;
+		bool clamp;
+		GLenum func;
+	} depth_state;
 
-	.buffer_create = spel_gfx_buffer_create_gl,
-	.buffer_destroy = spel_gfx_buffer_destroy_gl,
-	.buffer_update = spel_gfx_buffer_update_gl,
-	.buffer_map = spel_gfx_buffer_map_gl,
-	.buffer_unmap = spel_gfx_buffer_unmap_gl,
-	.buffer_flush = spel_gfx_buffer_flush_gl,
+	struct
+	{
+		bool test;
+		GLbitfield write_mask;
+		GLbitfield read_mask;
+		GLbitfield reference;
+		GLenum func;
+		GLenum fail_op;
+		GLenum depth_op;
+		GLenum pass_op;
+	} stencil_state;
 
-	.shader_create = spel_gfx_shader_create_gl,
-	.shader_destroy = spel_gfx_shader_destroy_gl};
+	struct
+	{
+		bool enabled;
+		GLenum src_rgb;
+		GLenum dst_rgb;
+
+		GLenum src_a;
+		GLenum dst_a;
+
+		GLenum op_rgb;
+		GLenum op_a;
+		GLbitfield write_mask;
+	} blend_state;
+
+	struct
+	{
+		GLenum primitives;
+		GLenum cull_mode;
+		GLenum winding;
+	} topology;
+} spel_gfx_pipeline_gl;
+
+static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
+
+									  .frame_begin = spel_gfx_frame_begin_gl,
+									  .frame_end = spel_gfx_frame_end_gl,
+
+									  .cmdlist_create = spel_gfx_cmdlist_create_gl,
+									  .cmdlist_destroy = spel_gfx_cmdlist_destroy_gl,
+									  .cmdlist_submit = spel_gfx_cmdlist_submit_gl,
+									  .cmdlist_alloc = spel_gfx_cmdlist_alloc_gl,
+
+									  .buffer_create = spel_gfx_buffer_create_gl,
+									  .buffer_destroy = spel_gfx_buffer_destroy_gl,
+									  .buffer_update = spel_gfx_buffer_update_gl,
+									  .buffer_map = spel_gfx_buffer_map_gl,
+									  .buffer_unmap = spel_gfx_buffer_unmap_gl,
+									  .buffer_flush = spel_gfx_buffer_flush_gl,
+
+									  .shader_create = spel_gfx_shader_create_gl,
+									  .shader_destroy = spel_gfx_shader_destroy_gl,
+
+									  .pipeline_create = spel_gfx_pipeline_create_gl,
+									  .pipeline_destroy = spel_gfx_pipeline_destroy_gl};
 
 #endif

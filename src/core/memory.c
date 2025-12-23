@@ -2,6 +2,7 @@
 #include "core/log.h"
 #include "core/types.h"
 #include <stdio.h>
+#include <string.h>
 
 typedef struct spel_alloc_header
 {
@@ -13,6 +14,7 @@ void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
 	size_t total = sizeof(spel_alloc_header) + size;
 	spel_alloc_header* h = malloc(total);
+	memset(h, 0, total);
 	if (!h)
 	{
 		return NULL;

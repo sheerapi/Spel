@@ -17,11 +17,13 @@ sources = [
     'src/utils/time.c', 
     'src/gfx/gfx.c', 
     'src/utils/path.c',
+    'src/gfx/gfx_pipeline.c',
     
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
     'src/gfx/backends/gl/gfx_buffer_gl.c',
-    'src/gfx/backends/gl/gfx_shader_gl.c'
+    'src/gfx/backends/gl/gfx_shader_gl.c',
+    'src/gfx/backends/gl/gfx_pipeline_gl.c'
 ]
 
 dependencies = [dependency('sdl3'), m_dep]

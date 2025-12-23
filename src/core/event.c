@@ -114,6 +114,11 @@ void spel_event_handle(void* event)
 		sp_callback(spel_low_memory);
 		break;
 
+	case SDL_EVENT_WINDOW_RESIZED:
+		spel.window.width = ev->window.data1;
+		spel.window.height = ev->window.data2;
+		break;
+
 	case SDL_EVENT_WILL_ENTER_BACKGROUND:
 	case SDL_EVENT_DID_ENTER_BACKGROUND:
 	case SDL_EVENT_WILL_ENTER_FOREGROUND:
@@ -131,7 +136,6 @@ void spel_event_handle(void* event)
 	case SDL_EVENT_WINDOW_HIDDEN:
 	case SDL_EVENT_WINDOW_EXPOSED:
 	case SDL_EVENT_WINDOW_MOVED:
-	case SDL_EVENT_WINDOW_RESIZED:
 	case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 	case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:
 	case SDL_EVENT_WINDOW_MINIMIZED:

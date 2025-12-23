@@ -5,7 +5,7 @@
 typedef struct spel_gfx_context_t* spel_gfx_context;
 typedef struct spel_gfx_buffer_t* spel_gfx_buffer;
 typedef struct spel_gfx_cmdlist_t* spel_gfx_cmdlist;
-typedef struct spel_gfx_graphic_pipeline_t* spel_gfx_graphic_pipeline;
+typedef struct spel_gfx_pipeline_t* spel_gfx_pipeline;
 typedef struct spel_gfx_shader_t* spel_gfx_shader;
 
 typedef enum
@@ -69,8 +69,8 @@ typedef enum
 
 typedef enum
 {
-	SPEL_GFX_VERTEX_PER_VERTEX,
-	SPEL_GFX_VERTEX_PER_INSTANCE
+	SPEL_GFX_VERTEX_RATE_VERTEX,
+	SPEL_GFX_VERTEX_RATE_INSTANCE
 } spel_gfx_vertex_rate;
 
 typedef enum
@@ -151,5 +151,24 @@ typedef enum
 } spel_gfx_shader_stage;
 
 typedef uint32_t spel_gfx_vertex_format;
+
+#define spel_vtx_fmt(base, comps, bits, flags)                                           \
+	((spel_gfx_vertex_format)(((base) & 0x3) | (((comps) - 1) << 2) | ((bits) << 4) |    \
+							  ((flags) << 7)))
+
+#define spel_vtx_base(fmt) ((spel_gfx_vertex_base_format)(((fmt) >> 0) & 0x3))
+
+#define spel_vtx_comps(fmt) ((((fmt) >> 2) & 0x3) + 1)
+
+#define spel_vtx_bits(fmt) (((fmt) >> 4) & 0x7)
+
+#define spel_vtx_flags(fmt) ((fmt) >> 7)
+
+#define spel_gfx_vertex_format_float2 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 2, 32, 0)
+#define spel_gfx_vertex_format_float3 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 3, 32, 0)
+#define spel_gfx_vertex_format_float4 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 4, 32, 0)
+
+#define spel_gfx_vertex_format_ubyte4n                                                   \
+	spel_vtx_fmt(SPEL_GFX_VERTEX_UINT, 4, 8, SPEL_GFX_VERTEX_NORMALIZED)
 
 #endif

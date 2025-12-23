@@ -80,4 +80,5 @@ void spel_quit()
 	spel_gfx_shader_destroy(fragment_shader);
 	spel_gfx_shader_destroy(vertex_shader);
 	spel_gfx_buffer_destroy(vbuffer);
+	spel_gfx_buffer_destroy(ibuffer);
 }

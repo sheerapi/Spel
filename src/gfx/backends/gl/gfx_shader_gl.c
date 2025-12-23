@@ -6,6 +6,7 @@
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
 #include "gl.h"
+#include "utils/internal/xxhash.h"
 
 spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 												const spel_gfx_shader_desc* desc);
@@ -55,6 +56,14 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 
 	shader->ctx = ctx;
 	shader->type = desc->stage;
+
+	XXH3_state_t* state = XXH3_createState();
+	XXH3_64bits_reset(state);
+
+	XXH3_64bits_update(state, desc->source, desc->source_size);
+
+	shader->hash = XXH3_64bits_digest(state);
+	XXH3_freeState(state);
 
 	shader->data = sp_malloc(sizeof(spel_gfx_shader_gl), SPEL_MEM_TAG_GFX);
 	(*(spel_gfx_shader_gl*)shader->data).shader =

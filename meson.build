@@ -18,6 +18,8 @@ sources = [
     'src/gfx/gfx.c', 
     'src/utils/path.c',
     'src/gfx/gfx_pipeline.c',
+    'src/utils/internal/xxh_x86dispatch.c',
+    'src/utils/internal/xxhash.c',
     
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',

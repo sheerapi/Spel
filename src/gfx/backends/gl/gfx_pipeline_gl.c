@@ -4,6 +4,7 @@
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
+#include "utils/internal/xxhash.h"
 
 static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits);
 static GLenum spel_gl_primitive(spel_gfx_primitive_topology t);
@@ -99,11 +100,57 @@ static void spel_gl_cache_pipeline_state(spel_gfx_pipeline_gl* glPipeline,
 	glPipeline->topology.winding = spel_gl_winding(desc->winding);
 }
 
+static void spel_hash_vertex_layout(XXH3_state_t* state,
+									const spel_gfx_vertex_layout* layout);
+
 spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 											  const spel_gfx_pipeline_desc* desc)
 {
 	spel_gfx_pipeline pipeline =
 		(spel_gfx_pipeline)sp_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
+
+	XXH3_state_t* state = XXH3_createState();
+	XXH3_64bits_reset(state);
+
+	if (desc->vertex_shader != nullptr)
+	{
+		XXH3_64bits_update(state, &desc->vertex_shader->hash,
+						   sizeof(desc->vertex_shader->hash));
+	}
+
+	if (desc->fragment_shader != nullptr)
+	{
+		XXH3_64bits_update(state, &desc->fragment_shader->hash,
+						   sizeof(desc->geometry_shader->hash));
+	}
+
+	if (desc->geometry_shader != nullptr)
+	{
+		XXH3_64bits_update(state, &desc->geometry_shader->hash,
+						   sizeof(desc->geometry_shader->hash));
+	}
+
+	spel_hash_vertex_layout(state, &desc->vertex_layout);
+
+	XXH3_64bits_update(state, &desc->topology, sizeof(desc->topology));
+	XXH3_64bits_update(state, &desc->cull_mode, sizeof(desc->cull_mode));
+	XXH3_64bits_update(state, &desc->winding, sizeof(desc->winding));
+
+	XXH3_64bits_update(state, &desc->blend_state, sizeof(desc->blend_state));
+	XXH3_64bits_update(state, &desc->depth_state, sizeof(desc->depth_state));
+	XXH3_64bits_update(state, &desc->stencil, sizeof(desc->stencil));
+
+	pipeline->hash = XXH3_64bits_digest(state);
+	XXH3_freeState(state);
+
+	spel_gfx_pipeline cached =
+		spel_gfx_pipeline_cache_get_or_create(&ctx->pipeline_cache, pipeline->hash, pipeline);
+
+	if (cached != pipeline)
+	{
+		sp_free(pipeline);
+		return cached;
+	}
 
 	pipeline->ctx = ctx;
 	pipeline->type = SPEL_GFX_PIPELINE_GRAPHIC;
@@ -347,4 +394,30 @@ static GLenum spel_gl_blend_op(spel_gfx_blend_op op)
 
 	spel_error("invalid blend op");
 	return GL_FUNC_ADD;
+}
+
+static void spel_hash_vertex_layout(XXH3_state_t* state,
+									const spel_gfx_vertex_layout* layout)
+{
+	XXH3_64bits_update(state, &layout->attrib_count, sizeof(layout->attrib_count));
+
+	for (uint32_t i = 0; i < layout->attrib_count; ++i)
+	{
+		const spel_gfx_vertex_attrib* a = &layout->attribs[i];
+
+		XXH3_64bits_update(state, &a->location, sizeof(a->location));
+		XXH3_64bits_update(state, &a->format, sizeof(a->format));
+		XXH3_64bits_update(state, &a->offset, sizeof(a->offset));
+		XXH3_64bits_update(state, &a->stream, sizeof(a->stream));
+	}
+
+	XXH3_64bits_update(state, &layout->stream_count, sizeof(layout->stream_count));
+
+	for (uint32_t i = 0; i < layout->stream_count; ++i)
+	{
+		const spel_gfx_vertex_stream* s = &layout->streams[i];
+
+		XXH3_64bits_update(state, &s->stride, sizeof(s->stride));
+		XXH3_64bits_update(state, &s->rate, sizeof(s->rate));
+	}
 }

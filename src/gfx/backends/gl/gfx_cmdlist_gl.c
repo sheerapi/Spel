@@ -15,6 +15,10 @@ void exec_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_bind_pipeline_cmd* cmd
 void exec_cmd_draw(spel_gfx_cmdlist cl, spel_gfx_draw_cmd* cmd);
 void exec_cmd_draw_indexed(spel_gfx_cmdlist cl, spel_gfx_draw_indexed_cmd* cmd);
 
+void exec_cmd_bind_texture(spel_gfx_cmdlist cl, spel_gfx_bind_texture_cmd* cmd);
+void exec_cmd_bind_sampler(spel_gfx_cmdlist cl, spel_gfx_bind_sampler_cmd* cmd);
+void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd);
+
 typedef struct
 {
 	spel_gfx_pipeline pipeline;
@@ -22,6 +26,8 @@ typedef struct
 	spel_gfx_buffer index_buffer;
 	size_t index_offset;
 	GLenum index_type;
+
+	spel_gfx_sampler sampler;
 } spel_gfx_cmdlist_gl;
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
@@ -98,7 +104,14 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		case SPEL_GFX_CMD_DRAW_INDEXED:
 			exec_cmd_draw_indexed(cl, (spel_gfx_draw_indexed_cmd*)ptr);
 			break;
-		default:
+		case SPEL_GFX_CMD_BIND_TEXTURE:
+			exec_cmd_bind_texture(cl, (spel_gfx_bind_texture_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_BIND_SAMPLER:
+			exec_cmd_bind_sampler(cl, (spel_gfx_bind_sampler_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_BIND_IMAGE:
+			exec_cmd_bind_image(cl, (spel_gfx_bind_image_cmd*)ptr);
 			break;
 		}
 
@@ -268,4 +281,29 @@ void exec_cmd_draw_indexed(spel_gfx_cmdlist cl, spel_gfx_draw_indexed_cmd* cmd)
 
 	glDrawElementsBaseVertex(p->topology.primitives, (int)cmd->index_count,
 							 exec->index_type, (void*)byte_offset, cmd->vertex_offset);
+}
+
+void exec_cmd_bind_texture(spel_gfx_cmdlist cl, spel_gfx_bind_texture_cmd* cmd)
+{
+	glBindTextureUnit(cmd->slot, *(GLuint*)cmd->texture->data);
+}
+
+void exec_cmd_bind_sampler(spel_gfx_cmdlist cl, spel_gfx_bind_sampler_cmd* cmd)
+{
+	if (((spel_gfx_cmdlist_gl*)cl->data)->sampler == cmd->sampler)
+	{
+		return;
+	}
+	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
+}
+
+void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
+{
+	glBindTextureUnit(cmd->slot, *(GLuint*)cmd->texture->data);
+
+	if (((spel_gfx_cmdlist_gl*)cl->data)->sampler == cmd->sampler)
+	{
+		return;
+	}
+	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
 }

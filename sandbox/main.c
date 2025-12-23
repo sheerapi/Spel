@@ -24,14 +24,14 @@ void spel_load()
 	{
 		float pos[2];
 		float uv[2];
-		uint8_t color[4];
+		spel_color color;
 	} Vertex;
 
 	Vertex vertices[] = {
-		{{0.5f, 0.5f}, {1.0f, 1.0f}, {255, 255, 255, 255}},
-		{{0.5f, -0.5f}, {1.0f, 0.0f}, {255, 255, 255, 255}},
-		{{-0.5f, -0.5f}, {0.0f, 0.0f}, {255, 255, 255, 255}},
-		{{-0.5f, 0.5f}, {0.0f, 1.0f}, {255, 255, 255, 255}},
+		{{0.5f, 0.5f}, {1.0f, 1.0f}, spel_color_white()},
+		{{0.5f, -0.5f}, {1.0f, 0.0f}, spel_color_white()},
+		{{-0.5f, -0.5f}, {0.0f, 0.0f}, spel_color_white()},
+		{{-0.5f, 0.5f}, {0.0f, 1.0f}, spel_color_white()},
 	};
 
 	unsigned int indices[] = {3, 2, 1, 3, 1, 0};
@@ -64,6 +64,7 @@ void spel_draw()
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
+	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
 
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 

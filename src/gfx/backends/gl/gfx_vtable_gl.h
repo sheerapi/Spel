@@ -5,6 +5,7 @@
 #include "gfx/gfx_shader.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
+#include "gl_types.h"
 
 static spel_gfx_vtable_t GL_VTABLE;
 
@@ -38,70 +39,28 @@ sp_hidden void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_
 sp_hidden void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf);
 sp_hidden void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size);
 
+// shaders
 sp_hidden spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
 													const spel_gfx_shader_desc* desc);
 
 sp_hidden void spel_gfx_shader_destroy_gl(spel_gfx_shader shader);
 
+// pipelines
 sp_hidden spel_gfx_pipeline
 spel_gfx_pipeline_create_gl(spel_gfx_context ctx, const spel_gfx_pipeline_desc* desc);
 
 sp_hidden void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline);
 
-typedef struct
-{
-	GLuint shader;
-	GLuint program;
-} spel_gfx_shader_gl;
+// textures
+sp_hidden spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
+													  const spel_gfx_texture_desc* desc);
 
-typedef struct
-{
-	GLuint pipeline;
-	GLuint vao;
+sp_hidden void spel_gfx_texture_destroy_gl(spel_gfx_texture texture);
 
-	GLsizei* strides;
+sp_hidden spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
+													  const spel_gfx_sampler_desc* desc);
 
-	struct
-	{
-		bool test;
-		bool write;
-		bool clamp;
-		GLenum func;
-	} depth_state;
-
-	struct
-	{
-		bool test;
-		GLbitfield write_mask;
-		GLbitfield read_mask;
-		GLbitfield reference;
-		GLenum func;
-		GLenum fail_op;
-		GLenum depth_op;
-		GLenum pass_op;
-	} stencil_state;
-
-	struct
-	{
-		bool enabled;
-		GLenum src_rgb;
-		GLenum dst_rgb;
-
-		GLenum src_a;
-		GLenum dst_a;
-
-		GLenum op_rgb;
-		GLenum op_a;
-		GLbitfield write_mask;
-	} blend_state;
-
-	struct
-	{
-		GLenum primitives;
-		GLenum cull_mode;
-		GLenum winding;
-	} topology;
-} spel_gfx_pipeline_gl;
+sp_hidden void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler);
 
 static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
 
@@ -124,6 +83,11 @@ static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl
 									  .shader_destroy = spel_gfx_shader_destroy_gl,
 
 									  .pipeline_create = spel_gfx_pipeline_create_gl,
-									  .pipeline_destroy = spel_gfx_pipeline_destroy_gl};
+									  .pipeline_destroy = spel_gfx_pipeline_destroy_gl,
+
+									  .texture_create = spel_gfx_texture_create_gl,
+									  .texture_destroy = spel_gfx_texture_destroy_gl,
+									  .sampler_create = spel_gfx_sampler_create_gl,
+									  .sampler_destroy = spel_gfx_sampler_destroy_gl};
 
 #endif

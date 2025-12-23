@@ -21,7 +21,7 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 {
 	if (shader->internal)
 	{
-		log_error("you can't delete an internal shader!");
+		spel_error("you can't delete an internal shader!");
 		return;
 	}
 	

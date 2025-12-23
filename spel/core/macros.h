@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#	include <stdlib.h>
+#include <stdlib.h>
 
 #if defined(_WIN32)
 #	if defined(sp_build)
@@ -55,15 +55,9 @@
 #define sp_unused(x) (void)(x)
 
 #if sp_debug
-#	define sp_assert(expr)                                                              \
-		do                                                                               \
-		{                                                                                \
-			if (!(expr))                                                                 \
-			{                                                                            \
-				log_fatal("Assertion failed: %s", #expr);                                \
-				exit(-1);                                                                \
-			}                                                                            \
-		} while (0)
+#	define sp_assert(expr, msg)                                                         \
+		((expr) ? (void)0                                                                \
+				: spel_assert_fail(#expr, msg, __FILE__, __LINE__, __PRETTY_FUNCTION__))
 #else
 #	define sp_assert(expr)
 #endif
@@ -111,11 +105,11 @@
 		return (spel_color){r, g, b, 255};                                               \
 	}
 
-#	ifdef DEBUG
-#		define sp_malloc(size, tag) spel_memory_malloc(size, tag)
-#		define sp_free(ptr) spel_memory_free(ptr)
-#		define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
-#	else
+#ifdef DEBUG
+#	define sp_malloc(size, tag) spel_memory_malloc(size, tag)
+#	define sp_free(ptr) spel_memory_free(ptr)
+#	define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
+#else
 #	define sp_malloc(size, tag) malloc(size)
 #	define sp_free(ptr) free(ptr)
 #	define sp_realloc(ptr, size, tag) realloc(ptr, size)

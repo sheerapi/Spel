@@ -33,5 +33,7 @@ sp_weak_alias(spel_low_memory, spel_fallback);
 
 // core functions
 sp_api bool spel_args_has(const char* arg);
+sp_hidden void spel_assert_fail(const char* assertion, const char* msg, const char* file,
+						   int line, const char* function);
 
 #endif

@@ -2,6 +2,7 @@
 #define SPEL_GFX_INTERNAL
 #include "gfx/gfx_pipeline.h"
 #include "gfx/gfx_shader.h"
+#include "gfx/gfx_texture.h"
 #include "gfx_buffer.h"
 #include "gfx_commands.h"
 #include "gfx_types.h"
@@ -52,7 +53,6 @@ typedef struct spel_gfx_pipeline_t
 	spel_gfx_context ctx;
 	spel_gfx_pipeline_type type;
 
-	const char* name;
 	uint64_t hash;
 
 	void* data;
@@ -71,6 +71,35 @@ typedef struct
 	uint32_t count;
 } spel_gfx_pipeline_cache;
 
+// textures & samplers
+typedef struct spel_gfx_texture_t
+{
+	spel_gfx_context ctx;
+	spel_gfx_texture_type type;
+	bool internal;
+
+	void* data;
+} spel_gfx_texture_t;
+
+typedef struct spel_gfx_sampler_t
+{
+	spel_gfx_context ctx;
+	void* data;
+} spel_gfx_sampler_t;
+
+typedef struct
+{
+	uint64_t hash;
+	spel_gfx_sampler sampler;
+} spel_gfx_sampler_cache_entry;
+
+typedef struct
+{
+	spel_gfx_sampler_cache_entry* entries;
+	uint32_t capacity;
+	uint32_t count;
+} spel_gfx_sampler_cache;
+
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
 
@@ -81,9 +110,16 @@ typedef struct spel_gfx_context_t
 	bool debug;
 	int vsync;
 
+	// default data
 	spel_gfx_cmdlist cmdlist;
 	spel_gfx_pipeline_cache pipeline_cache;
+	spel_gfx_sampler_cache sampler_cache;
 	spel_gfx_shader shaders[3];
+
+	spel_gfx_sampler default_sampler;
+	spel_gfx_texture white_tex;
+	spel_gfx_texture checkerboard;
+
 	void* data;
 } spel_gfx_context_t;
 
@@ -104,19 +140,26 @@ typedef struct spel_gfx_vtable_t
 	void (*buffer_update)(spel_gfx_buffer, const void*, size_t, size_t);
 	void* (*buffer_map)(spel_gfx_buffer, size_t, size_t, spel_gfx_access);
 	void (*buffer_unmap)(spel_gfx_buffer);
-	void (*buffer_flush)(spel_gfx_buffer buf, size_t offset, size_t size);
+	void (*buffer_flush)(spel_gfx_buffer, size_t, size_t);
 
-	spel_gfx_shader (*shader_create)(spel_gfx_context, const spel_gfx_shader_desc* desc);
+	spel_gfx_shader (*shader_create)(spel_gfx_context, const spel_gfx_shader_desc*);
 	void (*shader_destroy)(spel_gfx_shader);
 
-	spel_gfx_pipeline (*pipeline_create)(spel_gfx_context,
-										 const spel_gfx_pipeline_desc* desc);
+	spel_gfx_pipeline (*pipeline_create)(spel_gfx_context, const spel_gfx_pipeline_desc*);
 	void (*pipeline_destroy)(spel_gfx_pipeline);
+
+	spel_gfx_texture (*texture_create)(spel_gfx_context, const spel_gfx_texture_desc*);
+	void (*texture_destroy)(spel_gfx_texture);
+
+	spel_gfx_sampler (*sampler_create)(spel_gfx_context,
+									   const spel_gfx_sampler_desc* desc);
+	void (*sampler_destroy)(spel_gfx_sampler);
 } spel_gfx_vtable_t;
 
 extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
 extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
+extern void spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 // initialization
 
 #endif

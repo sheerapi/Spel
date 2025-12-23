@@ -7,6 +7,8 @@ typedef struct spel_gfx_buffer_t* spel_gfx_buffer;
 typedef struct spel_gfx_cmdlist_t* spel_gfx_cmdlist;
 typedef struct spel_gfx_pipeline_t* spel_gfx_pipeline;
 typedef struct spel_gfx_shader_t* spel_gfx_shader;
+typedef struct spel_gfx_texture_t* spel_gfx_texture;
+typedef struct spel_gfx_sampler_t* spel_gfx_sampler;
 
 typedef enum
 {
@@ -170,5 +172,62 @@ typedef uint32_t spel_gfx_vertex_format;
 
 #define spel_gfx_vertex_format_ubyte4n                                                   \
 	spel_vtx_fmt(SPEL_GFX_VERTEX_UINT, 4, 8, SPEL_GFX_VERTEX_NORMALIZED)
+
+typedef enum
+{
+	SPEL_GFX_TEXTURE_2D,
+	SPEL_GFX_TEXTURE_2D_ARRAY,
+	SPEL_GFX_TEXTURE_3D,
+	SPEL_GFX_TEXTURE_CUBE
+} spel_gfx_texture_type;
+
+typedef enum
+{
+	SPEL_GFX_TEXTURE_USAGE_SAMPLED = 1 << 0,
+	SPEL_GFX_TEXTURE_USAGE_STORAGE = 1 << 1,
+	SPEL_GFX_TEXTURE_USAGE_RENDER = 1 << 2,
+} spel_gfx_texture_usage;
+
+typedef enum
+{
+	SPEL_GFX_TEXTURE_FMT_R8_UNORM,
+	SPEL_GFX_TEXTURE_FMT_RG8_UNORM,
+	SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
+	SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB,
+
+	SPEL_GFX_TEXTURE_FMT_R16F,
+	SPEL_GFX_TEXTURE_FMT_RG16F,
+	SPEL_GFX_TEXTURE_FMT_RGBA16F,
+
+	SPEL_GFX_TEXTURE_FMT_R32F,
+	SPEL_GFX_TEXTURE_FMT_RG32F,
+	SPEL_GFX_TEXTURE_FMT_RGBA32F,
+
+	SPEL_GFX_TEXTURE_FMT_D16,
+	SPEL_GFX_TEXTURE_FMT_D24S8,
+	SPEL_GFX_TEXTURE_FMT_D32F,
+
+	SPEL_GFX_TEXTURE_FORMAT_COUNT
+} spel_gfx_texture_format;
+
+typedef enum
+{
+	SPEL_GFX_SAMPLER_FILTER_NEAREST,
+	SPEL_GFX_SAMPLER_FILTER_LINEAR,
+} spel_gfx_sampler_filter;
+
+typedef enum
+{
+	SPEL_GFX_SAMPLER_MIP_NONE,
+	SPEL_GFX_SAMPLER_MIP_NEAREST,
+	SPEL_GFX_SAMPLER_MIP_LINEAR,
+} spel_gfx_sampler_mip_filter;
+
+typedef enum
+{
+	SPEL_GFX_SAMPLER_WRAP_REPEAT,
+	SPEL_GFX_SAMPLER_WRAP_CLAMP,
+	SPEL_GFX_SAMPLER_WRAP_MIRROR,
+} spel_gfx_sampler_wrap;
 
 #endif

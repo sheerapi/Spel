@@ -98,7 +98,6 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 
 sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 												  const spel_gfx_pipeline_desc* desc);
-sp_api void spel_gfx_pipeline_name(spel_gfx_pipeline pipeline, const char* name);
 sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline);
 
 #endif

@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/types.h"
 #include "gfx/gfx_internal.h"
+#include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
 #include <signal.h>
 #define GLAD_GL_IMPLEMENTATION 1
@@ -52,8 +53,6 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
 							  0, NULL, GL_FALSE);
 	}
-
-	ctx->cmdlist = spel_gfx_cmdlist_create_gl(ctx);
 }
 
 void spel_gfx_context_conf_gl()
@@ -84,6 +83,17 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 		spel_gfx_shader_destroy_gl(ctx->shaders[i]);
 	}
 
+	for (size_t i = 0; i < ctx->sampler_cache.count; i++)
+	{
+		ctx->vt->sampler_destroy(ctx->sampler_cache.entries[i].sampler);
+	}
+
+	ctx->white_tex->internal = false;
+	ctx->checkerboard->internal = false;
+
+	spel_gfx_texture_destroy(ctx->white_tex);
+	spel_gfx_texture_destroy(ctx->checkerboard);
+
 	spel_gfx_cmdlist_destroy_gl(ctx->cmdlist);
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
@@ -97,6 +107,8 @@ void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 	glViewport(0, 0, spel.window.width, spel.window.height);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glBindSampler(0, *(GLuint*)ctx->default_sampler->data);
+	glBindTextureUnit(0, *(GLuint*)ctx->white_tex->data);
 }
 
 void spel_gfx_frame_end_gl(spel_gfx_context ctx)

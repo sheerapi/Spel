@@ -25,7 +25,8 @@ sources = [
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
     'src/gfx/backends/gl/gfx_buffer_gl.c',
     'src/gfx/backends/gl/gfx_shader_gl.c',
-    'src/gfx/backends/gl/gfx_pipeline_gl.c'
+    'src/gfx/backends/gl/gfx_pipeline_gl.c',
+    'src/gfx/backends/gl/gfx_texture_gl.c'
 ]
 
 dependencies = [dependency('sdl3'), m_dep]

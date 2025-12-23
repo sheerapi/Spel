@@ -27,4 +27,13 @@ sp_api void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount,
 sp_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
 									  uint32_t firstIndex, int32_t vertexOffset);
 
+sp_api void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
+									  spel_gfx_texture texture);
+
+sp_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
+									  spel_gfx_sampler sampler);
+
+sp_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
+									spel_gfx_texture texture, spel_gfx_sampler sampler);
+
 #endif

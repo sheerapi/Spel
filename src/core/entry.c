@@ -81,7 +81,15 @@ sp_weak void spel_run()
 sp_weak void spel_error(const char* msg)
 {
 	log_error(msg);
+	log_error("panic!");
 	exit(-1);
+}
+
+void spel_assert_fail(const char* assertion, const char* msg, const char* file, int line,
+				 const char* function)
+{
+	log_log(LOG_FATAL, file, line, "Assertion `%s` failed at %s: %s", assertion, function,
+			msg);
 }
 #endif
 

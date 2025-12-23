@@ -24,14 +24,14 @@ void spel_load()
 	{
 		float pos[2];
 		float uv[2];
-		spel_color color;
+		uint8_t color[4];
 	} Vertex;
 
 	Vertex vertices[] = {
-		{{0.5f, 0.5f}, {1.0f, 1.0f}, spel_color_white()},
-		{{0.5f, -0.5f}, {1.0f, 0.0f}, spel_color_white()},
-		{{-0.5f, -0.5f}, {0.0f, 0.0f}, spel_color_white()},
-		{{-0.5f, 0.5f}, {0.0f, 1.0f}, spel_color_white()},
+		{{0.5f, 0.5f}, {1.0f, 1.0f}, {255, 255, 255, 255}},
+		{{0.5f, -0.5f}, {1.0f, 0.0f}, {255, 255, 255, 255}},
+		{{-0.5f, -0.5f}, {0.0f, 0.0f}, {255, 255, 255, 255}},
+		{{-0.5f, 0.5f}, {0.0f, 1.0f}, {255, 255, 255, 255}},
 	};
 
 	unsigned int indices[] = {3, 2, 1, 3, 1, 0};

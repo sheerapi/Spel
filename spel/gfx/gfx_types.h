@@ -153,16 +153,16 @@ typedef enum
 typedef uint32_t spel_gfx_vertex_format;
 
 #define spel_vtx_fmt(base, comps, bits, flags)                                           \
-	((spel_gfx_vertex_format)(((base) & 0x3) | (((comps) - 1) << 2) | ((bits) << 4) |    \
-							  ((flags) << 7)))
+	((spel_gfx_vertex_format)(((base) & 0x3) | (((comps) - 1) << 2) |                    \
+							  (((bits) & 0xFF) << 4) | ((flags) << 12)))
 
 #define spel_vtx_base(fmt) ((spel_gfx_vertex_base_format)(((fmt) >> 0) & 0x3))
 
 #define spel_vtx_comps(fmt) ((((fmt) >> 2) & 0x3) + 1)
 
-#define spel_vtx_bits(fmt) (((fmt) >> 4) & 0x7)
+#define spel_vtx_bits(fmt) (((fmt) >> 4) & 0xFF)
 
-#define spel_vtx_flags(fmt) ((fmt) >> 7)
+#define spel_vtx_flags(fmt) ((fmt) >> 12)
 
 #define spel_gfx_vertex_format_float2 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 2, 32, 0)
 #define spel_gfx_vertex_format_float3 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 3, 32, 0)

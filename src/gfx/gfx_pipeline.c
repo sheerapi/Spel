@@ -154,11 +154,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 
 	desc.depth_state.depth_test = false;
 	desc.depth_state.depth_write = false;
-
-	desc.blend_state.enabled = true;
-	desc.blend_state.src_factor = SPEL_GFX_BLEND_SRC_ALPHA;
-	desc.blend_state.dst_factor = SPEL_GFX_BLEND_ONE_MINUS_SRC_ALPHA;
-
+	
 	return desc;
 }
 
@@ -207,6 +203,14 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 	desc.vertex_layout.attrib_count = 3;
 	desc.vertex_layout.streams = STREAMS;
 	desc.vertex_layout.stream_count = 1;
+
+	desc.depth_state.depth_test = false;
+	desc.depth_state.depth_write = false;
+
+	desc.blend_state.enabled = true;
+	desc.blend_state.src_factor = SPEL_GFX_BLEND_SRC_ALPHA;
+	desc.blend_state.dst_factor = SPEL_GFX_BLEND_ONE_MINUS_SRC_ALPHA;
+	desc.blend_state.operation = SPEL_GFX_BLEND_OP_ADD;
 
 	return desc;
 }

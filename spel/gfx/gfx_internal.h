@@ -47,6 +47,7 @@ typedef struct spel_gfx_context_t
 	bool debug;
 	int vsync;
 
+	spel_gfx_cmdlist cmdlist;
 	void* data;
 } spel_gfx_context_t;
 

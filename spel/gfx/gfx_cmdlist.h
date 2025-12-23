@@ -5,6 +5,8 @@
 #include "utils/math.h"
 
 sp_api spel_gfx_cmdlist spel_gfx_cmdlist_create(spel_gfx_context ctx);
+sp_api spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx);
+
 sp_api void spel_gfx_cmdlist_destroy(spel_gfx_cmdlist cmdlist);
 
 sp_api void spel_gfx_cmdlist_submit(spel_gfx_cmdlist cmdlist);

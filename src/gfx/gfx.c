@@ -182,3 +182,8 @@ void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 	cmd->offset = offset;
 	cmd->type = type;
 }
+
+spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
+{
+	return ctx->cmdlist;
+}

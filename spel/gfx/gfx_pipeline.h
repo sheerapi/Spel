@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_PIPELINE
 #define SPEL_GFX_PIPELINE
+#include "core/macros.h"
 #include "gfx/gfx_types.h"
 
 typedef struct
@@ -25,6 +26,42 @@ typedef struct
 	uint32_t stream_count;
 } spel_gfx_vertex_layout;
 
+typedef struct
+{
+	bool enabled;
+	uint8_t color_write_mask;
+
+	spel_gfx_blend_factor src_factor;
+	spel_gfx_blend_factor dst_factor;
+	spel_gfx_blend_op operation;
+
+	spel_gfx_blend_factor src_alpha_factor;
+	spel_gfx_blend_factor dst_alpha_factor;
+	spel_gfx_blend_op alpha_op;
+} spel_gfx_blend_state;
+
+typedef struct
+{
+	bool enabled;
+
+	spel_gfx_compare_func compare;
+	uint8_t read_mask;
+	uint8_t write_mask;
+	uint8_t reference;
+
+	spel_gfx_stencil_op fail_op;
+	spel_gfx_stencil_op depth_fail_op;
+	spel_gfx_stencil_op pass_op;
+} spel_gfx_stencil_state;
+
+typedef struct
+{
+	bool depth_test;
+	bool depth_write;
+	bool depth_clamp;
+	spel_gfx_compare_func depth_compare;
+} spel_gfx_depth_state;
+
 typedef struct spel_gfx_graphic_pipeline_desc
 {
 	spel_gfx_shader vertex_shader;
@@ -37,10 +74,12 @@ typedef struct spel_gfx_graphic_pipeline_desc
 	spel_gfx_cull_mode cull_mode;
 	spel_gfx_winding_mode winding;
 
-	bool depth_test;
-	bool depth_write;
-	spel_gfx_compare_func depth_compare;
+	spel_gfx_blend_state blend_state;
+	spel_gfx_depth_state depth_state;
+	spel_gfx_stencil_state stencil;
 
 } spel_gfx_graphic_pipeline_desc;
+
+sp_api spel_gfx_graphic_pipeline_desc spel_gfx_pipeline_default();
 
 #endif

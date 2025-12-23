@@ -51,6 +51,8 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
 							  0, NULL, GL_FALSE);
 	}
+
+	ctx->cmdlist = spel_gfx_cmdlist_create_gl(ctx);
 }
 
 void spel_gfx_context_conf_gl()
@@ -67,6 +69,7 @@ void spel_gfx_context_conf_gl()
 
 void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 {
+	spel_gfx_cmdlist_destroy_gl(ctx->cmdlist);
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
@@ -83,6 +86,8 @@ void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 
 void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
+	// flush any remaining commands
+	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	glFlush();
 	SDL_GL_SwapWindow(spel.window.handle);
 }
@@ -167,7 +172,7 @@ void spel_gfx_debug_callback(unsigned int source, unsigned int type, unsigned in
 	{
 		char buffer[256];
 		snprintf(buffer, 256, "[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id,
-				  message);
+				 message);
 		spel_error(buffer);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)

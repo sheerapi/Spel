@@ -171,7 +171,8 @@ void spel_memory_dump()
 			 spel_mem_fmt_size(spel.memory.total_allocated, total),
 			 spel_mem_fmt_size(spel.memory.total_freed, freed));
 
-	log_info("  allocs: %u  frees: %u", spel.memory.alloc_count, spel.memory.free_count);
+	log_info("  allocs: %u  frees: %u (%u still alive)", spel.memory.alloc_count,
+			 spel.memory.free_count, spel.memory.alloc_count - spel.memory.free_count);
 
 	log_info("");
 

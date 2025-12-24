@@ -61,7 +61,10 @@ static GLenum spel_gl_texture_target(spel_gfx_texture_type type)
 spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 											const spel_gfx_texture_desc* desc)
 {
-	spel_gfx_texture_validate(desc);
+	if (!spel_gfx_texture_validate(desc))
+	{
+		return ctx->checkerboard != nullptr ? ctx->checkerboard : nullptr;
+	}
 
 	const spel_gfx_gl_format_info* fmt = &GL_FORMATS[desc->format];
 
@@ -145,7 +148,7 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 		spel_error("you can't destroy an internal texture!");
 		return;
 	}
-	
+
 	glDeleteTextures(1, texture->data);
 	sp_free(texture->data);
 	sp_free(texture);

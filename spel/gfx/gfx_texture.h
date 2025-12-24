@@ -32,6 +32,14 @@ typedef struct
 	float max_aniso;
 } spel_gfx_sampler_desc;
 
+typedef struct
+{
+	spel_gfx_texture_format format;
+	spel_gfx_texture_usage usage;
+	uint32_t mip_count;
+	bool srgb;
+} spel_gfx_texture_load_desc;
+
 sp_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
 												const spel_gfx_texture_desc* desc);
 
@@ -39,6 +47,15 @@ sp_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
 sp_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);
 sp_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx);
 
+sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
+											  const spel_gfx_texture_load_desc* desc);
+
+sp_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
+													const char* path);
+sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
+													 const char* path);
+
+sp_api spel_gfx_sampler_desc spel_gfx_sampler_default();
 sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 											 const spel_gfx_sampler_desc* desc);
 #endif

@@ -10,7 +10,13 @@
 #include "gfx/gfx_types.h"
 #include "utils/internal/xxhash.h"
 #include "utils/path.h"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz) spel_memory_malloc(sz, SPEL_MEM_TAG_GFX)
+#define STBI_REALLOC(sz, p) spel_memory_realloc(sz, p, SPEL_MEM_TAG_GFX)
+#define STBI_FREE(p) spel_memory_free(p)
+#include "utils/internal/stb_image.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 
 void spel_gfx_context_default_data(spel_gfx_context ctx);
@@ -314,36 +320,48 @@ spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(spel_gfx_pipeline_cache*
 	}
 }
 
-void spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
+bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 {
-	sp_assert(desc->width > 0, "width must be greater than 0");
-	sp_assert(desc->height > 0, "height must be greater than 0");
-	sp_assert(desc->depth > 0, "depth must be greater than 0");
-	sp_assert(desc->mip_count > 0, "mipmap count must be greater than 0");
+	bool valid;
+
+	if (desc->width <= 0 || desc->height <= 0 || desc->depth <= 0 || desc->mip_count <= 0)
+	{
+		valid = false;
+	}
 
 	switch (desc->type)
 	{
 	case SPEL_GFX_TEXTURE_2D:
-		sp_assert(desc->depth == 1, "a 2d texture cannot have depth");
+		if (desc->depth != 1)
+		{
+			valid = false;
+		}
 		break;
 
 	case SPEL_GFX_TEXTURE_2D_ARRAY:
-		sp_assert(desc->depth >= 1,
-				  "you need at least 1 texture for a 2d tex array"); // layers
-		break;
-
 	case SPEL_GFX_TEXTURE_3D:
-		sp_assert(desc->depth > 1, "a 3d texture must have depth");
+		if (desc->depth <= 0)
+		{
+			valid = false;
+		}
 		break;
 
 	case SPEL_GFX_TEXTURE_CUBE:
-		sp_assert(desc->depth == 6, "a cubemap must have exactly 6 faces");
+		if (desc->depth != 6)
+		{
+			valid = false;
+		}
 		break;
 	}
 
 	uint32_t max_mips = 1 + (uint32_t)floor(log2(fmax(desc->width, desc->height)));
 
-	sp_assert(desc->mip_count <= max_mips, "you cant have more mipmaps than the maximum");
+	if (desc->mip_count >= max_mips)
+	{
+		valid = false;
+	}
+
+	return valid;
 }
 
 spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
@@ -452,21 +470,12 @@ void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot, spel_gfx_textur
 
 void spel_gfx_context_default_data(spel_gfx_context ctx)
 {
+	ctx->checkerboard = nullptr;
+	ctx->white_tex = nullptr;
 	ctx->cmdlist = spel_gfx_cmdlist_create(ctx);
 
-	static const spel_gfx_sampler_desc DEFAULT_SAMPLER = {
-		.min = SPEL_GFX_SAMPLER_FILTER_LINEAR,
-		.mag = SPEL_GFX_SAMPLER_FILTER_LINEAR,
-		.mip = SPEL_GFX_SAMPLER_MIP_LINEAR,
-
-		.wrap_u = SPEL_GFX_SAMPLER_WRAP_REPEAT,
-		.wrap_v = SPEL_GFX_SAMPLER_WRAP_REPEAT,
-		.wrap_w = SPEL_GFX_SAMPLER_WRAP_REPEAT,
-
-		.lod_bias = 0.0F,
-		.max_aniso = 1.0F};
-
-	ctx->default_sampler = spel_gfx_sampler_get(ctx, &DEFAULT_SAMPLER);
+	spel_gfx_sampler_desc desc = spel_gfx_sampler_default();
+	ctx->default_sampler = spel_gfx_sampler_get(ctx, &desc);
 
 	static uint8_t WHITE_TEX_DATA[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -541,4 +550,149 @@ spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx)
 spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx)
 {
 	return ctx->checkerboard;
+}
+
+spel_gfx_sampler_desc spel_gfx_sampler_default()
+{
+	static const spel_gfx_sampler_desc DEFAULT_SAMPLER = {
+		.min = SPEL_GFX_SAMPLER_FILTER_LINEAR,
+		.mag = SPEL_GFX_SAMPLER_FILTER_LINEAR,
+		.mip = SPEL_GFX_SAMPLER_MIP_LINEAR,
+
+		.wrap_u = SPEL_GFX_SAMPLER_WRAP_REPEAT,
+		.wrap_v = SPEL_GFX_SAMPLER_WRAP_REPEAT,
+		.wrap_w = SPEL_GFX_SAMPLER_WRAP_REPEAT,
+
+		.lod_bias = 0.0F,
+		.max_aniso = 1.0F};
+	return DEFAULT_SAMPLER;
+}
+
+uint8_t* rgb_to_rgba(const uint8_t* src, int pixelCount)
+{
+	uint8_t* dst = sp_malloc((unsigned long)(pixelCount * 4), SPEL_MEM_TAG_GFX);
+	if (!dst)
+	{
+		return nullptr;
+	}
+
+	for (int i = 0; i < pixelCount; i++)
+	{
+		dst[(i * 4) + 0] = src[(i * 3) + 0]; // R
+		dst[(i * 4) + 1] = src[(i * 3) + 1]; // G
+		dst[(i * 4) + 2] = src[(i * 3) + 2]; // B
+		dst[(i * 4) + 3] = 255;				 // A
+	}
+
+	return dst;
+}
+
+spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
+									   const spel_gfx_texture_load_desc* desc)
+{
+	int w;
+	int h;
+	int comp;
+	stbi_uc* pixels = stbi_load(path, &w, &h, &comp, 0);
+	if (!pixels)
+	{
+		return spel_gfx_texture_checker_get(ctx);
+	}
+
+	uint8_t* upload_pixels = pixels;
+	size_t upload_size = 0;
+
+	spel_gfx_texture_desc tex = {0};
+	tex.type = SPEL_GFX_TEXTURE_2D;
+	tex.width = w;
+	tex.height = h;
+	tex.depth = 1;
+	tex.mip_count =
+		desc->mip_count ? desc->mip_count : (1 + (uint32_t)floor(log2(fmax(w, h))));
+	tex.usage = desc->usage;
+
+	if (desc->format != SPEL_GFX_TEXTURE_FMT_UNKNOWN)
+	{
+		tex.format = desc->format;
+		upload_size = (size_t)w * h * comp;
+	}
+	else
+	{
+		if ((int)desc->srgb && comp < 3)
+		{
+			spel_error("sRGB requested for non-RGB texture");
+			stbi_image_free(pixels);
+			return spel_gfx_texture_checker_get(ctx);
+		}
+
+		switch (comp)
+		{
+		case 1:
+			tex.format = SPEL_GFX_TEXTURE_FMT_R8_UNORM;
+			upload_size = (size_t)w * h;
+			break;
+
+		case 2:
+			tex.format = SPEL_GFX_TEXTURE_FMT_RG8_UNORM;
+			upload_size = (size_t)w * h * 2;
+			break;
+
+		case 3:
+			upload_pixels = rgb_to_rgba(pixels, w * h);
+			upload_size = (size_t)w * h * 4;
+			stbi_image_free(pixels);
+			pixels = nullptr;
+
+			tex.format = (int)desc->srgb ? SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB
+										 : SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM;
+			break;
+
+		case 4:
+			tex.format = (int)desc->srgb ? SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB
+										 : SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM;
+			upload_size = (size_t)w * h * 4;
+			break;
+
+		default:
+			stbi_image_free(pixels);
+			return spel_gfx_texture_checker_get(ctx);
+		}
+	}
+
+	tex.data = upload_pixels;
+	tex.data_size = upload_size;
+
+	spel_gfx_texture out = spel_gfx_texture_create(ctx, &tex);
+
+	if (upload_pixels && upload_pixels != pixels)
+	{
+		sp_free(upload_pixels);
+	}
+
+	if (pixels)
+	{
+		stbi_image_free(pixels);
+	}
+
+	return out;
+}
+
+spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx, const char* path)
+{
+	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB,
+									   .usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
+									   .mip_count = 0,
+									   .srgb = true};
+
+	return spel_gfx_texture_load(ctx, path, &desc);
+}
+
+spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx, const char* path)
+{
+	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB,
+									   .usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
+									   .mip_count = 0,
+									   .srgb = false};
+
+	return spel_gfx_texture_load(ctx, path, &desc);
 }

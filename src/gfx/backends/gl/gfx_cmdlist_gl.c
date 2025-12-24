@@ -290,20 +290,11 @@ void exec_cmd_bind_texture(spel_gfx_cmdlist cl, spel_gfx_bind_texture_cmd* cmd)
 
 void exec_cmd_bind_sampler(spel_gfx_cmdlist cl, spel_gfx_bind_sampler_cmd* cmd)
 {
-	if (((spel_gfx_cmdlist_gl*)cl->data)->sampler == cmd->sampler)
-	{
-		return;
-	}
 	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
 }
 
 void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 {
 	glBindTextureUnit(cmd->slot, *(GLuint*)cmd->texture->data);
-
-	if (((spel_gfx_cmdlist_gl*)cl->data)->sampler == cmd->sampler)
-	{
-		return;
-	}
 	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
 }

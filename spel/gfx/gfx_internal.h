@@ -159,7 +159,7 @@ typedef struct spel_gfx_vtable_t
 extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
 extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
-extern void spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
+extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 // initialization
 
 #endif

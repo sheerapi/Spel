@@ -34,6 +34,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 
 	ctx->vt = &GL_VTABLE;
 	ctx->data = gl;
+	ctx->vsync = spel.window.swapchain.vsync;
 	ctx->debug = spel.debug;
 
 	SDL_GL_MakeCurrent(spel.window.handle, gl->ctx);
@@ -66,8 +67,9 @@ void spel_gfx_context_conf_gl()
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, spel.window.swapchain.stencil);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,
-						spel.window.swapchain.msaa != 0 ? spel.window.swapchain.msaa : 8);
+	const int MSAA_SAMPLES = spel.window.swapchain.msaa;
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, MSAA_SAMPLES > 0 ? 1 : 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_SAMPLES > 0 ? MSAA_SAMPLES : 0);
 }
 
 void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
@@ -115,7 +117,6 @@ void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
-	glFlush();
 	SDL_GL_SwapWindow(spel.window.handle);
 }
 

@@ -18,6 +18,7 @@ int main(int argc, const char** argv)
 {
 	spel.argc = argc;
 	spel.argv = argv;
+	spel.window.swapchain.vsync = 1; // vsync on by default
 
 #ifdef DEBUG
 	spel.debug = true;
@@ -86,7 +87,7 @@ sp_weak void spel_error(const char* msg)
 }
 
 void spel_assert_fail(const char* assertion, const char* msg, const char* file, int line,
-				 const char* function)
+					  const char* function)
 {
 	log_log(LOG_FATAL, file, line, "Assertion `%s` failed at %s: %s", assertion, function,
 			msg);

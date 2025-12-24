@@ -61,15 +61,11 @@ void spel_draw()
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 
-	spel_gfx_cmd_scissor(cl, 150, 100, 200, 100);
-
-	spel_gfx_cmd_clear(cl, spel_color_cyan());
-
+	spel_gfx_cmd_clear(cl, spel_color_black());
 	
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
-	
 
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 

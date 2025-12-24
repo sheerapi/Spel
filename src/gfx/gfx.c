@@ -322,7 +322,7 @@ spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(spel_gfx_pipeline_cache*
 
 bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 {
-	bool valid;
+	bool valid = true;
 
 	if (desc->width <= 0 || desc->height <= 0 || desc->depth <= 0 || desc->mip_count <= 0)
 	{
@@ -356,7 +356,7 @@ bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 
 	uint32_t max_mips = 1 + (uint32_t)floor(log2(fmax(desc->width, desc->height)));
 
-	if (desc->mip_count >= max_mips)
+	if (desc->mip_count > max_mips)
 	{
 		valid = false;
 	}
@@ -695,4 +695,32 @@ spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx, const char* 
 									   .srgb = false};
 
 	return spel_gfx_texture_load(ctx, path, &desc);
+}
+
+void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width, int height)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_viewport_cmd* cmd = (spel_gfx_viewport_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_viewport_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_VIEWPORT;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->x = x;
+	cmd->y = y;
+	cmd->width = width;
+	cmd->height = height;
+}
+
+void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, int height)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_scissor_cmd* cmd = (spel_gfx_scissor_cmd*)cl->ctx->vt->cmdlist_alloc(
+		cl, sizeof(*cmd), alignof(spel_gfx_scissor_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_SCISSOR;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->x = x;
+	cmd->y = y;
+	cmd->width = width;
+	cmd->height = height;
 }

@@ -44,6 +44,8 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_default()
 	desc.stencil.depth_fail_op = SPEL_GFX_STENCIL_KEEP;
 	desc.stencil.pass_op = SPEL_GFX_STENCIL_KEEP;
 
+	desc.scissor_test = true;
+
 	return desc;
 }
 
@@ -154,7 +156,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 
 	desc.depth_state.depth_test = false;
 	desc.depth_state.depth_write = false;
-	
+
 	return desc;
 }
 

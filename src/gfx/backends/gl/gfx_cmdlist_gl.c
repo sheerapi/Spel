@@ -19,6 +19,9 @@ void exec_cmd_bind_texture(spel_gfx_cmdlist cl, spel_gfx_bind_texture_cmd* cmd);
 void exec_cmd_bind_sampler(spel_gfx_cmdlist cl, spel_gfx_bind_sampler_cmd* cmd);
 void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd);
 
+void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd);
+void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd);
+
 typedef struct
 {
 	spel_gfx_pipeline pipeline;
@@ -112,6 +115,12 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 			break;
 		case SPEL_GFX_CMD_BIND_IMAGE:
 			exec_cmd_bind_image(cl, (spel_gfx_bind_image_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_VIEWPORT:
+			exec_cmd_viewport(cl, (spel_gfx_viewport_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_SCISSOR:
+			exec_cmd_scissor(cl, (spel_gfx_scissor_cmd*)ptr);
 			break;
 		}
 
@@ -228,6 +237,15 @@ void exec_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_bind_pipeline_cmd* cmd
 		glDisable(GL_CULL_FACE);
 	}
 
+	if (p->scissor_test)
+	{
+		glEnable(GL_SCISSOR_TEST);
+	}
+	else
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
+
 	glFrontFace(p->topology.winding);
 }
 
@@ -297,4 +315,15 @@ void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 {
 	glBindTextureUnit(cmd->slot, *(GLuint*)cmd->texture->data);
 	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
+}
+
+void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
+{
+	glViewport(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width,
+			   cmd->height);
+}
+
+void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
+{
+	glScissor(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width, cmd->height);
 }

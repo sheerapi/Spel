@@ -14,7 +14,9 @@ typedef enum
 	SPEL_GFX_CMD_BIND_IMAGE,
 	SPEL_GFX_CMD_CLEAR,
 	SPEL_GFX_CMD_DRAW,
-	SPEL_GFX_CMD_DRAW_INDEXED
+	SPEL_GFX_CMD_DRAW_INDEXED,
+	SPEL_GFX_CMD_VIEWPORT,
+	SPEL_GFX_CMD_SCISSOR
 } spel_gfx_cmd_type;
 
 typedef struct spel_gfx_cmd_header
@@ -87,5 +89,23 @@ typedef struct spel_gfx_bind_image_cmd
 	spel_gfx_texture texture;
 	spel_gfx_sampler sampler;
 } spel_gfx_bind_image_cmd;
+
+typedef struct spel_gfx_viewport_cmd
+{
+	spel_gfx_cmd_header hdr;
+	int x;
+	int y;
+	int width;
+	int height;
+} spel_gfx_viewport_cmd;
+
+typedef struct spel_gfx_viewport_cmd
+{
+	spel_gfx_cmd_header hdr;
+	int x;
+	int y;
+	int width;
+	int height;
+} spel_gfx_scissor_cmd;
 
 #endif

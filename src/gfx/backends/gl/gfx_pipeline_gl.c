@@ -140,6 +140,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	XXH3_64bits_update(state, &desc->depth_state, sizeof(desc->depth_state));
 	XXH3_64bits_update(state, &desc->stencil, sizeof(desc->stencil));
 
+	XXH3_64bits_update(state, &desc->scissor_test, sizeof(desc->scissor_test));
+
 	pipeline->hash = XXH3_64bits_digest(state);
 	XXH3_freeState(state);
 
@@ -159,6 +161,7 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		(spel_gfx_pipeline_gl*)sp_malloc(sizeof(spel_gfx_pipeline_gl), SPEL_MEM_TAG_GFX);
 
 	spel_gfx_pipeline_gl* gl_pipeline = (spel_gfx_pipeline_gl*)pipeline->data;
+	gl_pipeline->scissor_test = desc->scissor_test;
 
 	glCreateProgramPipelines(1, &gl_pipeline->pipeline);
 

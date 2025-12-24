@@ -18,6 +18,11 @@ sp_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 									spel_gfx_index_type type, size_t offset);
 
 sp_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color);
+sp_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width,
+								  int height);
+
+sp_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width,
+								  int height);
 
 sp_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline);
 

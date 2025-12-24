@@ -56,6 +56,8 @@ typedef struct
 		GLenum cull_mode;
 		GLenum winding;
 	} topology;
+
+	bool scissor_test;
 } spel_gfx_pipeline_gl;
 
 typedef struct

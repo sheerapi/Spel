@@ -74,6 +74,7 @@ typedef struct spel_gfx_pipeline_desc
 	spel_gfx_cull_mode cull_mode;
 	spel_gfx_winding_mode winding;
 
+	bool scissor_test;
 	spel_gfx_blend_state blend_state;
 	spel_gfx_depth_state depth_state;
 	spel_gfx_stencil_state stencil;

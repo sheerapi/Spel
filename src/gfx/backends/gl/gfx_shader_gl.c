@@ -7,6 +7,7 @@
 #include "gfx_vtable_gl.h"
 #include "gl.h"
 #include "utils/internal/xxhash.h"
+#include <limits.h>
 
 spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 												const spel_gfx_shader_desc* desc);
@@ -24,7 +25,7 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 		spel_error("you can't delete an internal shader!");
 		return;
 	}
-	
+
 	glDeleteProgram((*(spel_gfx_shader_gl*)shader->data).program);
 	sp_free(shader->data);
 	sp_free(shader);
@@ -75,8 +76,17 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 	(*(spel_gfx_shader_gl*)shader->data).shader =
 		glCreateShader(spel_gfx_shader_stage_to_gl(desc->stage));
 
+	if (desc->source_size > (size_t)INT_MAX)
+	{
+		spel_error("gfx: shader binary too large");
+		sp_free(shader->data);
+		sp_free(shader);
+		return nullptr;
+	}
+	GLsizei src_size = (GLsizei)desc->source_size;
+
 	glShaderBinary(1, &(*(spel_gfx_shader_gl*)shader->data).shader,
-				   GL_SHADER_BINARY_FORMAT_SPIR_V, desc->source, desc->source_size);
+				   GL_SHADER_BINARY_FORMAT_SPIR_V, desc->source, src_size);
 
 	glSpecializeShader((*(spel_gfx_shader_gl*)shader->data).shader, desc->entry, 0,
 					   nullptr, nullptr);
@@ -97,10 +107,10 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 
 	if (status != GL_TRUE)
 	{
-		char* info_log = nullptr;
-		size_t info_log_size;
-		glGetShaderInfoLog((*(spel_gfx_shader_gl*)shader->data).shader, 512,
-						   &info_log_size, info_log);
+		char info_log[512];
+		GLsizei info_log_size = 0;
+		glGetShaderInfoLog((*(spel_gfx_shader_gl*)shader->data).shader, sizeof(info_log),
+						   &info_log_size, (GLchar*)info_log);
 		char buffer[256];
 		snprintf(buffer, 256, "gfx: failed to compile shader %s: %s", desc->debug_name,
 				 info_log);

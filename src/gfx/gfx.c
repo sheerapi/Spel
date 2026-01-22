@@ -40,6 +40,15 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	ctx->backend = desc->backend;
 	ctx->debug = desc->debug;
 
+	// Init caches before any allocations performed inside backend creation.
+	ctx->pipeline_cache.entries = NULL;
+	ctx->pipeline_cache.capacity = 0;
+	ctx->pipeline_cache.count = 0;
+
+	ctx->sampler_cache.entries = NULL;
+	ctx->sampler_cache.capacity = 0;
+	ctx->sampler_cache.count = 0;
+
 	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
 	{
 		ctx->shaders[i] = nullptr;
@@ -324,6 +333,7 @@ spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(spel_gfx_pipeline_cache*
 
 		spel_gfx_pipeline_cache_entry* new_entries =
 			sp_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+		memset(new_entries, 0, new_capacity * sizeof(*new_entries));
 
 		for (uint32_t i = 0; i < old_capacity; ++i)
 		{

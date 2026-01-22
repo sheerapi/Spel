@@ -59,7 +59,7 @@
 		((expr) ? (void)0                                                                \
 				: spel_assert_fail(#expr, msg, __FILE__, __LINE__, __PRETTY_FUNCTION__))
 #else
-#	define sp_assert(expr)
+#	define sp_assert(expr, msg)
 #endif
 
 #if defined(_WIN32)

@@ -80,12 +80,14 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		return nullptr;
 	}
 
+#ifdef DEBUG
 	if (desc->data)
 	{
 		size_t expected = (size_t)desc->width * (size_t)desc->height *
 						  (size_t)desc->depth * (size_t)fmt->bytes_per_pixel;
 		sp_assert(desc->data_size >= expected, "i expected more data");
 	}
+#endif
 
 	spel_gfx_texture texture =
 		(spel_gfx_texture)sp_malloc(sizeof(*texture), SPEL_MEM_TAG_GFX);

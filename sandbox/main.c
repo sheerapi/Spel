@@ -28,10 +28,10 @@ void spel_load()
 	} Vertex;
 
 	Vertex vertices[] = {
-		{{0.5f, 0.5f}, {1.0f, 1.0f}, spel_color_white()},
-		{{0.5f, -0.5f}, {1.0f, 0.0f}, spel_color_white()},
-		{{-0.5f, -0.5f}, {0.0f, 0.0f}, spel_color_white()},
-		{{-0.5f, 0.5f}, {0.0f, 1.0f}, spel_color_white()},
+		{{0.5F, 0.5F}, {1.0F, 1.0F}, spel_color_white()},
+		{{0.5F, -0.5F}, {1.0F, 0.0F}, spel_color_white()},
+		{{-0.5F, -0.5F}, {0.0F, 0.0F}, spel_color_white()},
+		{{-0.5F, 0.5F}, {0.0F, 1.0F}, spel_color_white()},
 	};
 
 	unsigned int indices[] = {3, 2, 1, 3, 1, 0};

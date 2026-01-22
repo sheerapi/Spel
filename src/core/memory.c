@@ -128,6 +128,7 @@ void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	return (void*)(new_h + 1);
 }
 
+#ifdef DEBUG
 static const char* spel_mem_fmt_size(size_t bytes, char buf[32])
 {
 	const char* units[] = {"B", "KB", "MB", "GB"};
@@ -150,12 +151,12 @@ static const char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
 	[SPEL_MEM_TAG_MISC] = "misc",
 	[SPEL_MEM_TAG_TEMP] = "temp",
 };
+#endif
 
 void spel_memory_dump()
 {
 #if !DEBUG
 	log_info("spël memory management disabled.");
-	return;
 #else
 	char cur[32];
 	char peak[32];

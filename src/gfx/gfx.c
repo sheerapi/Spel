@@ -18,6 +18,7 @@
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 void spel_gfx_context_default_data(spel_gfx_context ctx);
 void spel_checker_rgba8_make(uint8_t* out, int width, int height, int tileSize);
@@ -255,8 +256,60 @@ spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
+static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
+										   uint64_t hash, spel_gfx_pipeline pipeline)
+{
+	if (cache->capacity == 0)
+	{
+		return;
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_pipeline_cache_entry* e = &cache->entries[index];
+
+		if (!e->pipeline)
+		{
+			return; // not found
+		}
+
+		if (e->pipeline == pipeline)
+		{
+			cache->count--;
+			e->pipeline = NULL;
+			e->hash = 0;
+
+			// Reinsert downstream cluster to preserve probing invariants.
+			for (uint32_t next = (index + 1) & mask; cache->entries[next].pipeline;
+				 next = (next + 1) & mask)
+			{
+				spel_gfx_pipeline_cache_entry entry = cache->entries[next];
+				cache->entries[next].pipeline = NULL;
+				cache->entries[next].hash = 0;
+
+				uint32_t dest = (uint32_t)entry.hash & mask;
+				while (cache->entries[dest].pipeline)
+				{
+					dest = (dest + 1) & mask;
+				}
+
+				cache->entries[dest] = entry;
+			}
+
+			return;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
 void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 {
+	spel_gfx_pipeline_cache_remove(&pipeline->ctx->pipeline_cache, pipeline->hash,
+								   pipeline);
 	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }
 
@@ -267,7 +320,7 @@ spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(spel_gfx_pipeline_cache*
 	if (cache->count * 10 >= cache->capacity * 7)
 	{
 		uint32_t old_capacity = cache->capacity;
-		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 64;
+		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
 
 		spel_gfx_pipeline_cache_entry* new_entries =
 			sp_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
@@ -291,7 +344,7 @@ spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(spel_gfx_pipeline_cache*
 			new_entries[index] = *old;
 		}
 
-		free(cache->entries);
+		sp_free(cache->entries);
 		cache->entries = new_entries;
 		cache->capacity = new_capacity;
 	}
@@ -367,19 +420,20 @@ bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 									  const spel_gfx_sampler_desc* desc)
 {
-	spel_gfx_sampler_cache cache = ctx->sampler_cache;
+	spel_gfx_sampler_cache* cache = &ctx->sampler_cache;
 
-	if (cache.count * 10 >= cache.capacity * 7)
+	if (cache->count * 10 >= cache->capacity * 7)
 	{
-		uint32_t old_capacity = cache.capacity;
-		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 64;
+		uint32_t old_capacity = cache->capacity;
+		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
 
 		spel_gfx_sampler_cache_entry* new_entries =
 			sp_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+		memset(new_entries, 0, new_capacity * sizeof(*new_entries));
 
 		for (uint32_t i = 0; i < old_capacity; ++i)
 		{
-			spel_gfx_sampler_cache_entry* old = &cache.entries[i];
+			spel_gfx_sampler_cache_entry* old = &cache->entries[i];
 
 			if (!old->sampler)
 			{
@@ -396,24 +450,24 @@ spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 			new_entries[index] = *old;
 		}
 
-		free(cache.entries);
-		cache.entries = new_entries;
-		cache.capacity = new_capacity;
+		sp_free(cache->entries);
+		cache->entries = new_entries;
+		cache->capacity = new_capacity;
 	}
 
-	uint32_t mask = cache.capacity - 1;
+	uint32_t mask = cache->capacity - 1;
 	uint64_t hash = XXH3_64bits(desc, sizeof(*desc));
-	uint32_t index = (uint32_t)hash & (cache.capacity - 1);
+	uint32_t index = (uint32_t)hash & (cache->capacity - 1);
 
 	for (;;)
 	{
-		spel_gfx_sampler_cache_entry* e = &cache.entries[index];
+		spel_gfx_sampler_cache_entry* e = &cache->entries[index];
 
 		if (e->sampler == NULL)
 		{
 			e->hash = hash;
 			e->sampler = ctx->vt->sampler_create(ctx, desc);
-			cache.count++;
+			cache->count++;
 			return e->sampler;
 		}
 

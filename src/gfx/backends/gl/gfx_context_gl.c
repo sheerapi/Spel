@@ -85,9 +85,26 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 		spel_gfx_shader_destroy_gl(ctx->shaders[i]);
 	}
 
-	for (size_t i = 0; i < ctx->sampler_cache.count; i++)
+	while (ctx->pipeline_cache.count)
 	{
-		ctx->vt->sampler_destroy(ctx->sampler_cache.entries[i].sampler);
+		for (uint32_t i = 0; i < ctx->pipeline_cache.capacity; ++i)
+		{
+			spel_gfx_pipeline_cache_entry* entry = &ctx->pipeline_cache.entries[i];
+			if (entry->pipeline)
+			{
+				ctx->vt->pipeline_destroy(entry->pipeline);
+				break;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < ctx->sampler_cache.capacity; ++i)
+	{
+		spel_gfx_sampler_cache_entry* entry = &ctx->sampler_cache.entries[i];
+		if (entry->sampler)
+		{
+			ctx->vt->sampler_destroy(entry->sampler);
+		}
 	}
 
 	ctx->white_tex->internal = false;
@@ -100,6 +117,8 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
+	sp_free(ctx->pipeline_cache.entries);
+	sp_free(ctx->sampler_cache.entries);
 	sp_free(gl);
 	ctx->data = NULL;
 }

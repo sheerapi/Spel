@@ -197,6 +197,12 @@ spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 
 void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler)
 {
+	GLuint* gl_handle = (GLuint*)sampler->data;
+	if (gl_handle)
+	{
+		glDeleteSamplers(1, gl_handle);
+	}
+
 	sp_free(sampler->data);
 	sp_free(sampler);
 }

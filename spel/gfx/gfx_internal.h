@@ -20,7 +20,7 @@ typedef struct spel_gfx_cmdlist_t
 	void* data;
 } spel_gfx_cmdlist_t;
 
-#define sp_cmdlist_default_size (8 * 1024) // 8 KB
+#define sp_cmdlist_default_size (4 * 1024) // 4 KB
 
 // buffers
 typedef struct spel_gfx_buffer_t

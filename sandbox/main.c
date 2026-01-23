@@ -1,6 +1,7 @@
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/memory.h"
+#include "core/panic.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_types.h"

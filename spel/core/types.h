@@ -1,5 +1,6 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
+#include "core/build_info.h"
 #include "core/macros.h"
 #include "core/memory.h"
 #include "gfx/gfx_types.h"
@@ -82,6 +83,13 @@ typedef uint8_t spel_severity;
 typedef struct spel_log_event_t* spel_log_event;
 typedef void (*spel_log_fn)(spel_log_event evt, void* user);
 
+typedef enum
+{
+	SPEL_PANIC_ABORT,
+	SPEL_PANIC_TRAP_THEN_ABORT,
+	SPEL_PANIC_EXIT_FAST,
+} spel_panic_mode;
+
 typedef struct spel_log
 {
 	spel_severity severity;
@@ -95,6 +103,7 @@ typedef struct spel_context
 	const char** argv;
 	bool debug;
 	bool terminal_color;
+	spel_panic_mode panic_mode;
 
 	spel_window window;
 	spel_events events;
@@ -102,6 +111,7 @@ typedef struct spel_context
 	spel_gfx_context gfx;
 	spel_memory memory;
 	spel_log log;
+	spel_build_info build_info;
 } spel_context;
 
 sp_api extern spel_context spel;

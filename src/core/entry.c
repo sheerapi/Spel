@@ -23,6 +23,7 @@ int main(int argc, const char** argv)
 	spel.log.function = nullptr;
 	spel.log.severity = SPEL_SEV_TRACE;
 
+	spel_build_info_init();
 	spel_log_stderr_install();
 	spel_terminal_detect_ansi();
 

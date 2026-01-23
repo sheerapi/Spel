@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "core/panic.h"
 #include <time.h>
 #include <unistd.h>
 
@@ -134,11 +135,4 @@ const char* spel_log_sev_to_string(spel_severity severity)
 	default:
 		return "unk";
 	}
-}
-
-void spel_panic(spel_log_event evt)
-{
-	printf("panic!\n");
-	fflush(stdout);
-	abort();
 }

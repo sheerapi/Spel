@@ -60,7 +60,6 @@ sp_api void spel_log_filter(spel_severity severity);
 sp_api void spel_log_callback_set(spel_log_fn fn, void* user);
 void spel_log_emit(spel_log_event evt);
 spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
-sp_api void spel_panic(spel_log_event evt);
 
 sp_api void spel_log_assert(bool condition, spel_log_event evt);
 
@@ -84,17 +83,7 @@ const sp_api char* spel_log_sev_to_string(spel_severity severity);
 											  .wall_sec = spel_time_now_sec()},          \
 						  msg, ##__VA_ARGS__))
 
-#define sp_panic(err, msg, ...)                                                          \
-	spel_panic(spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),       \
-													 .code = (err),                      \
-													 .message = nullptr,                 \
-													 .length = 0,                        \
-													 .file = __FILE__,                   \
-													 .line = __LINE__,                   \
-													 .data = nullptr,                    \
-													 .data_type = SPEL_DATA_NONE,        \
-													 .data_size = 0},                    \
-								 msg, ##__VA_ARGS__))
+
 
 #define sp_info(msg, ...)                                                                \
 	sp_log(SPEL_SEV_INFO, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
@@ -102,7 +91,6 @@ const sp_api char* spel_log_sev_to_string(spel_severity severity);
 	sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #define sp_error(code, msg, ...)                                                         \
 	sp_log(SPEL_SEV_ERROR, code, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define sp_fatal(code, msg, ...) sp_panic(code, msg, ##__VA_ARGS__)
 #define sp_trace(msg, ...)                                                               \
 	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, #__VA_ARGS__)
 

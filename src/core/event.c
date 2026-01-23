@@ -1,10 +1,12 @@
 #include "core/event.h"
 #include "SDL3/SDL_events.h"
 #include "core/entry.h"
+#include "core/log.h"
 #include "core/macros.h"
 #include "core/types.h"
 #include "core/window.h"
 #include <assert.h>
+#include <string.h>
 
 SDL_Event event;
 
@@ -19,7 +21,22 @@ spel_event_id spel_event_intern(const char* name)
 	}
 
 	found = sp_malloc(sizeof(*found), SPEL_MEM_TAG_CORE);
-	found->key = strdup(name);
+	if (!found)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate intern entry");
+		return (spel_event_id)-1;
+	}
+
+	size_t len = strlen(name) + 1;
+	found->key = sp_malloc(len, SPEL_MEM_TAG_CORE);
+	if (!found->key)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate interned string");
+		sp_free(found);
+		return (spel_event_id)-1;
+	}
+
+	memcpy((char*)found->key, name, len);
 	found->id = spel.events.counter++;
 
 	HASH_ADD_KEYPTR(hh, spel.events.interns, found->key, strlen(found->key), found);
@@ -42,7 +59,11 @@ void spel_event_ensure_capacity(spel_event_id id)
 
 	spel_event_list* temp =
 		(spel_event_list*)realloc(spel.events.events, sizeof(spel_event_list) * new_cap);
-	assert(temp != nullptr);
+	if (!temp)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to grow events array");
+		return;
+	}
 	spel.events.events = temp;
 
 	for (int i = spel.events.capacity; i < new_cap; i++)
@@ -56,6 +77,10 @@ void spel_event_ensure_capacity(spel_event_id id)
 void spel_event_register(const char* name, spel_event_callback cb)
 {
 	spel_event_id id = spel_event_intern(name);
+	if (id == (spel_event_id)-1)
+	{
+		return;
+	}
 	spel_event_ensure_capacity(id);
 
 	spel_event_list* list = &spel.events.events[id];
@@ -65,7 +90,11 @@ void spel_event_register(const char* name, spel_event_callback cb)
 		list->cap = (list->cap == 0) ? 4 : list->cap * 2;
 		spel_event_callback* temp = (spel_event_callback*)realloc(
 			(void*)list->callbacks, list->cap * sizeof(spel_event_callback));
-		assert(temp != nullptr);
+		if (!temp)
+		{
+			sp_error(SPEL_ERR_OOM, "failed to grow callback list");
+			return;
+		}
 		list->callbacks = temp;
 	}
 
@@ -76,6 +105,10 @@ void spel_event_register(const char* name, spel_event_callback cb)
 void spel_event_emit(const char* name, void* data)
 {
 	spel_event_id id = spel_event_intern(name);
+	if (id == (spel_event_id)-1)
+	{
+		return;
+	}
 
 	if (id >= (spel_event_id)spel.events.capacity)
 	{

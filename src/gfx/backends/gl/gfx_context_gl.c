@@ -28,7 +28,9 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	gl->ctx = SDL_GL_CreateContext(spel.window.handle);
 	if (!gl->ctx)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "Failed to create an opengl context");
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to create an opengl context");
+		ctx->vt = nullptr;
+		sp_free(gl);
 		return;
 	}
 
@@ -40,8 +42,24 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	SDL_GL_MakeCurrent(spel.window.handle, gl->ctx);
 	SDL_GL_SetSwapInterval(ctx->vsync);
 
-	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
-	gladLoaderLoadGL();
+	if (gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress) == 0)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to load GL functions");
+		SDL_GL_DestroyContext(gl->ctx);
+		ctx->vt = NULL;
+		ctx->data = NULL;
+		sp_free(gl);
+		return;
+	}
+	if (gladLoaderLoadGL() == 0)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to finalize GL loader");
+		SDL_GL_DestroyContext(gl->ctx);
+		ctx->vt = NULL;
+		ctx->data = NULL;
+		sp_free(gl);
+		return;
+	}
 
 	glEnable(GL_BLEND);
 
@@ -52,8 +70,10 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageCallback(spel_gfx_debug_callback, ctx);
 
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
-							  0, NULL, GL_FALSE);
+								  0, NULL, GL_FALSE);
 	}
+
+	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
 }
 
 void spel_gfx_context_conf_gl()
@@ -121,6 +141,8 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	sp_free(ctx->sampler_cache.entries);
 	sp_free(gl);
 	ctx->data = NULL;
+
+	sp_debug("GL context destroyed");
 }
 
 void spel_gfx_frame_begin_gl(spel_gfx_context ctx)

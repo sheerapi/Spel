@@ -64,6 +64,8 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 {
 	if (!spel_gfx_texture_validate(desc))
 	{
+		sp_warn("invalid texture description (w:%d h:%d d:%d mips:%d type:%d)",
+				desc->width, desc->height, desc->depth, desc->mip_count, desc->type);
 		return ctx->checkerboard != nullptr ? ctx->checkerboard : nullptr;
 	}
 
@@ -92,16 +94,34 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 
 	spel_gfx_texture texture =
 		(spel_gfx_texture)sp_malloc(sizeof(*texture), SPEL_MEM_TAG_GFX);
+	if (!texture)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate texture object");
+		return nullptr;
+	}
 
 	texture->ctx = ctx;
 	texture->type = desc->type;
 	texture->internal = false;
 
 	texture->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
+	if (!texture->data)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
+		sp_free(texture);
+		return nullptr;
+	}
 	GLuint* gl_handle = (GLuint*)texture->data;
 
 	GLenum target = spel_gl_texture_target(desc->type);
 	glCreateTextures(target, 1, gl_handle);
+	if (*gl_handle == 0)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateTextures returned 0");
+		sp_free(texture->data);
+		sp_free(texture);
+		return nullptr;
+	}
 
 	if (desc->type == SPEL_GFX_TEXTURE_2D)
 	{
@@ -141,6 +161,9 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	glTextureParameteri(*gl_handle, GL_TEXTURE_BASE_LEVEL, 0);
 	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, (int)desc->mip_count - 1);
 
+	sp_debug("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle,
+			 desc->width, desc->height, desc->depth, desc->mip_count, desc->format);
+
 	return texture;
 }
 
@@ -152,7 +175,9 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 		return;
 	}
 
+	GLuint handle = *(GLuint*)texture->data;
 	glDeleteTextures(1, texture->data);
+	sp_debug("destroyed GL texture %u", handle);
 	sp_free(texture->data);
 	sp_free(texture);
 }

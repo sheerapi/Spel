@@ -13,20 +13,57 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 										  const spel_gfx_buffer_desc* desc)
 {
 	spel_gfx_buffer buf = (spel_gfx_buffer)sp_malloc(sizeof(*buf), SPEL_MEM_TAG_GFX);
+	if (!buf)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate buffer object");
+		return nullptr;
+	}
+
 	buf->ctx = ctx;
 	buf->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
+	if (!buf->data)
+	{
+		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
+		sp_free(buf);
+		return nullptr;
+	}
+
+	buf->persistent = false;
 	buf->type = desc->type;
 
 	glCreateBuffers(1, (GLuint*)buf->data);
+	if (*(GLuint*)buf->data == 0)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
+		sp_free(buf->data);
+		sp_free(buf);
+		return nullptr;
+	}
+
 	glNamedBufferData(*(GLuint*)buf->data, desc->size, desc->data,
 					  spel_gfx_gl_buffer_usage(desc->access, desc->usage));
+	GLenum err = glGetError();
+	if (err != GL_NO_ERROR)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferData error 0x%x", err);
+		glDeleteBuffers(1, (GLuint*)buf->data);
+		sp_free(buf->data);
+		sp_free(buf);
+		return nullptr;
+	}
+
+	sp_debug("created GL buffer %u size=%zu", *(GLuint*)buf->data, desc->size);
 
 	return buf;
 }
 
 void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 {
+	GLuint handle = *(GLuint*)buf->data;
 	glDeleteBuffers(1, (GLuint*)buf->data);
+	sp_free(buf->data);
+	sp_free(buf);
+	sp_debug("destroyed GL buffer %u", handle);
 }
 
 void spel_gfx_buffer_update_gl(spel_gfx_buffer buf, const void* data, size_t size,

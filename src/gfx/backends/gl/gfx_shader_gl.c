@@ -80,7 +80,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 
 	if (desc->source_size > (size_t)INT_MAX)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "gfx: shader binary too large");
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "shader binary too large");
 		sp_free(shader->data);
 		sp_free(shader);
 		return nullptr;

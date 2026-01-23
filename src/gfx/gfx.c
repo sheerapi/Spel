@@ -13,7 +13,8 @@
 #include "utils/path.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz) spel_memory_malloc(sz, SPEL_MEM_TAG_GFX)
-#define STBI_REALLOC(sz, p) spel_memory_realloc(sz, p, SPEL_MEM_TAG_GFX)
+// stb expects realloc(ptr, new_size); previous macro had parameters flipped.
+#define STBI_REALLOC(p, sz) spel_memory_realloc(p, sz, SPEL_MEM_TAG_GFX)
 #define STBI_FREE(p) spel_memory_free(p)
 #include "utils/internal/stb_image.h"
 #include <math.h>
@@ -60,6 +61,13 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	case SPEL_GFX_BACKEND_OPENGL:
 		spel_gfx_context_create_gl(ctx);
 		break;
+	}
+
+	if (ctx->vt == NULL)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "backend creation failed");
+		sp_free(ctx);
+		return nullptr;
 	}
 
 	spel_gfx_context_default_data(ctx);

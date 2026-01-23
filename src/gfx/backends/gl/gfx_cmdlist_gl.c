@@ -69,7 +69,7 @@ void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 		void* new_buffer = sp_realloc(cl->buffer, cl->capacity, SPEL_MEM_TAG_GFX);
 		if (new_buffer == NULL)
 		{
-			sp_error(SPEL_ERR_OOM, "Out of memory?");
+			sp_error(SPEL_ERR_OOM, "out of memory?");
 			return NULL;
 		}
 		cl->buffer = new_buffer;
@@ -141,13 +141,13 @@ void exec_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_bind_vertex_cmd* cmd)
 {
 	if (cmd->buf->type != SPEL_GFX_BUFFER_VERTEX)
 	{
-		sp_warn("gfx: buffer type does not correspond to binding cmd (vertex). this is "
+		sp_warn("buffer type does not correspond to binding cmd (vertex). this is "
 				 "allowed, but discouraged");
 	}
 
 	if (((spel_gfx_cmdlist_gl*)cl->data)->pipeline == nullptr)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "You need to bind a pipeline before binding a vertex buffer");
+		sp_error(SPEL_ERR_INVALID_STATE, "you need to bind a pipeline before binding a vertex buffer");
 		return;
 	}
 
@@ -253,7 +253,7 @@ void exec_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_bind_index_cmd* cmd)
 {
 	if (cmd->buf->type != SPEL_GFX_BUFFER_INDEX)
 	{
-		sp_warn("gfx: buffer type does not correspond to binding cmd (index). this is "
+		sp_warn("buffer type does not correspond to binding cmd (index). this is "
 				 "allowed, but discouraged");
 	}
 

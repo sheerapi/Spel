@@ -14,7 +14,12 @@ typedef struct spel_alloc_header
 
 void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
-	// Avoid overflow when adding the allocation header.
+	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
+	{
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid memory tag %d", tag);
+		return NULL;
+	}
+
 	if (size > SIZE_MAX - sizeof(spel_alloc_header))
 	{
 		return NULL;
@@ -27,7 +32,6 @@ void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 		return NULL;
 	}
 
-	// Clear the entire block (header + user data) before use.
 	memset(h, 0, total);
 
 	h->size = size;
@@ -65,6 +69,12 @@ void spel_memory_free(void* ptr)
 	size_t size = h->size;
 	spel_memory_tag tag = h->tag;
 
+	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in free", tag);
+		return;
+	}
+
 	spel.memory.current -= size;
 	spel.memory.total_freed += size;
 	spel.memory.free_count++;
@@ -92,7 +102,25 @@ void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	size_t old_size = old_h->size;
 	spel_memory_tag old_tag = old_h->tag;
 
+	if ((int)old_tag < 0 || old_tag >= SPEL_MEM_TAG_COUNT)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in realloc", old_tag);
+		return NULL;
+	}
+
 	spel_memory_tag use_tag = (tag == SPEL_MEM_TAG_TEMP) ? old_tag : tag;
+
+	if ((int)use_tag < 0 || use_tag >= SPEL_MEM_TAG_COUNT)
+	{
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid tag %d in realloc", use_tag);
+		return NULL;
+	}
+
+	if (newSize > SIZE_MAX - sizeof(spel_alloc_header))
+	{
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "requested realloc too large (%zu)", newSize);
+		return NULL;
+	}
 
 	size_t total = sizeof(spel_alloc_header) + newSize;
 

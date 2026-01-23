@@ -75,12 +75,12 @@ GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)
 	if ((access & sp_gfx_access_read) &&
 		(access & (sp_gfx_access_invalidate_range | sp_gfx_access_invalidate_buffer)))
 	{
-		spel_error("Invalidate flags are meaningless with READ access");
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "Invalidate flags are meaningless with READ access");
 	}
 
 	if ((access & sp_gfx_access_persistent) && !(access & sp_gfx_access_write))
 	{
-		spel_error("Persistent mapping requires WRITE access");
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "Persistent mapping requires WRITE access");
 	}
 #endif
 

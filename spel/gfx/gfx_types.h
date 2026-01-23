@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_TYPES
 #define SPEL_GFX_TYPES
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct spel_gfx_context_t* spel_gfx_context;
@@ -191,7 +192,7 @@ typedef enum
 typedef enum
 {
 	SPEL_GFX_TEXTURE_FMT_UNKNOWN,
-	
+
 	SPEL_GFX_TEXTURE_FMT_R8_UNORM,
 	SPEL_GFX_TEXTURE_FMT_RG8_UNORM,
 	SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
@@ -231,5 +232,27 @@ typedef enum
 	SPEL_GFX_SAMPLER_WRAP_CLAMP,
 	SPEL_GFX_SAMPLER_WRAP_MIRROR,
 } spel_gfx_sampler_wrap;
+
+typedef struct
+{
+	const char* name;
+	size_t name_size;
+
+	const char* log;
+	size_t log_size;
+} spel_gfx_shader_log;
+
+typedef struct
+{
+	const char* severity;
+	uint8_t severity_size;
+	const char* type;
+	uint8_t type_size;
+	const char* source;
+	uint8_t source_size;
+	const char* msg;
+	uint16_t msg_size;
+	unsigned int id;
+} spel_gfx_backend_msg;
 
 #endif

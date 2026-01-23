@@ -2,8 +2,16 @@ project(
     'spel',
     ['c', 'cpp'],
     version: '0.0.1',
-    default_options: ['c_std=c2x', 'default_library=static', 'b_lto=true', 'b_ndebug=true'],
+    default_options: [
+        'c_std=c2x',
+        'cpp_std=c++20',
+        'default_library=static',
+        'b_lto=true',
+        'b_ndebug=true',
+    ],
 )
+
+add_project_arguments(['-D_POSIX_C_SOURCE=200809L'], language: 'c')
 
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
@@ -15,7 +23,8 @@ else
             '-fdata-sections',
             '-fno-unwind-tables',
             '-fno-asynchronous-unwind-tables',
-            '-fvisibility=hidden',
+            '-fno-exceptions',
+            '-fno-rtti',
         ],
         language: ['c', 'cpp'],
     )
@@ -24,10 +33,29 @@ else
         [
             '-Wl,--gc-sections',
             '-Wl,--strip-all',
+            '-Wl,--exclude-libs,ALL',
+            '-Wl,--no-as-needed',
         ],
         language: ['c', 'cpp'],
     )
 endif
+
+add_project_arguments(
+    [
+        '-fno-threadsafe-statics',
+        '-fno-unwind-tables',
+        '-fno-asynchronous-unwind-tables',
+    ],
+    language: 'c',
+)
+
+add_project_arguments(
+    [
+        '-fvisibility=hidden',
+        '-fvisibility-inlines-hidden',
+    ],
+    language: 'cpp',
+)
 
 if get_option('sanitizers')
     add_project_arguments(
@@ -68,6 +96,7 @@ sources = [
     'src/gfx/gfx_pipeline.c',
     'src/utils/internal/xxh_x86dispatch.c',
     'src/utils/internal/xxhash.c',
+    'src/utils/terminal.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',

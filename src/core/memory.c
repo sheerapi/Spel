@@ -1,6 +1,8 @@
 #include "core/memory.h"
 #include "core/log.h"
 #include "core/types.h"
+#include "utils/terminal.h"
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -12,13 +14,21 @@ typedef struct spel_alloc_header
 
 void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
+	// Avoid overflow when adding the allocation header.
+	if (size > SIZE_MAX - sizeof(spel_alloc_header))
+	{
+		return NULL;
+	}
+
 	size_t total = sizeof(spel_alloc_header) + size;
 	spel_alloc_header* h = malloc(total);
-	memset(h, 0, total);
 	if (!h)
 	{
 		return NULL;
 	}
+
+	// Clear the entire block (header + user data) before use.
+	memset(h, 0, total);
 
 	h->size = size;
 	h->tag = tag;
@@ -141,7 +151,8 @@ static const char* spel_mem_fmt_size(size_t bytes, char buf[32])
 		unit++;
 	}
 
-	snprintf(buf, 32, "%.2f %s", size, units[unit]);
+	snprintf(buf, 32, "%s%.2f%s %s%s%s", sp_terminal_bright_green, size, sp_terminal_bold,
+			 sp_terminal_bright_magenta, units[unit], sp_terminal_reset);
 	return buf;
 }
 
@@ -153,38 +164,40 @@ static const char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
 };
 #endif
 
-void spel_memory_dump()
+void spel_memory_render_terminal()
 {
-#if !DEBUG
-	log_info("spël memory management disabled.");
-#else
 	char cur[32];
 	char peak[32];
 	char total[32];
 	char freed[32];
 
-	log_info("<=== spël memory dump ===>");
+	printf("%s%s==== spël memory dump ====%s\n", sp_terminal_bright_green,
+		   sp_terminal_bold, sp_terminal_reset);
 
-	log_info("global:");
-	log_info("  current: %s", spel_mem_fmt_size(spel.memory.current, cur));
+	printf("global:\n");
+	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
+		   spel_mem_fmt_size(spel.memory.current, cur));
+	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
+		   spel_mem_fmt_size(spel.memory.peak, peak));
+	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
+		   sp_terminal_reset, spel_mem_fmt_size(spel.memory.total_allocated, total),
+		   sp_terminal_italic, sp_terminal_gray,
+		   spel_mem_fmt_size(spel.memory.total_freed, freed), sp_terminal_gray,
+		   sp_terminal_italic, sp_terminal_reset);
 
-	log_info("  peak:    %s", spel_mem_fmt_size(spel.memory.peak, peak));
+	printf("    %sallocs%s:    %s%zu%s\n    %sfrees%s:     %s%zu%s %s%s(%s%zu%s "
+		   "still alive%s)%s\n",
+		   sp_terminal_bright_blue, sp_terminal_reset, sp_terminal_bright_green,
+		   spel.memory.alloc_count, sp_terminal_reset, sp_terminal_bright_blue,
+		   sp_terminal_reset, sp_terminal_bright_green, spel.memory.free_count,
+		   sp_terminal_reset, sp_terminal_italic, sp_terminal_gray,
+		   sp_terminal_bright_yellow, spel.memory.alloc_count - spel.memory.free_count,
+		   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset);
 
-	log_info("  total allocated: %s (%s freed)",
-			 spel_mem_fmt_size(spel.memory.total_allocated, total),
-			 spel_mem_fmt_size(spel.memory.total_freed, freed));
-
-	log_info("  allocs: %u  frees: %u (%u still alive)", spel.memory.alloc_count,
-			 spel.memory.free_count, spel.memory.alloc_count - spel.memory.free_count);
-
-	log_info("");
-
-	log_info("by tag:");
-
+	printf("\nby tag:\n");
 	for (int i = 0; i < SPEL_MEM_TAG_COUNT; ++i)
 	{
 		const spel_memory_tag_stats* ts = &spel.memory.tags[i];
-
 		if (ts->alloc_count == 0)
 		{
 			continue;
@@ -192,12 +205,15 @@ void spel_memory_dump()
 
 		char tag_cur[32];
 		char tag_peak[32];
-
-		log_info("  %-10s  %s (peak %s)  allocs %u", spel_mem_tag_names[i],
-				 spel_mem_fmt_size(ts->bytes_current, tag_cur),
-				 spel_mem_fmt_size(ts->bytes_peak, tag_peak), ts->alloc_count);
+		printf("    %s%-10s%s  %-10s %s%s(peak %10s%s%s)%s %s%sallocs: %s%zu%s\n",
+			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
+			   spel_mem_fmt_size(ts->bytes_current, tag_cur), sp_terminal_italic,
+			   sp_terminal_gray, spel_mem_fmt_size(ts->bytes_peak, tag_peak),
+			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset,
+			   sp_terminal_bright_blue, sp_terminal_italic, sp_terminal_bright_green,
+			   ts->alloc_count, sp_terminal_reset);
 	}
 
-	log_info("</=======================>");
-#endif
+	printf("%s%s===========================%s\n", sp_terminal_bright_green,
+		   sp_terminal_bold, sp_terminal_reset);
 }

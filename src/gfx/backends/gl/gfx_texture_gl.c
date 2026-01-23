@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "core/log.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_texture.h"
 #include "gfx/gfx_types.h"
@@ -70,13 +71,13 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 
 	if ((desc->usage & SPEL_GFX_TEXTURE_USAGE_RENDER) && !fmt->renderable)
 	{
-		spel_error("format not renderable");
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "format not renderable");
 		return nullptr;
 	}
 
 	if ((desc->usage & SPEL_GFX_TEXTURE_USAGE_STORAGE) && !fmt->storage)
 	{
-		spel_error("format not storage-capable");
+		sp_error(SPEL_ERR_INVALID_ARGUMENT, "format not storage-capable");
 		return nullptr;
 	}
 
@@ -147,7 +148,7 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 {
 	if (texture->internal)
 	{
-		spel_error("you can't destroy an internal texture!");
+		sp_error(SPEL_ERR_INVALID_RESOURCE, "you can't destroy an internal texture!");
 		return;
 	}
 

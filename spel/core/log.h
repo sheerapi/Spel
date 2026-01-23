@@ -1,58 +1,130 @@
-/**
- * Copyright (c) 2020 rxi
- *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the MIT license. See `log.c` for details.
- */
-
-#ifndef LOG_H
-#define LOG_H
-
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
+#ifndef SPEL_LOG
+#define SPEL_LOG
+#include "core/macros.h"
+#include "core/types.h"
+#include "utils/time.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <time.h>
-
-#define LOG_VERSION "0.1.0"
-
-typedef struct
-{
-	va_list ap;
-	const char* fmt;
-	const char* file;
-	struct tm* time;
-	void* udata;
-	int line;
-	int level;
-} log_Event;
-
-typedef void (*log_LogFn)(log_Event* ev);
-typedef void (*log_LockFn)(bool lock, void* udata);
 
 enum
 {
-	LOG_TRACE,
-	LOG_DEBUG,
-	LOG_INFO,
-	LOG_WARN,
-	LOG_ERROR,
-	LOG_FATAL
+	SPEL_ERR_NONE = 0,
+
+	SPEL_ERR_OOM,
+	SPEL_ERR_INVALID_ARGUMENT,
+	SPEL_ERR_INVALID_STATE,
+	SPEL_ERR_INVALID_RESOURCE,
+
+	SPEL_ERR_CONTEXT_FAILED,
+	SPEL_ERR_WINDOWING_FAILED,
+	SPEL_ERR_SHADER_FAILED,
+
+	SPEL_ERR_FILE_NOT_FOUND,
+	SPEL_ERR_ASSERTION_FAILED,
+	SPEL_ERR_INTERNAL,
 };
 
-#define log_trace(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
-#define log_debug(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
-#define log_info(...) log_log(LOG_INFO, __FILE__, __LINE__, __VA_ARGS__)
-#define log_warn(...) log_log(LOG_WARN, __FILE__, __LINE__, __VA_ARGS__)
-#define log_error(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
-#define log_fatal(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
+enum
+{
+	SPEL_DATA_NONE = 0,
+	SPEL_DATA_STRING,
+	SPEL_DATA_SHADER_LOG,
+	SPEL_DATA_GFX_MSG
+};
 
-const char* log_level_string(int level);
-void log_set_lock(log_LockFn fn, void* udata);
-void log_set_level(int level);
-void log_set_quiet(bool enable);
-int log_add_callback(log_LogFn fn, void* udata, int level);
-int log_add_fp(FILE* fp, int level);
+typedef uint8_t spel_error_code;
+typedef uint8_t spel_log_data_type;
 
-void log_log(int level, const char* file, int line, const char* fmt, ...);
+typedef struct spel_log_event_t
+{
+	spel_severity severity;
+	spel_error_code code;
+	spel_log_data_type data_type;
 
+	uint32_t length;
+	char* message;
+	bool message_owned;
+
+	uint64_t timestamp;
+	time_t wall_sec;
+
+	const char* file;
+	int line;
+
+	const void* data;
+	size_t data_size;
+} spel_log_event_t;
+
+sp_api void spel_log_filter(spel_severity severity);
+sp_api void spel_log_callback_set(spel_log_fn fn, void* user);
+void spel_log_emit(spel_log_event evt);
+spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
+sp_api void spel_panic(spel_log_event evt);
+
+sp_api void spel_log_assert(bool condition, spel_log_event evt);
+
+sp_api void spel_log_stderr_install();
+sp_api void spel_log_stderr(spel_log_event evt, void* user);
+
+const sp_api char* spel_log_sev_to_string(spel_severity severity);
+
+#define sp_log(sev, error, dataVal, dataType, dataSize, msg, ...)                        \
+	spel_log_emit(                                                                       \
+		spel_log_fmt(&(spel_log_event_t){.severity = (sev),                         \
+											  .code = (error),                           \
+											  .message = nullptr,                        \
+											  .length = 0,                               \
+											  .file = __FILE__,                          \
+											  .line = __LINE__,                          \
+											  .data = (dataVal),                         \
+											  .data_type = (dataType),                   \
+											  .data_size = (dataSize),                   \
+											  .timestamp = spel_time_now_ns(),           \
+											  .wall_sec = spel_time_now_sec()},          \
+						  msg, ##__VA_ARGS__))
+
+#define sp_panic(err, msg, ...)                                                          \
+	spel_panic(spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),       \
+													 .code = (err),                      \
+													 .message = nullptr,                 \
+													 .length = 0,                        \
+													 .file = __FILE__,                   \
+													 .line = __LINE__,                   \
+													 .data = nullptr,                    \
+													 .data_type = SPEL_DATA_NONE,        \
+													 .data_size = 0},                    \
+								 msg, ##__VA_ARGS__))
+
+#define sp_info(msg, ...)                                                                \
+	sp_log(SPEL_SEV_INFO, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define sp_warn(msg, ...)                                                                \
+	sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define sp_error(code, msg, ...)                                                         \
+	sp_log(SPEL_SEV_ERROR, code, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define sp_fatal(code, msg, ...) sp_panic(code, msg, ##__VA_ARGS__)
+#define sp_trace(msg, ...)                                                               \
+	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, #__VA_ARGS__)
+
+#ifdef DEBUG
+#	define sp_debug(msg, ...)                                                           \
+		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg,           \
+			   ##__VA_ARGS__)
+#	define sp_assert(condition, msg, ...)                                               \
+		spel_log_assert(                                                                 \
+			condition,                                                                   \
+			spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),          \
+												  .code = (SPEL_ERR_ASSERTION_FAILED),   \
+												  .message = "assertion failed: " #condition,                    \
+												  .length = 0,                           \
+												  .file = __FILE__,                      \
+												  .line = __LINE__,                      \
+												  .data = nullptr,                       \
+												  .data_type = SPEL_DATA_NONE,           \
+												  .data_size = 0},                       \
+							  msg, ##__VA_ARGS__))
+#else
+#	define sp_debug(msg, ...)
+#	define sp_assert(condition, msg, ...)
+#endif
 #endif

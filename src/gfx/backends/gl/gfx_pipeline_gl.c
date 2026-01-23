@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "core/log.h"
 #include "core/macros.h"
 #include "core/memory.h"
 #include "gfx/gfx_internal.h"
@@ -248,7 +249,7 @@ static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bit
 		break;
 	}
 
-	spel_error("invalid vertex format");
+	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid vertex format");
 	return GL_FLOAT;
 }
 
@@ -375,7 +376,7 @@ static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f)
 		return GL_ONE_MINUS_DST_COLOR;
 	}
 
-	spel_error("invalid blend factor");
+	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend factor");
 	return GL_ONE;
 }
 
@@ -395,7 +396,7 @@ static GLenum spel_gl_blend_op(spel_gfx_blend_op op)
 		return GL_MAX;
 	}
 
-	spel_error("invalid blend op");
+	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend op");
 	return GL_FUNC_ADD;
 }
 

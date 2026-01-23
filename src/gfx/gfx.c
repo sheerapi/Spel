@@ -1,5 +1,6 @@
 #include "backends/gl/gfx_vtable_gl.h"
 #include "core/entry.h"
+#include "core/log.h"
 #include "core/macros.h"
 #include "core/types.h"
 #include "gfx/gfx_buffer.h"
@@ -141,9 +142,8 @@ spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
 {
 	if (!spel_path_exists(path))
 	{
-		char buffer[512];
-		snprintf(buffer, 512, "file %s does not exist", path);
-		spel_error(buffer);
+		sp_log(SPEL_SEV_ERROR, SPEL_ERR_FILE_NOT_FOUND, path, SPEL_DATA_STRING,
+			   strlen(path), "file %s does not exist", path);
 		return nullptr;
 	}
 
@@ -265,8 +265,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
-static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
-										   uint64_t hash, spel_gfx_pipeline pipeline)
+static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache, uint64_t hash,
+										   spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0)
 	{
@@ -684,7 +684,7 @@ spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 	{
 		if ((int)desc->srgb && comp < 3)
 		{
-			spel_error("sRGB requested for non-RGB texture");
+			sp_error(SPEL_ERR_INVALID_ARGUMENT, "sRGB requested for non-RGB texture");
 			stbi_image_free(pixels);
 			return spel_gfx_texture_checker_get(ctx);
 		}

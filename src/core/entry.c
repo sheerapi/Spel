@@ -5,6 +5,7 @@
 #include "core/types.h"
 #include "core/window.h"
 #include "gfx/gfx.h"
+#include "utils/terminal.h"
 #include "utils/time.h"
 #include <stdlib.h>
 
@@ -19,9 +20,14 @@ int main(int argc, const char** argv)
 	spel.argc = argc;
 	spel.argv = argv;
 	spel.window.swapchain.vsync = 1; // vsync on by default
+	spel.log.function = nullptr;
+	spel.log.severity = SPEL_SEV_TRACE;
+
+	spel_log_stderr_install();
+	spel_terminal_detect_ansi();
 
 #ifdef DEBUG
-	spel.debug = true;
+		spel.debug = true;
 #endif
 
 	if (spel_args_has("--debug"))
@@ -33,7 +39,7 @@ int main(int argc, const char** argv)
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 	{
-		spel_error("Failed to initialize windowing backend");
+		sp_error(SPEL_ERR_WINDOWING_FAILED, "Failed to initialize windowing backend");
 		return -1;
 	}
 
@@ -77,20 +83,6 @@ sp_weak void spel_run()
 		sp_callback(spel_draw);
 		spel_gfx_frame_present(spel.gfx);
 	}
-}
-
-sp_weak void spel_error(const char* msg)
-{
-	log_error(msg);
-	log_error("panic!");
-	exit(-1);
-}
-
-void spel_assert_fail(const char* assertion, const char* msg, const char* file, int line,
-					  const char* function)
-{
-	log_log(LOG_FATAL, file, line, "Assertion `%s` failed at %s: %s", assertion, function,
-			msg);
 }
 #endif
 

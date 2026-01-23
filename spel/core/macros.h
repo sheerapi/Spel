@@ -1,10 +1,6 @@
 #ifndef SPEL_MACROS
 #define SPEL_MACROS
 
-#ifdef DEBUG
-#	define sp_debug 1
-#endif
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -52,15 +48,7 @@
 #	define sp_align(N) __attribute__((aligned(N)))
 #endif
 
-#define sp_unused(x) (void)(x)
-
-#if sp_debug
-#	define sp_assert(expr, msg)                                                         \
-		((expr) ? (void)0                                                                \
-				: spel_assert_fail(#expr, msg, __FILE__, __LINE__, __PRETTY_FUNCTION__))
-#else
-#	define sp_assert(expr, msg)
-#endif
+#	define sp_unused(x) (void)(x)
 
 #if defined(_WIN32)
 #	define sp_platform_win 1
@@ -110,8 +98,8 @@
 #	define sp_free(ptr) spel_memory_free(ptr)
 #	define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
 #else
-#	define sp_malloc(size, tag) malloc(size)
-#	define sp_free(ptr) free(ptr)
-#	define sp_realloc(ptr, size, tag) realloc(ptr, size)
+#	define sp_malloc(size, tag) spel_memory_malloc(size, tag)
+#	define sp_free(ptr) spel_memory_free(ptr)
+#	define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
 #endif
 #endif

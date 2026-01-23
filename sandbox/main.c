@@ -53,11 +53,12 @@ void spel_load()
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
 
-	spel_memory_dump();
+	spel_memory_render_terminal();
 }
 
 void spel_draw()
 {
+	sp_panic(SPEL_ERR_NONE, "PANIC!!!");
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 

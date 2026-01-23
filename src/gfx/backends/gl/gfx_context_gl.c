@@ -28,7 +28,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	gl->ctx = SDL_GL_CreateContext(spel.window.handle);
 	if (!gl->ctx)
 	{
-		spel_error("Failed to create an opengl context");
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "Failed to create an opengl context");
 		return;
 	}
 
@@ -215,30 +215,34 @@ void spel_gfx_debug_callback(unsigned int source, unsigned int type, unsigned in
 	const char* typ = gl_type_to_string(type);
 	const char* sev = gl_severity_to_string(severity);
 
+	spel_gfx_backend_msg msg = {.source = src,
+								.source_size = strlen(src),
+								.type = typ,
+								.type_size = strlen(typ),
+								.severity = sev,
+								.severity_size = strlen(sev),
+								.msg = message,
+								.msg_size = strlen(message),
+								.id = id};
+
 	if (severity == GL_DEBUG_SEVERITY_HIGH || type == GL_DEBUG_TYPE_ERROR)
 	{
-		char buffer[256];
-		snprintf(buffer, 256, "[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id,
-				 message);
-		spel_error(buffer);
+		sp_log(SPEL_SEV_ERROR, SPEL_ERR_CONTEXT_FAILED, &msg, SPEL_DATA_GFX_MSG,
+			   sizeof(msg), "error from opengl (%s): %s", src, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
 	{
-		log_warn("[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id, message);
+		sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG,
+			   sizeof(msg), "warning from opengl (%s): %s", src, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_LOW)
 	{
-		log_debug("[gl][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id, message);
+		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+			   "debug info from opengl (%s): %s", src, message);
 	}
 	else
 	{
-		log_trace("[GL][%s][%s][%s][id=%u]\n    %s", sev, src, typ, id, message);
+		sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+			   "trace info from opengl (%s): %s", src, message);
 	}
-
-#ifdef DEBUG
-	if (severity == GL_DEBUG_SEVERITY_HIGH || type == GL_DEBUG_TYPE_ERROR)
-	{
-		raise(SIGTRAP);
-	}
-#endif
 }

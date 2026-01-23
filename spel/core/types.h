@@ -68,17 +68,40 @@ typedef struct spel_time
 	uint64_t stamp_last;
 } spel_time;
 
+enum
+{
+	SPEL_SEV_TRACE,
+	SPEL_SEV_DEBUG,
+	SPEL_SEV_INFO,
+	SPEL_SEV_WARN,
+	SPEL_SEV_ERROR,
+	SPEL_SEV_FATAL,
+};
+
+typedef uint8_t spel_severity;
+typedef struct spel_log_event_t* spel_log_event;
+typedef void (*spel_log_fn)(spel_log_event evt, void* user);
+
+typedef struct spel_log
+{
+	spel_severity severity;
+	spel_log_fn function;
+	void* user;
+} spel_log;
+
 typedef struct spel_context
 {
 	int argc;
 	const char** argv;
 	bool debug;
+	bool terminal_color;
 
 	spel_window window;
 	spel_events events;
 	spel_time time;
 	spel_gfx_context gfx;
 	spel_memory memory;
+	spel_log log;
 } spel_context;
 
 sp_api extern spel_context spel;

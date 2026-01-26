@@ -17,23 +17,25 @@ spel_context spel = {.window = {.title = "Spël",
 
 int main(int argc, const char** argv)
 {
-	spel.argc = argc;
-	spel.argv = argv;
+	spel.process.argc = argc;
+	spel.process.argv = argv;
 	spel.window.swapchain.vsync = 1; // vsync on by default
 	spel.log.function = nullptr;
 	spel.log.severity = SPEL_SEV_TRACE;
 
+	spel.process.name = argv[0];
+	spel_runtime_info_setup();
 	spel_build_info_init();
 	spel_log_stderr_install();
 	spel_terminal_detect_ansi();
 
 #ifdef DEBUG
-		spel.debug = true;
+	spel.env.debug = true;
 #endif
 
 	if (spel_args_has("--debug"))
 	{
-		spel.debug = true;
+		spel.env.debug = true;
 	}
 
 	sp_callback(spel_conf);
@@ -52,7 +54,7 @@ int main(int argc, const char** argv)
 	spel_gfx_context_desc gfx_desc;
 	gfx_desc.backend = SPEL_GFX_BACKEND_OPENGL;
 	gfx_desc.vsync = spel.window.swapchain.vsync;
-	gfx_desc.debug = spel.debug;
+	gfx_desc.debug = spel.env.debug;
 
 	spel.gfx = spel_gfx_context_create(&gfx_desc);
 
@@ -89,9 +91,9 @@ sp_weak void spel_run()
 
 bool spel_args_has(const char* arg)
 {
-	for (int i = 1; i < spel.argc; i++)
+	for (int i = 1; i < spel.process.argc; i++)
 	{
-		if (strcmp(spel.argv[i], arg) == 0)
+		if (strcmp(spel.process.argv[i], arg) == 0)
 		{
 			return true;
 		}

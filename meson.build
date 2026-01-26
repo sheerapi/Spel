@@ -15,10 +15,11 @@ project(
 compile_args = []
 link_args = []
 
-compile_args += '-D_POSIX_C_SOURCE=200809L'
+compile_args += ['-D_POSIX_C_SOURCE=200809L', '-D_XOPEN_SOURCE=700']
 
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
+    compile_args += ['-fno-omit-frame-pointer', '-fasynchronous-unwind-tables']
 else
     compile_args += [
         '-Os',
@@ -37,12 +38,6 @@ else
         '-Wl,--no-as-needed',
     ]
 endif
-
-compile_args += [
-    '-fno-threadsafe-statics',
-    '-fno-unwind-tables',
-    '-fno-asynchronous-unwind-tables',
-]
 
 add_project_arguments(
     [
@@ -100,7 +95,7 @@ cmake = import('cmake')
 cmake_args = cmake.subproject_options()
 
 cmake_args.append_compile_args('cpp', ['-fPIC'])
-cmake_args.add_cmake_defines({'SPIRV_CROSS_ENABLE_TESTS': false, 'SPIRV_CROSS_ENABLE_CLI': false})
+cmake_args.add_cmake_defines({'SPIRV_CROSS_ENABLE_TESTS': false, 'SPIRV_CROSS_CLI': false})
 
 sources = [
     'src/core/entry.c',
@@ -118,6 +113,7 @@ sources = [
     'src/utils/terminal.c',
     'src/core/panic.c',
     'src/core/build_info.c',
+    'src/core/env_info.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
@@ -133,14 +129,15 @@ sources = [
 dependencies = [
     dependency('sdl3'),
     m_dep,
-    cmake.subproject('SPIRV-Cross').dependency('spirv-cross-core'),
+    cmake.subproject('SPIRV-Cross', options: cmake_args).dependency('spirv-cross-core'),
+    cmake.subproject('libunwind', options: cmake_args).dependency('libunwind'),
 ]
 
 spel_lib = library(
     'spel',
     sources: sources,
     include_directories: include_directories('spel'),
-    dependencies: dependencies
+    dependencies: dependencies,
 )
 
 spel_dep = declare_dependency(

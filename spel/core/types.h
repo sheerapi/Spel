@@ -1,6 +1,7 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
 #include "core/build_info.h"
+#include "core/env_info.h"
 #include "core/macros.h"
 #include "core/memory.h"
 #include "gfx/gfx_types.h"
@@ -99,9 +100,6 @@ typedef struct spel_log
 
 typedef struct spel_context
 {
-	int argc;
-	const char** argv;
-	bool debug;
 	bool terminal_color;
 	spel_panic_mode panic_mode;
 
@@ -111,7 +109,12 @@ typedef struct spel_context
 	spel_gfx_context gfx;
 	spel_memory memory;
 	spel_log log;
+
 	spel_build_info build_info;
+	spel_runtime_process_info process;
+	spel_runtime_env_info env;
+	spel_runtime_hardware_info hardware;
+
 } spel_context;
 
 sp_api extern spel_context spel;

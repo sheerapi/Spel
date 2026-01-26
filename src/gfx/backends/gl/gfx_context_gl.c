@@ -37,7 +37,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	ctx->vt = &GL_VTABLE;
 	ctx->data = gl;
 	ctx->vsync = spel.window.swapchain.vsync;
-	ctx->debug = spel.debug;
+	ctx->debug = spel.env.debug;
 
 	SDL_GL_MakeCurrent(spel.window.handle, gl->ctx);
 	SDL_GL_SetSwapInterval(ctx->vsync);
@@ -70,7 +70,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageCallback(spel_gfx_debug_callback, ctx);
 
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
-								  0, NULL, GL_FALSE);
+							  0, NULL, GL_FALSE);
 	}
 
 	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
@@ -78,7 +78,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 
 void spel_gfx_context_conf_gl()
 {
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_DEBUG_FLAG, (int)spel.debug);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_DEBUG_FLAG, (int)spel.env.debug);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth != 0
 											   ? spel.window.swapchain.depth
 											   : 16);
@@ -254,8 +254,8 @@ void spel_gfx_debug_callback(unsigned int source, unsigned int type, unsigned in
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
 	{
-		sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG,
-			   sizeof(msg), "warning from opengl (%s): %s", src, message);
+		sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+			   "warning from opengl (%s): %s", src, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_LOW)
 	{

@@ -53,8 +53,6 @@ void spel_load()
 
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
-
-	spel_memory_render_terminal();
 }
 
 void spel_draw()

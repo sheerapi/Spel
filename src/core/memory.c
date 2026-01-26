@@ -167,7 +167,7 @@ void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 }
 
 #ifdef DEBUG
-static const char* spel_mem_fmt_size(size_t bytes, char buf[32])
+const char* spel_memory_fmt_size(size_t bytes, char buf[32])
 {
 	const char* units[] = {"B", "KB", "MB", "GB"};
 	double size = (double)bytes;
@@ -204,13 +204,13 @@ void spel_memory_render_terminal()
 
 	printf("global:\n");
 	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
-		   spel_mem_fmt_size(spel.memory.current, cur));
+		   spel_memory_fmt_size(spel.memory.current, cur));
 	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
-		   spel_mem_fmt_size(spel.memory.peak, peak));
+		   spel_memory_fmt_size(spel.memory.peak, peak));
 	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
-		   sp_terminal_reset, spel_mem_fmt_size(spel.memory.total_allocated, total),
+		   sp_terminal_reset, spel_memory_fmt_size(spel.memory.total_allocated, total),
 		   sp_terminal_italic, sp_terminal_gray,
-		   spel_mem_fmt_size(spel.memory.total_freed, freed), sp_terminal_gray,
+		   spel_memory_fmt_size(spel.memory.total_freed, freed), sp_terminal_gray,
 		   sp_terminal_italic, sp_terminal_reset);
 
 	printf("    %sallocs%s:    %s%zu%s\n    %sfrees%s:     %s%zu%s %s%s(%s%zu%s "
@@ -235,8 +235,8 @@ void spel_memory_render_terminal()
 		char tag_peak[32];
 		printf("    %s%-10s%s  %-10s %s%s(peak %10s%s%s)%s %s%sallocs: %s%zu%s\n",
 			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
-			   spel_mem_fmt_size(ts->bytes_current, tag_cur), sp_terminal_italic,
-			   sp_terminal_gray, spel_mem_fmt_size(ts->bytes_peak, tag_peak),
+			   spel_memory_fmt_size(ts->bytes_current, tag_cur), sp_terminal_italic,
+			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak),
 			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset,
 			   sp_terminal_bright_blue, sp_terminal_italic, sp_terminal_bright_green,
 			   ts->alloc_count, sp_terminal_reset);

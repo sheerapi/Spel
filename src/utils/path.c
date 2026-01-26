@@ -123,12 +123,10 @@ char* spel_path_dirname(const char* path, char* buf, size_t bufsize)
 
 	if (!last_sep)
 	{
-		/* No separator, current directory */
 		snprintf(buf, bufsize, ".");
 	}
 	else if (last_sep == path)
 	{
-		/* Root directory */
 		snprintf(buf, bufsize, PATH_SEP_STR);
 	}
 	else

@@ -167,7 +167,7 @@ void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 }
 
 #ifdef DEBUG
-const char* spel_memory_fmt_size(size_t bytes, char buf[32])
+const char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 {
 	const char* units[] = {"B", "KB", "MB", "GB"};
 	double size = (double)bytes;
@@ -179,8 +179,16 @@ const char* spel_memory_fmt_size(size_t bytes, char buf[32])
 		unit++;
 	}
 
-	snprintf(buf, 32, "%s%.2f%s %s%s%s", sp_terminal_bright_green, size, sp_terminal_bold,
-			 sp_terminal_bright_magenta, units[unit], sp_terminal_reset);
+	if (colors)
+	{
+		snprintf(buf, 32, "%s%.2f%s %s%s%s", sp_terminal_bright_green, size,
+				 sp_terminal_bold, sp_terminal_bright_magenta, units[unit],
+				 sp_terminal_reset);
+	}
+	else
+	{
+		snprintf(buf, 32, "%.2f %s", size, units[unit]);
+	}
 	return buf;
 }
 
@@ -204,13 +212,14 @@ void spel_memory_render_terminal()
 
 	printf("global:\n");
 	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
-		   spel_memory_fmt_size(spel.memory.current, cur));
+		   spel_memory_fmt_size(spel.memory.current, cur, true));
 	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
-		   spel_memory_fmt_size(spel.memory.peak, peak));
+		   spel_memory_fmt_size(spel.memory.peak, peak, true));
 	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
-		   sp_terminal_reset, spel_memory_fmt_size(spel.memory.total_allocated, total),
+		   sp_terminal_reset,
+		   spel_memory_fmt_size(spel.memory.total_allocated, total, true),
 		   sp_terminal_italic, sp_terminal_gray,
-		   spel_memory_fmt_size(spel.memory.total_freed, freed), sp_terminal_gray,
+		   spel_memory_fmt_size(spel.memory.total_freed, freed, true), sp_terminal_gray,
 		   sp_terminal_italic, sp_terminal_reset);
 
 	printf("    %sallocs%s:    %s%zu%s\n    %sfrees%s:     %s%zu%s %s%s(%s%zu%s "
@@ -235,8 +244,8 @@ void spel_memory_render_terminal()
 		char tag_peak[32];
 		printf("    %s%-10s%s  %-10s %s%s(peak %10s%s%s)%s %s%sallocs: %s%zu%s\n",
 			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
-			   spel_memory_fmt_size(ts->bytes_current, tag_cur), sp_terminal_italic,
-			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak),
+			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), sp_terminal_italic,
+			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
 			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset,
 			   sp_terminal_bright_blue, sp_terminal_italic, sp_terminal_bright_green,
 			   ts->alloc_count, sp_terminal_reset);

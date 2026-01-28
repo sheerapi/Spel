@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include "core/memory.h"
 #include <dlfcn.h>
 #include <errno.h>
 #include <math.h>
@@ -16,23 +17,6 @@
 
 #define D10(x) ceil(log10(((x) == 0) ? 2 : ((x) + 1)))
 #define MAX_STACK_BUFFER 4096
-
-inline static void* realloc_safe(void* ptr, size_t size)
-{
-	void* nptr;
-	if (size == 0 || size > SIZE_MAX / 2)
-	{
-		free(ptr);
-		return NULL;
-	}
-	nptr = realloc(ptr, size);
-	if (nptr == NULL)
-	{
-		free(ptr);
-		errno = ENOMEM;
-	}
-	return nptr;
-}
 
 int backtrace(void** buffer, int size)
 {
@@ -84,7 +68,7 @@ char** backtrace_symbols(void* const* buffer, int size)
 	}
 
 	size_t ptrs_size = size * sizeof(char*);
-	char** rval = malloc(ptrs_size + total_len);
+	char** rval = spel_memory_malloc(ptrs_size + total_len, SPEL_MEM_TAG_MISC);
 	if (!rval)
 		return NULL;
 
@@ -120,7 +104,8 @@ char** backtrace_symbols(void* const* buffer, int size)
 
 void backtrace_symbols_fd(void* const* buffer, int size, int fd)
 {
-	int i, len;
+	int i;
+	int len;
 	char* buf;
 	char static_buf[MAX_STACK_BUFFER];
 	Dl_info info;
@@ -132,7 +117,13 @@ void backtrace_symbols_fd(void* const* buffer, int size, int fd)
 
 	for (i = 0; i < size; i++)
 	{
-		if (!buffer[i])
+		void* addr = buffer[i];
+		if (addr != NULL)
+		{
+			addr = (void*)((uintptr_t)addr - 1);
+		}
+
+		if (!addr)
 		{
 			len = 2 + (sizeof(void*) * 2) + 2;
 			if (len <= MAX_STACK_BUFFER)
@@ -141,19 +132,19 @@ void backtrace_symbols_fd(void* const* buffer, int size, int fd)
 			}
 			else
 			{
-				buf = malloc(len);
+				buf = spel_memory_malloc(len, SPEL_MEM_TAG_MISC);
 				if (buf == NULL)
 					return;
 			}
-			snprintf(buf, len, "%p\n", buffer[i]);
+			snprintf(buf, len, "%p\n", addr);
 		}
-		else if (dladdr(buffer[i], &info) != 0)
+		else if (dladdr(addr, &info) != 0)
 		{
 			if (info.dli_sname == NULL)
 				info.dli_sname = "???";
 			if (info.dli_saddr == NULL)
-				info.dli_saddr = buffer[i];
-			offset = (char*)buffer[i] - (char*)info.dli_saddr;
+				info.dli_saddr = addr;
+			offset = (char*)addr - (char*)info.dli_saddr;
 			len = 2 + (sizeof(void*) * 2) + 2 + strlen(info.dli_sname) + 1 + D10(offset) +
 				  5 + strlen(info.dli_fname) + 2;
 			if (len <= MAX_STACK_BUFFER)
@@ -162,11 +153,11 @@ void backtrace_symbols_fd(void* const* buffer, int size, int fd)
 			}
 			else
 			{
-				buf = malloc(len);
+				buf = spel_memory_malloc(len, SPEL_MEM_TAG_MISC);
 				if (buf == NULL)
 					return;
 			}
-			snprintf(buf, len, "%p <%s+%td> at %s\n", buffer[i], info.dli_sname, offset,
+			snprintf(buf, len, "%p <%s+%td> at %s\n", addr, info.dli_sname, offset,
 					 info.dli_fname);
 		}
 		else
@@ -178,16 +169,16 @@ void backtrace_symbols_fd(void* const* buffer, int size, int fd)
 			}
 			else
 			{
-				buf = malloc(len);
+				buf = spel_memory_malloc(len, SPEL_MEM_TAG_MISC);
 				if (buf == NULL)
 					return;
 			}
-			snprintf(buf, len, "%p\n", buffer[i]);
+			snprintf(buf, len, "%p\n", addr);
 		}
 
 		written = write(fd, buf, strlen(buf));
 		(void)written;
 		if (buf != static_buf)
-			free(buf);
+			spel_memory_free(buf);
 	}
 }

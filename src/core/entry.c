@@ -2,6 +2,7 @@
 #include "SDL3/SDL_init.h"
 #include "core/event.h"
 #include "core/log.h"
+#include "core/panic.h"
 #include "core/types.h"
 #include "core/window.h"
 #include "gfx/gfx.h"
@@ -42,7 +43,7 @@ int main(int argc, const char** argv)
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 	{
-		sp_error(SPEL_ERR_WINDOWING_FAILED, "Failed to initialize windowing backend");
+		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s", SDL_GetError());
 		return -1;
 	}
 

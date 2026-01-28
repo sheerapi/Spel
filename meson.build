@@ -19,7 +19,14 @@ compile_args += ['-D_POSIX_C_SOURCE=200809L', '-D_XOPEN_SOURCE=700']
 
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
-    compile_args += ['-fno-omit-frame-pointer', '-fasynchronous-unwind-tables']
+    compile_args += [
+        '-fno-omit-frame-pointer',
+        '-fasynchronous-unwind-tables',
+        '-fno-optimize-sibling-calls',
+        '-fno-lto',
+        '-Wno-frame-address'
+    ]
+    link_args += ['-Wl,--export-dynamic']
 else
     compile_args += [
         '-Os',
@@ -110,6 +117,8 @@ sources = [
     'src/gfx/gfx_pipeline.c',
     'src/utils/internal/xxh_x86dispatch.c',
     'src/utils/internal/xxhash.c',
+    'src/utils/internal/execinfo.c',
+    'src/utils/internal/stacktraverse.c',
     'src/utils/terminal.c',
     'src/core/panic.c',
     'src/core/build_info.c',
@@ -130,7 +139,7 @@ dependencies = [
     dependency('sdl3'),
     m_dep,
     cmake.subproject('SPIRV-Cross', options: cmake_args).dependency('spirv-cross-core'),
-    cmake.subproject('libunwind', options: cmake_args).dependency('libunwind'),
+    dependency('libdw', required: false),
 ]
 
 spel_lib = library(
@@ -154,4 +163,4 @@ sh2spv = executable(
 )
 
 sandbox_src = ['sandbox/main.c']
-executable('sandbox', sources: sandbox_src, dependencies: spel_dep)
+executable('sandbox', sources: sandbox_src, dependencies: spel_dep, link_args: link_args)

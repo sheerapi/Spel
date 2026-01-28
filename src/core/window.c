@@ -1,11 +1,19 @@
 #include "core/window.h"
 #include "SDL3/SDL_video.h"
+#include "core/panic.h"
 #include "core/types.h"
 
 void spel_window_create()
 {
 	spel.window.handle = SDL_CreateWindow(spel.window.title, spel.window.width,
 										  spel.window.height, SDL_WINDOW_OPENGL);
+
+	if (spel.window.handle == nullptr)
+	{
+		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to create a window: %s",
+				 SDL_GetError());
+		return;
+	}
 
 	if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") != 0)
 	{

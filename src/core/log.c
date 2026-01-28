@@ -1,9 +1,9 @@
 #include "core/log.h"
+#include "core/panic.h"
 #include "core/types.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "core/panic.h"
 #include <time.h>
 #include <unistd.h>
 
@@ -47,16 +47,27 @@ spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 	va_list args_copy;
 	va_copy(args_copy, args);
 
-
-	int len = vsnprintf(nullptr, 0, fmt, args);
-	if (len < 0)
+	int len_fmt = vsnprintf(nullptr, 0, fmt, args);
+	if (len_fmt < 0)
 	{
 		va_end(args);
 		va_end(args_copy);
 		return evt;
 	}
 
-	char* heap_buf = spel_memory_malloc((size_t)len + 1, SPEL_MEM_TAG_CORE);
+	size_t orig_len = 0;
+	char* orig = evt->message;
+	if (orig)
+	{
+		while (orig[orig_len])
+			++orig_len;
+	}
+
+	size_t total_len = (size_t)len_fmt;
+	if (orig_len)
+		total_len += orig_len + 3;
+
+	char* heap_buf = spel_memory_malloc(total_len + 1, SPEL_MEM_TAG_CORE);
 	if (!heap_buf)
 	{
 		va_end(args);
@@ -64,10 +75,31 @@ spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 		return evt;
 	}
 
-	vsnprintf(heap_buf, (size_t)len + 1, fmt, args_copy);
+	vsnprintf(heap_buf, (size_t)len_fmt + 1, fmt, args_copy);
+
+	if (orig_len)
+	{
+		size_t pos = (size_t)len_fmt;
+		heap_buf[pos++] = ' ';
+		heap_buf[pos++] = '(';
+		for (size_t i = 0; i < orig_len; ++i)
+			heap_buf[pos + i] = orig[i];
+		pos += orig_len;
+		heap_buf[pos++] = ')';
+		heap_buf[pos] = '\0';
+	}
+	else
+	{
+		heap_buf[len_fmt] = '\0';
+	}
+
+	if (orig && evt->message_owned)
+	{
+		spel_memory_free(orig);
+	}
 
 	evt->message = heap_buf;
-	evt->length = (uint32_t)len;
+	evt->length = (uint32_t)total_len;
 	evt->message_owned = true;
 
 	va_end(args);

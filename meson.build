@@ -146,7 +146,6 @@ dependencies = [
     dependency('sdl3'),
     m_dep,
     cmake.subproject('SPIRV-Cross', options: cmake_args).dependency('spirv-cross-core'),
-    dependency('libdw', required: false),
 ]
 
 spel_lib = library(

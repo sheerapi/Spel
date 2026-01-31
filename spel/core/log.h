@@ -92,7 +92,7 @@ const sp_api char* spel_log_sev_to_string(spel_severity severity);
 #define sp_error(code, msg, ...)                                                         \
 	sp_log(SPEL_SEV_ERROR, code, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #define sp_trace(msg, ...)                                                               \
-	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, #__VA_ARGS__)
+	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 
 #ifdef DEBUG
 #	define sp_debug(msg, ...)                                                           \

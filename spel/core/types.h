@@ -1,6 +1,6 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
-#include "core/build_info.h"
+#include "utils/build_info.h"
 #include "core/env_info.h"
 #include "core/macros.h"
 #include "core/memory.h"
@@ -21,7 +21,7 @@ typedef struct
 	int min_width;
 	int min_height;
 
-	int display;
+	unsigned int display;
 	int x;
 	int y;
 

@@ -1,4 +1,4 @@
-#include "core/build_info.h"
+#include "utils/build_info.h"
 #include "build_info.generated.h"
 #include "build_info_vcs.generated.h"
 #include "core/types.h"

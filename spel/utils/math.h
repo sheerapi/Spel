@@ -10,6 +10,19 @@ typedef struct
 	uint8_t a;
 } spel_color;
 
+typedef struct
+{
+	float x;
+	float y;
+} spel_vec2;
+
+typedef struct
+{
+	float x;
+	float y;
+	float z;
+} spel_vec3;
+
 sp_color_declare(black);
 sp_color_declare(white);
 

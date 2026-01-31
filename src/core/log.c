@@ -15,7 +15,7 @@ void spel_log_callback_set(spel_log_fn fn, void* user)
 
 void spel_log_emit(spel_log_event evt)
 {
-	bool should_callback = (evt->severity > spel.log.severity && spel.log.function) != 0;
+	bool should_callback = (evt->severity >= spel.log.severity && spel.log.function) != 0;
 	if (should_callback)
 	{
 		spel.log.function(evt, spel.log.user);
@@ -36,7 +36,7 @@ void spel_log_filter(spel_severity severity)
 
 spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 {
-	if (evt->severity <= spel.log.severity)
+	if (evt->severity < spel.log.severity)
 	{
 		return evt;
 	}

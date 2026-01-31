@@ -12,6 +12,34 @@ project(
     meson_version: '1.10.0',
 )
 
+sources = [
+    'src/core/entry.c',
+    'src/core/memory.c',
+    'src/core/log.c',
+    'src/core/window.c',
+    'src/core/event.c',
+    'src/utils/math.c',
+    'src/utils/time.c',
+    'src/gfx/gfx.c',
+    'src/utils/path.c',
+    'src/gfx/gfx_pipeline.c',
+    'src/utils/internal/xxh_x86dispatch.c',
+    'src/utils/internal/xxhash.c',
+    'src/utils/internal/execinfo.c',
+    'src/utils/internal/stacktraverse.c',
+    'src/utils/terminal.c',
+    'src/core/panic.c',
+    'src/utils/build_info.c',
+    'src/core/env_info.c',
+
+    'src/gfx/backends/gl/gfx_context_gl.c',
+    'src/gfx/backends/gl/gfx_cmdlist_gl.c',
+    'src/gfx/backends/gl/gfx_buffer_gl.c',
+    'src/gfx/backends/gl/gfx_shader_gl.c',
+    'src/gfx/backends/gl/gfx_pipeline_gl.c',
+    'src/gfx/backends/gl/gfx_texture_gl.c',
+]
+
 compile_args = []
 link_args = []
 
@@ -24,7 +52,7 @@ if get_option('debug')
         '-fasynchronous-unwind-tables',
         '-fno-optimize-sibling-calls',
         '-fno-lto',
-        '-Wno-frame-address'
+        '-Wno-frame-address',
     ]
     link_args += ['-Wl,--export-dynamic']
 else
@@ -96,6 +124,8 @@ conf_file = configure_file(
     configuration: conf,
 )
 
+sources += [vcs, conf_file]
+
 m_dep = cc.find_library('m', required: false)
 
 cmake = import('cmake')
@@ -103,37 +133,6 @@ cmake_args = cmake.subproject_options()
 
 cmake_args.append_compile_args('cpp', ['-fPIC'])
 cmake_args.add_cmake_defines({'SPIRV_CROSS_ENABLE_TESTS': false, 'SPIRV_CROSS_CLI': false})
-
-sources = [
-    'src/core/entry.c',
-    'src/core/memory.c',
-    'src/core/log.c',
-    'src/core/window.c',
-    'src/core/event.c',
-    'src/utils/math.c',
-    'src/utils/time.c',
-    'src/gfx/gfx.c',
-    'src/utils/path.c',
-    'src/gfx/gfx_pipeline.c',
-    'src/utils/internal/xxh_x86dispatch.c',
-    'src/utils/internal/xxhash.c',
-    'src/utils/internal/execinfo.c',
-    'src/utils/internal/stacktraverse.c',
-    'src/utils/terminal.c',
-    'src/core/panic.c',
-    'src/core/build_info.c',
-    'src/core/env_info.c',
-
-    'src/gfx/backends/gl/gfx_context_gl.c',
-    'src/gfx/backends/gl/gfx_cmdlist_gl.c',
-    'src/gfx/backends/gl/gfx_buffer_gl.c',
-    'src/gfx/backends/gl/gfx_shader_gl.c',
-    'src/gfx/backends/gl/gfx_pipeline_gl.c',
-    'src/gfx/backends/gl/gfx_texture_gl.c',
-
-    vcs,
-    conf_file,
-]
 
 dependencies = [
     dependency('sdl3'),
@@ -163,4 +162,9 @@ sh2spv = executable(
 )
 
 sandbox_src = ['sandbox/main.c']
-executable('sandbox', sources: sandbox_src, dependencies: spel_dep, link_args: link_args)
+executable(
+    'sandbox',
+    sources: sandbox_src,
+    dependencies: spel_dep,
+    link_args: link_args,
+)

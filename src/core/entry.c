@@ -24,6 +24,9 @@ int main(int argc, const char** argv)
 	spel.log.function = nullptr;
 	spel.log.severity = SPEL_SEV_TRACE;
 
+	spel.window.x = 0;
+	spel.window.y = 0;
+
 	spel.process.name = argv[0];
 	spel_runtime_info_setup();
 	spel_build_info_init();

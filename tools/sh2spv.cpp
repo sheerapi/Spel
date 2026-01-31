@@ -1,4 +1,4 @@
-#include "shaderc/shaderc.hpp"
+#include "glslang/SPIRV/disassemble.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -6,10 +6,11 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include "glslang/Public/ShaderLang.h"
+#include "glslang/SPIRV/GlslangToSpv.h"
 #include <iostream>
 #include <libgen.h>
 #include <optional>
-#include <shaderc/env.h>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -62,7 +63,7 @@ auto trim(const std::string& text) -> std::string
 
 struct stage_config
 {
-	shaderc_shader_kind kind;
+	EShLanguage lang;
 	std::string suffix;
 };
 
@@ -71,17 +72,17 @@ auto stage_from_char(char stage) -> std::optional<stage_config>
 	switch (stage)
 	{
 	case 'v':
-		return stage_config{shaderc_vertex_shader, "vert"};
+		return stage_config{EShLangVertex, "vert"};
 	case 'f':
-		return stage_config{shaderc_fragment_shader, "frag"};
+		return stage_config{EShLangFragment, "frag"};
 	case 'g':
-		return stage_config{shaderc_geometry_shader, "geo"};
+		return stage_config{EShLangGeometry, "geo"};
 	case 'c':
-		return stage_config{shaderc_compute_shader, "comp"};
+		return stage_config{EShLangCompute, "comp"};
 	case 't':
-		return stage_config{shaderc_tess_control_shader, "tesc"};
+		return stage_config{EShLangTessControl, "tesc"};
 	case 'e':
-		return stage_config{shaderc_tess_evaluation_shader, "tese"};
+		return stage_config{EShLangTessEvaluation, "tese"};
 	default:
 		return std::nullopt;
 	}
@@ -93,21 +94,21 @@ auto stage_from_name(std::string stage_name) -> std::optional<stage_config>
 				   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 	static const std::unordered_map<std::string, stage_config> stage_map = {
-		{"vertex", {shaderc_vertex_shader, "vert"}},
-		{"vert", {shaderc_vertex_shader, "vert"}},
-		{"fragment", {shaderc_fragment_shader, "frag"}},
-		{"frag", {shaderc_fragment_shader, "frag"}},
-		{"pixel", {shaderc_fragment_shader, "frag"}},
-		{"geometry", {shaderc_geometry_shader, "geo"}},
-		{"geo", {shaderc_geometry_shader, "geo"}},
-		{"compute", {shaderc_compute_shader, "comp"}},
-		{"comp", {shaderc_compute_shader, "comp"}},
-		{"tesscontrol", {shaderc_tess_control_shader, "tesc"}},
-		{"tess_control", {shaderc_tess_control_shader, "tesc"}},
-		{"tesc", {shaderc_tess_control_shader, "tesc"}},
-		{"tessevaluation", {shaderc_tess_evaluation_shader, "tese"}},
-		{"tess_evaluation", {shaderc_tess_evaluation_shader, "tese"}},
-		{"tese", {shaderc_tess_evaluation_shader, "tese"}},
+		{"vertex", {EShLangVertex, "vert"}},
+		{"vert", {EShLangVertex, "vert"}},
+		{"fragment", {EShLangFragment, "frag"}},
+		{"frag", {EShLangFragment, "frag"}},
+		{"pixel", {EShLangFragment, "frag"}},
+		{"geometry", {EShLangGeometry, "geo"}},
+		{"geo", {EShLangGeometry, "geo"}},
+		{"compute", {EShLangCompute, "comp"}},
+		{"comp", {EShLangCompute, "comp"}},
+		{"tesscontrol", {EShLangTessControl, "tesc"}},
+		{"tess_control", {EShLangTessControl, "tesc"}},
+		{"tesc", {EShLangTessControl, "tesc"}},
+		{"tessevaluation", {EShLangTessEvaluation, "tese"}},
+		{"tess_evaluation", {EShLangTessEvaluation, "tese"}},
+		{"tese", {EShLangTessEvaluation, "tese"}},
 	};
 
 	auto stage = stage_map.find(stage_name);
@@ -184,7 +185,8 @@ auto find_stage_sections(const std::string& source) -> stage_parse_result
 		const auto line = source.substr(line_start, line_end - line_start);
 		const auto parsed_stage = parse_stage_line(line);
 
-		const size_t next_line_start = (line_end == source.size()) ? source.size() : line_end + 1;
+		const size_t next_line_start =
+			(line_end == source.size()) ? source.size() : line_end + 1;
 
 		if (parsed_stage.has_value())
 		{
@@ -220,29 +222,10 @@ auto find_stage_sections(const std::string& source) -> stage_parse_result
 class file_finder
 {
 public:
-	// Searches for a read-openable file based on filename, which must be
-	// non-empty.  The search is attempted on filename prefixed by each element of
-	// search_path() in turn.  The first hit is returned, or an empty string if
-	// there are no hits.  Search attempts treat their argument the way
-	// std::fopen() treats its filename argument, ignoring whether the path is
-	// absolute or relative.
-	//
-	// If a search_path() element is non-empty and not ending in a slash, then a
-	// slash is inserted between it and filename before its search attempt. An
-	// empty string in search_path() means that the filename is tried as-is.
 	auto findReadableFilepath(const std::string& filename) const -> std::string;
-
-	// Searches for a read-openable file based on filename, which must be
-	// non-empty. The search is first attempted as a path relative to
-	// the requesting_file parameter. If no file is found relative to the
-	// requesting_file then this acts as FindReadableFilepath does. If
-	// requesting_file does not contain a '/' or a '\' character then it is
-	// assumed to be a filename and the request will be relative to the
-	// current directory.
 	std::string FindRelativeReadableFilepath(const std::string& requesting_file,
 											 const std::string& filename) const;
 
-	// Search path for Find().  Users may add/remove elements as desired.
 	auto searchPath() -> std::vector<std::string>&
 	{
 		return _searchPath;
@@ -252,44 +235,185 @@ private:
 	std::vector<std::string> _searchPath;
 };
 
-class file_includer : public shaderc::CompileOptions::IncluderInterface
+class CustomIncluder : public glslang::TShader::Includer
 {
 public:
-	explicit file_includer(const file_finder* file_finder) : file_finder_(*file_finder)
+	explicit CustomIncluder(const file_finder* file_finder) : file_finder_(*file_finder)
 	{
 	}
 
-	~file_includer() override;
+	~CustomIncluder() override = default;
 
-	// Resolves a requested source file of a given type from a requesting
-	// source into a shaderc_include_result whose contents will remain valid
-	// until it's released.
-	shaderc_include_result* GetInclude(const char* requested_source,
-									   shaderc_include_type type,
-									   const char* requesting_source,
-									   size_t include_depth) override;
-	// Releases an include result.
-	void ReleaseInclude(shaderc_include_result* include_result) override;
+	IncludeResult* includeSystem(const char* headerName, const char* includerName,
+								 size_t inclusionDepth) override
+	{
+		return readFile(headerName, includerName, false);
+	}
 
-	// Returns a reference to the member storing the set of included files.
+	IncludeResult* includeLocal(const char* headerName, const char* includerName,
+								size_t inclusionDepth) override
+	{
+		return readFile(headerName, includerName, true);
+	}
+
+	void releaseInclude(IncludeResult* result) override
+	{
+		if (result != nullptr)
+		{
+			delete[] static_cast<const char*>(result->headerData);
+			delete result;
+		}
+	}
+
 	const std::unordered_set<std::string>& file_path_trace() const
 	{
 		return included_files_;
 	}
 
 private:
-	// Used by GetInclude() to get the full filepath.
 	const file_finder& file_finder_;
-	// The full path and content of a source file.
-	struct FileInfo
-	{
-		const std::string full_path;
-		std::vector<char> contents;
-	};
-
-	// The set of full paths of included files.
 	std::unordered_set<std::string> included_files_;
+
+	IncludeResult* readFile(const char* headerName, const char* includerName, bool local)
+	{
+		std::string full_path =
+			local ? file_finder_.FindRelativeReadableFilepath(includerName, headerName)
+				  : file_finder_.findReadableFilepath(headerName);
+
+		if (full_path.empty())
+		{
+			return new IncludeResult("", nullptr, 0, nullptr);
+		}
+
+		std::ifstream file(full_path, std::ios::binary | std::ios::ate);
+		if (!file.is_open())
+		{
+			return new IncludeResult("", nullptr, 0, nullptr);
+		}
+
+		std::streamsize size = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		char* buffer = new char[size];
+		if (!file.read(buffer, size))
+		{
+			delete[] buffer;
+			return new IncludeResult("", nullptr, 0, nullptr);
+		}
+
+		included_files_.insert(full_path);
+
+		return new IncludeResult(full_path, buffer, size, nullptr);
+	}
 };
+
+TBuiltInResource GetDefaultResources()
+{
+	TBuiltInResource resources = {};
+	resources.maxLights = 32;
+	resources.maxClipPlanes = 6;
+	resources.maxTextureUnits = 32;
+	resources.maxTextureCoords = 32;
+	resources.maxVertexAttribs = 64;
+	resources.maxVertexUniformComponents = 4096;
+	resources.maxVaryingFloats = 64;
+	resources.maxVertexTextureImageUnits = 32;
+	resources.maxCombinedTextureImageUnits = 80;
+	resources.maxTextureImageUnits = 32;
+	resources.maxFragmentUniformComponents = 4096;
+	resources.maxDrawBuffers = 32;
+	resources.maxVertexUniformVectors = 128;
+	resources.maxVaryingVectors = 8;
+	resources.maxFragmentUniformVectors = 16;
+	resources.maxVertexOutputVectors = 16;
+	resources.maxFragmentInputVectors = 15;
+	resources.minProgramTexelOffset = -8;
+	resources.maxProgramTexelOffset = 7;
+	resources.maxClipDistances = 8;
+	resources.maxComputeWorkGroupCountX = 65535;
+	resources.maxComputeWorkGroupCountY = 65535;
+	resources.maxComputeWorkGroupCountZ = 65535;
+	resources.maxComputeWorkGroupSizeX = 1024;
+	resources.maxComputeWorkGroupSizeY = 1024;
+	resources.maxComputeWorkGroupSizeZ = 64;
+	resources.maxComputeUniformComponents = 1024;
+	resources.maxComputeTextureImageUnits = 16;
+	resources.maxComputeImageUniforms = 8;
+	resources.maxComputeAtomicCounters = 8;
+	resources.maxComputeAtomicCounterBuffers = 1;
+	resources.maxVaryingComponents = 60;
+	resources.maxVertexOutputComponents = 64;
+	resources.maxGeometryInputComponents = 64;
+	resources.maxGeometryOutputComponents = 128;
+	resources.maxFragmentInputComponents = 128;
+	resources.maxImageUnits = 8;
+	resources.maxCombinedImageUnitsAndFragmentOutputs = 8;
+	resources.maxCombinedShaderOutputResources = 8;
+	resources.maxImageSamples = 0;
+	resources.maxVertexImageUniforms = 0;
+	resources.maxTessControlImageUniforms = 0;
+	resources.maxTessEvaluationImageUniforms = 0;
+	resources.maxGeometryImageUniforms = 0;
+	resources.maxFragmentImageUniforms = 8;
+	resources.maxCombinedImageUniforms = 8;
+	resources.maxGeometryTextureImageUnits = 16;
+	resources.maxGeometryOutputVertices = 256;
+	resources.maxGeometryTotalOutputComponents = 1024;
+	resources.maxGeometryUniformComponents = 1024;
+	resources.maxGeometryVaryingComponents = 64;
+	resources.maxTessControlInputComponents = 128;
+	resources.maxTessControlOutputComponents = 128;
+	resources.maxTessControlTextureImageUnits = 16;
+	resources.maxTessControlUniformComponents = 1024;
+	resources.maxTessControlTotalOutputComponents = 4096;
+	resources.maxTessEvaluationInputComponents = 128;
+	resources.maxTessEvaluationOutputComponents = 128;
+	resources.maxTessEvaluationTextureImageUnits = 16;
+	resources.maxTessEvaluationUniformComponents = 1024;
+	resources.maxTessPatchComponents = 120;
+	resources.maxPatchVertices = 32;
+	resources.maxTessGenLevel = 64;
+	resources.maxViewports = 16;
+	resources.maxVertexAtomicCounters = 0;
+	resources.maxTessControlAtomicCounters = 0;
+	resources.maxTessEvaluationAtomicCounters = 0;
+	resources.maxGeometryAtomicCounters = 0;
+	resources.maxFragmentAtomicCounters = 8;
+	resources.maxCombinedAtomicCounters = 8;
+	resources.maxAtomicCounterBindings = 1;
+	resources.maxVertexAtomicCounterBuffers = 0;
+	resources.maxTessControlAtomicCounterBuffers = 0;
+	resources.maxTessEvaluationAtomicCounterBuffers = 0;
+	resources.maxGeometryAtomicCounterBuffers = 0;
+	resources.maxFragmentAtomicCounterBuffers = 1;
+	resources.maxCombinedAtomicCounterBuffers = 1;
+	resources.maxAtomicCounterBufferSize = 16384;
+	resources.maxTransformFeedbackBuffers = 4;
+	resources.maxTransformFeedbackInterleavedComponents = 64;
+	resources.maxCullDistances = 8;
+	resources.maxCombinedClipAndCullDistances = 8;
+	resources.maxSamples = 4;
+	resources.maxMeshOutputVerticesNV = 256;
+	resources.maxMeshOutputPrimitivesNV = 512;
+	resources.maxMeshWorkGroupSizeX_NV = 32;
+	resources.maxMeshWorkGroupSizeY_NV = 1;
+	resources.maxMeshWorkGroupSizeZ_NV = 1;
+	resources.maxTaskWorkGroupSizeX_NV = 32;
+	resources.maxTaskWorkGroupSizeY_NV = 1;
+	resources.maxTaskWorkGroupSizeZ_NV = 1;
+	resources.maxMeshViewCountNV = 4;
+	resources.limits.nonInductiveForLoops = true;
+	resources.limits.whileLoops = true;
+	resources.limits.doWhileLoops = true;
+	resources.limits.generalUniformIndexing = true;
+	resources.limits.generalAttributeMatrixVectorIndexing = true;
+	resources.limits.generalVaryingIndexing = true;
+	resources.limits.generalSamplerIndexing = true;
+	resources.limits.generalVariableIndexing = true;
+	resources.limits.generalConstantMatrixVectorIndexing = true;
+
+	return resources;
+}
 
 auto main(int argc, const char** argv) -> int
 {
@@ -419,56 +543,30 @@ auto main(int argc, const char** argv) -> int
 		entry = (char*)argv[args_has(argc, argv, "-e") + 1];
 	}
 
-	shaderc::Compiler compiler;
-	shaderc::CompileOptions options;
+	// Initialize glslang
+	glslang::InitializeProcess();
 
-	options.SetSourceLanguage(language == 'g' ? shaderc_source_language_glsl
-											  : shaderc_source_language_hlsl);
-
-	options.SetAutoMapLocations(true);
-
-	if (warningsAsErrors)
-	{
-		options.SetWarningsAsErrors();
-	}
-
-	switch (optimization)
-	{
-	case '0':
-		options.SetOptimizationLevel(shaderc_optimization_level_zero);
-		break;
-	case 'p':
-		options.SetOptimizationLevel(shaderc_optimization_level_performance);
-		break;
-	case 's':
-	case 'z':
-		options.SetOptimizationLevel(shaderc_optimization_level_size);
-		break;
-	default:
-		break;
-	}
-
-	shaderc_shader_kind kind;
+	EShLanguage lang;
 	switch (stage)
 	{
 	case 'v':
 	default:
-		kind = shaderc_vertex_shader;
+		lang = EShLangVertex;
 		break;
 	case 'f':
-		kind = shaderc_fragment_shader;
+		lang = EShLangFragment;
 		break;
 	case 'g':
-		kind = shaderc_geometry_shader;
+		lang = EShLangGeometry;
 		break;
 	case 'c':
-		kind = shaderc_compute_shader;
+		lang = EShLangCompute;
 		break;
 	case 't':
-		kind = shaderc_tess_control_shader;
+		lang = EShLangTessControl;
 		break;
 	case 'e':
-		kind = shaderc_tess_evaluation_shader;
+		lang = EShLangTessEvaluation;
 		break;
 	}
 
@@ -479,27 +577,13 @@ auto main(int argc, const char** argv) -> int
 		finder.searchPath().push_back(folder);
 	}
 
-	for (auto& def : defines)
-	{
-		auto definition = string_split(def, "=");
-
-		if (definition.size() == 2)
-		{
-			options.AddMacroDefinition(definition[0], definition[1]);
-		}
-		else
-		{
-			options.AddMacroDefinition(definition[0]);
-		}
-	}
-	options.SetIncluder(std::make_unique<file_includer>(&finder));
-
 	const auto stage_sections = find_stage_sections(source);
 	const bool has_multi_stage = stage_sections.sections.size() > 1;
 	const bool has_explicit_stage = stage_sections.sections.size() > 0;
 
-	const auto build_output_path =
-		[&](const std::string& stage_suffix, bool multi_stage_output) -> std::filesystem::path {
+	const auto build_output_path = [&](const std::string& stage_suffix,
+									   bool multi_stage_output) -> std::filesystem::path
+	{
 		if (!multi_stage_output && args_has(argc, argv, "-o") != -1)
 		{
 			return std::filesystem::path(output);
@@ -530,16 +614,106 @@ auto main(int argc, const char** argv) -> int
 		return input_path.replace_extension("spv");
 	};
 
-	auto compile_and_write = [&](const std::string& shader_source, const stage_config& stage_info,
-								 const std::filesystem::path& output_path) -> bool {
-		auto result = compiler.CompileGlslToSpv(shader_source.c_str(), shader_source.size(),
-												stage_info.kind, filename, entry, options);
+	auto compile_and_write = [&](const std::string& shader_source,
+								 const stage_config& stage_info,
+								 const std::filesystem::path& output_path) -> bool
+	{
+		glslang::TShader shader(stage_info.lang);
 
-		if (result.GetCompilationStatus() != shaderc_compilation_status_success)
+		const char* source_ptr = shader_source.c_str();
+		shader.setStrings(&source_ptr, 1);
+		shader.setEntryPoint(entry);
+		shader.setSourceEntryPoint(entry);
+
+		// Set up preprocessor defines
+		std::string preamble;
+		for (const auto& def : defines)
 		{
-			std::cerr << result.GetErrorMessage() << "\n";
+			auto definition = string_split(def, "=");
+			if (definition.size() == 2)
+			{
+				preamble += "#define " + definition[0] + " " + definition[1] + "\n";
+			}
+			else
+			{
+				preamble += "#define " + definition[0] + "\n";
+			}
+		}
+
+		if (!preamble.empty())
+		{
+			shader.setPreamble(preamble.c_str());
+		}
+
+		// Set language/environment
+		if (language == 'h')
+		{
+			shader.setEnvInput(glslang::EShSourceHlsl, stage_info.lang,
+							   glslang::EShClientVulkan, 100);
+		}
+		else
+		{
+			shader.setEnvInput(glslang::EShSourceGlsl, stage_info.lang,
+							   glslang::EShClientVulkan, 100);
+		}
+		shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
+		shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+
+		// Set auto-mapping for locations
+		shader.setAutoMapLocations(true);
+		shader.setAutoMapBindings(true);
+
+		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+		if (warningsAsErrors)
+		{
+			messages = (EShMessages)(messages | EShMsgKeepUncalled);
+		}
+
+		TBuiltInResource resources = GetDefaultResources();
+		CustomIncluder includer(&finder);
+
+		if (!shader.parse(&resources, 100, false, messages, includer))
+		{
+			std::cerr << shader.getInfoLog() << "\n";
+			std::cerr << shader.getInfoDebugLog() << "\n";
 			return false;
 		}
+
+		glslang::TProgram program;
+		program.addShader(&shader);
+
+		if (!program.link(messages))
+		{
+			std::cerr << program.getInfoLog() << "\n";
+			std::cerr << program.getInfoDebugLog() << "\n";
+			return false;
+		}
+
+		std::vector<unsigned int> spirv;
+		spv::SpvBuildLogger logger;
+		glslang::SpvOptions spvOptions;
+
+		// Set optimization level
+		switch (optimization)
+		{
+		case '0':
+			spvOptions.optimizeSize = false;
+			spvOptions.disableOptimizer = true;
+			break;
+		case 's':
+		case 'z':
+			spvOptions.optimizeSize = true;
+			spvOptions.disableOptimizer = false;
+			break;
+		case 'p':
+		default:
+			spvOptions.optimizeSize = false;
+			spvOptions.disableOptimizer = false;
+			break;
+		}
+
+		glslang::GlslangToSpv(*program.getIntermediate(stage_info.lang), spirv, &logger,
+							  &spvOptions);
 
 		std::ofstream f(output_path, std::ios::binary | std::ios::out);
 		if (!f.is_open())
@@ -548,12 +722,12 @@ auto main(int argc, const char** argv) -> int
 			return false;
 		}
 
-		const auto byte_count =
-			static_cast<std::streamsize>((result.cend() - result.cbegin()) * sizeof(uint32_t));
-
-		f.write(reinterpret_cast<const char*>(&(*result.cbegin())), byte_count);
+		f.write(reinterpret_cast<const char*>(spirv.data()),
+				spirv.size() * sizeof(unsigned int));
 		return true;
 	};
+
+	int result = 0;
 
 	if (has_explicit_stage)
 	{
@@ -563,100 +737,39 @@ auto main(int argc, const char** argv) -> int
 
 			if (!stage_info.has_value())
 			{
-				std::cerr << "Unknown shader stage in pragma: " << section.stage_name << "\n";
-				return -1;
+				std::cerr << "Unknown shader stage in pragma: " << section.stage_name
+						  << "\n";
+				result = -1;
+				break;
 			}
 
 			std::string stage_source = source.substr(0, stage_sections.prefix_length);
-			stage_source.append(source.substr(section.start, section.end - section.start));
+			stage_source.append(
+				source.substr(section.start, section.end - section.start));
 
 			auto output_path = build_output_path(stage_info->suffix,
 												 has_multi_stage || has_explicit_stage);
 
 			if (!compile_and_write(stage_source, *stage_info, output_path))
 			{
-				return -1;
+				result = -1;
+				break;
 			}
 		}
 	}
 	else
 	{
-		auto stage_info = stage_from_char(stage).value_or(stage_config{kind, ""});
+		auto stage_info = stage_from_char(stage).value_or(stage_config{lang, ""});
 		auto output_path = build_output_path(stage_info.suffix, false);
 
 		if (!compile_and_write(source, stage_info, output_path))
 		{
-			return -1;
+			result = -1;
 		}
 	}
 
-	return 0;
-}
-
-shaderc_include_result* MakeErrorIncludeResult(const char* message)
-{
-	return new shaderc_include_result{"", 0, message, strlen(message)};
-}
-
-file_includer::~file_includer() = default;
-
-bool ReadFile(const std::string& input_file_name, std::vector<char>* input_data)
-{
-	std::istream* stream = &std::cin;
-	std::ifstream input_file;
-	if (input_file_name != "-")
-	{
-		input_file.open(input_file_name, std::ios_base::binary);
-		stream = &input_file;
-		if (input_file.fail())
-		{
-			std::cerr << "glslc: error: cannot open input file: '" << input_file_name
-					  << "'";
-			std::cerr << '\n';
-			return false;
-		}
-	}
-	*input_data = std::vector<char>((std::istreambuf_iterator<char>(*stream)),
-									std::istreambuf_iterator<char>());
-	return true;
-}
-
-shaderc_include_result* file_includer::GetInclude(const char* requested_source,
-												 shaderc_include_type include_type,
-												 const char* requesting_source, size_t)
-{
-
-	const std::string full_path =
-		(include_type == shaderc_include_type_relative)
-			? file_finder_.FindRelativeReadableFilepath(requesting_source,
-														requested_source)
-			: file_finder_.findReadableFilepath(requested_source);
-
-	if (full_path.empty())
-		return MakeErrorIncludeResult("Cannot find or open include file.");
-
-	// In principle, several threads could be resolving includes at the same
-	// time.  Protect the included_files.
-
-	// Read the file and save its full path and contents into stable addresses.
-	FileInfo* new_file_info = new FileInfo{full_path, {}};
-	if (!ReadFile(full_path, &(new_file_info->contents)))
-	{
-		return MakeErrorIncludeResult("Cannot read file");
-	}
-
-	included_files_.insert(full_path);
-
-	return new shaderc_include_result{
-		new_file_info->full_path.data(), new_file_info->full_path.length(),
-		new_file_info->contents.data(), new_file_info->contents.size(), new_file_info};
-}
-
-void file_includer::ReleaseInclude(shaderc_include_result* include_result)
-{
-	FileInfo* info = static_cast<FileInfo*>(include_result->user_data);
-	delete info;
-	delete include_result;
+	glslang::FinalizeProcess();
+	return result;
 }
 
 std::string MaybeSlash(const std::string_view& path)
@@ -678,7 +791,7 @@ std::string file_finder::findReadableFilepath(const std::string& filename) const
 }
 
 std::string file_finder::FindRelativeReadableFilepath(const std::string& requesting_file,
-													 const std::string& filename) const
+													  const std::string& filename) const
 {
 	std::string dir_name(requesting_file);
 

@@ -7,7 +7,7 @@ project(
         'cpp_std=c++20',
         'default_library=static',
         'b_lto=true',
-        'b_ndebug=true',
+        'b_staticpic=true',
     ],
     meson_version: '1.10.0',
 )
@@ -43,6 +43,21 @@ sources = [
 compile_args = []
 link_args = []
 
+rel_compile_args = [
+    '-Os',
+    '-ffunction-sections',
+    '-fdata-sections',
+    '-fno-unwind-tables',
+    '-fno-asynchronous-unwind-tables',
+    '-fno-rtti',
+]
+rel_link_args = [
+    '-Wl,--gc-sections',
+    '-Wl,--strip-all',
+    '-Wl,--exclude-libs,ALL',
+    '-Wl,--no-as-needed',
+]
+
 compile_args += ['-D_POSIX_C_SOURCE=200809L', '-D_XOPEN_SOURCE=700']
 
 if get_option('debug')
@@ -56,22 +71,8 @@ if get_option('debug')
     ]
     link_args += ['-Wl,--export-dynamic']
 else
-    compile_args += [
-        '-Os',
-        '-ffunction-sections',
-        '-fdata-sections',
-        '-fno-unwind-tables',
-        '-fno-asynchronous-unwind-tables',
-        '-fno-exceptions',
-        '-fno-rtti',
-    ]
-
-    link_args += [
-        '-Wl,--gc-sections',
-        '-Wl,--strip-all',
-        '-Wl,--exclude-libs,ALL',
-        '-Wl,--no-as-needed',
-    ]
+    compile_args += rel_compile_args
+    link_args += rel_link_args
 endif
 
 add_project_arguments(
@@ -131,8 +132,15 @@ m_dep = cc.find_library('m', required: false)
 cmake = import('cmake')
 cmake_args = cmake.subproject_options()
 
-cmake_args.append_compile_args('cpp', ['-fPIC'])
-cmake_args.add_cmake_defines({'SPIRV_CROSS_ENABLE_TESTS': false, 'SPIRV_CROSS_CLI': false})
+cmake_args.append_compile_args('cpp', rel_compile_args)
+cmake_args.append_link_args([rel_link_args])
+cmake_args.add_cmake_defines(
+    {
+        'SPIRV_CROSS_ENABLE_TESTS': false,
+        'SPIRV_CROSS_CLI': false,
+        'ENABLE_GLSLANG_BINARIES': false,
+    },
+)
 
 dependencies = [
     dependency('sdl3'),
@@ -155,10 +163,18 @@ spel_dep = declare_dependency(
 )
 
 # tools
+sh2spv_deps = []
+
+glslang_args = cmake_args
+glslang_args.set_override_option('default_library', 'shared')
+sh2spv_deps += cmake.subproject('glslang', options: cmake_args).dependency('glslang')
+
 sh2spv = executable(
     'spel-sh2spv',
     sources: ['tools/sh2spv.cpp'],
-    dependencies: [dependency('shaderc')],
+    dependencies: sh2spv_deps,
+    cpp_args: rel_compile_args,
+    link_args: rel_link_args,
 )
 
 sandbox_src = ['sandbox/main.c']

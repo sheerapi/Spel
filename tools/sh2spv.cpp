@@ -1,5 +1,5 @@
 #include "glslang/Public/ShaderLang.h"
-#ifndef SPEL_SYSTEM_GLSLANG
+#ifdef SPEL_SYSTEM_GLSLANG
 #	include "glslang/SPIRV/GlslangToSpv.h"
 #	include "glslang/SPIRV/disassemble.h"
 #else

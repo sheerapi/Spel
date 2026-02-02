@@ -48,6 +48,9 @@ cpp = meson.get_compiler('cpp')
 compile_args = []
 link_args = []
 
+rel_compile_args = []
+rel_link_args = []
+
 if cc.get_id() != 'msvc'
     rel_compile_args = [
         '-Os',
@@ -182,7 +185,7 @@ sh2spv_deps = []
 
 if dependency('glslang', required: false).found()
     sh2spv_deps += dependency('glslang')
-    add_project_arguments('-DSPEL_SYSTEM_GLSLANG', language: 'c')
+    rel_compile_args += '-DSPEL_SYSTEM_GLSLANG'
 else
     glslang_args = cmake_args
     glslang_args.set_override_option('default_library', 'shared')

@@ -9,7 +9,7 @@ project(
         'b_lto=true',
         'b_staticpic=true',
     ],
-    meson_version: '1.10.0',
+    meson_version: '>= 1.10.0',
 )
 
 sources = [

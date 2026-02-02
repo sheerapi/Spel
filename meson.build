@@ -53,7 +53,6 @@ rel_link_args = []
 
 if cc.get_id() != 'msvc'
     rel_compile_args = [
-        '-Os',
         '-ffunction-sections',
         '-fdata-sections',
         '-fno-unwind-tables',
@@ -68,7 +67,6 @@ if cc.get_id() != 'msvc'
     ]
 else
     rel_compile_args += [
-        '/O1',
         '/Gy',
         '/Gw',
         '/GR-',

@@ -42,64 +42,97 @@ sources = [
 
 shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl']
 
+cc = meson.get_compiler('c')
+cpp = meson.get_compiler('cpp')
+
 compile_args = []
 link_args = []
 
-rel_compile_args = [
-    '-Os',
-    '-ffunction-sections',
-    '-fdata-sections',
-    '-fno-unwind-tables',
-    '-fno-asynchronous-unwind-tables',
-    '-fno-rtti',
-]
-rel_link_args = [
-    '-Wl,--gc-sections',
-    '-Wl,--strip-all',
-    '-Wl,--exclude-libs,ALL',
-    '-Wl,--no-as-needed',
-]
+if cc.get_id() != 'msvc'
+    rel_compile_args = [
+        '-Os',
+        '-ffunction-sections',
+        '-fdata-sections',
+        '-fno-unwind-tables',
+        '-fno-asynchronous-unwind-tables',
+        '-fno-rtti',
+    ]
+    rel_link_args = [
+        '-Wl,--gc-sections',
+        '-Wl,--strip-all',
+        '-Wl,--exclude-libs,ALL',
+        '-Wl,--no-as-needed',
+    ]
+else
+    rel_compile_args += [
+        '/O1',
+        '/Gy',
+        '/Gw',
+        '/GR-',
+    ]
+
+    rel_link_args += [
+        '/OPT:REF',
+        '/OPT:ICF',
+    ]
+endif
 
 compile_args += ['-D_POSIX_C_SOURCE=200809L', '-D_XOPEN_SOURCE=700']
 
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
-    compile_args += [
-        '-fno-omit-frame-pointer',
-        '-fasynchronous-unwind-tables',
-        '-fno-optimize-sibling-calls',
-        '-fno-lto',
-        '-Wno-frame-address',
-    ]
-    link_args += ['-Wl,--export-dynamic']
+
+    if cc.get_id() != 'msvc'
+        compile_args += [
+            '-fno-omit-frame-pointer',
+            '-fasynchronous-unwind-tables',
+            '-fno-optimize-sibling-calls',
+            '-fno-lto',
+            '-Wno-frame-address',
+        ]
+        link_args += ['-Wl,--export-dynamic']
+    else
+        compile_args += [
+            '/Od',
+            '/Oy-',
+            '/Zi',
+        ]
+        link_args += [
+            '/DEBUG',
+        ]
+    endif
 else
     compile_args += rel_compile_args
     link_args += rel_link_args
 endif
 
-add_project_arguments(
-    [
-        '-fvisibility=hidden',
-        '-fvisibility-inlines-hidden',
-    ],
-    language: 'cpp',
-)
+if cpp.get_id() != 'msvc'
+    add_project_arguments(
+        [
+            '-fvisibility=hidden',
+            '-fvisibility-inlines-hidden',
+        ],
+        language: 'cpp',
+    )
+endif
 
 if get_option('sanitizers')
-    compile_args += [
-        '-fsanitize=address,undefined',
-        '-fno-omit-frame-pointer',
-    ]
+    if cc.get_id() != 'msvc'
+        compile_args += [
+            '-fsanitize=address,undefined',
+            '-fno-omit-frame-pointer',
+        ]
 
-    link_args += [
-        '-fsanitize=address,undefined',
-    ]
+        link_args += [
+            '-fsanitize=address,undefined',
+        ]
+    else
+        warning('sanitizers not supported under msvc')
+    endif
 endif
 
 add_project_arguments(compile_args, language: ['c', 'cpp'])
 add_project_link_arguments(link_args, language: ['c', 'cpp'])
-
-cc = meson.get_compiler('c')
 
 conf = configuration_data()
 conf.set('SPEL_COMPILER_ID', cc.get_id())
@@ -149,6 +182,7 @@ sh2spv_deps = []
 
 if dependency('glslang', required: false).found()
     sh2spv_deps += dependency('glslang')
+    add_project_arguments('-DSPEL_SYSTEM_GLSLANG', language: 'c')
 else
     glslang_args = cmake_args
     glslang_args.set_override_option('default_library', 'shared')

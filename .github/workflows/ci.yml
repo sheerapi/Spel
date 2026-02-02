@@ -40,7 +40,12 @@ jobs:
             libdbus-1-dev \
             libibus-1.0-dev \
             libudev-dev \
-            libthai-dev
+            libthai-dev \
+            libpipewire-0.3-dev \
+            libxkbcommon-dev \
+            libxkbcommon0 \
+            libdecor-0-dev \
+            liburing-dev
 
       - name: Setup Python
         uses: actions/setup-python@v5

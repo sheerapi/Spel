@@ -1,20 +1,26 @@
 #include "glslang/Public/ShaderLang.h"
-#include "glslang/SPIRV/GlslangToSpv.h"
-#include "glslang/SPIRV/disassemble.h"
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <libgen.h>
-#include <optional>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#ifndef SPEL_SYSTEM_GLSLANG
+#	include "glslang/SPIRV/GlslangToSpv.h"
+#	include "glslang/SPIRV/disassemble.h"
+#else
+#	include "SPIRV/GlslangToSpv.h"
+#	include "SPIRV/disassemble.h"
+#endif
+
+#	include <algorithm>
+#	include <cctype>
+#	include <cstdio>
+#	include <cstdlib>
+#	include <cstring>
+#	include <filesystem>
+#	include <fstream>
+#	include <iostream>
+#	include <libgen.h>
+#	include <optional>
+#	include <string>
+#	include <unordered_map>
+#	include <unordered_set>
+#	include <vector>
 auto args_has(int argc, const char** argv, const char* arg) -> int
 {
 	for (int i = 1; i < argc; i++)
@@ -880,10 +886,6 @@ auto main(int argc, const char** argv) -> int
 		{
 			std::cerr << "failed to write manifest\n";
 			result = -1;
-		}
-		else
-		{
-			std::cout << "manifest written to " << manifest_path << "\n";
 		}
 	}
 

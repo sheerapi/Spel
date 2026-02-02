@@ -53,7 +53,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Setup glslang dependencies
-        run: python subprojects/glslang/update_glslang_sources.py
+        run: cd subprojects/glslang && python update_glslang_sources.py
+        shell: bash
 
       - name: Meson setup
         run: |

@@ -57,7 +57,7 @@ void spel_gfx_cmdlist_destroy_gl(spel_gfx_cmdlist cl)
 
 void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 {
-	const size_t MAX_ALIGN = alignof(max_align_t);
+	const size_t MAX_ALIGN = _Alignof(max_align_t);
 
 	uint64_t aligned = (cl->offset + (align - 1)) & ~(align - 1);
 	uint64_t end = aligned + size;

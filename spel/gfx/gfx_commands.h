@@ -99,7 +99,7 @@ typedef struct spel_gfx_viewport_cmd
 	int height;
 } spel_gfx_viewport_cmd;
 
-typedef struct spel_gfx_viewport_cmd
+typedef struct spel_gfx_scissor_cmd
 {
 	spel_gfx_cmd_header hdr;
 	int x;

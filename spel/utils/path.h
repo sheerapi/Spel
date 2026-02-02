@@ -1,5 +1,6 @@
 #ifndef SPEL_PATH
 #define SPEL_PATH
+#include <stdbool.h>
 #include <stddef.h>
 #ifdef _WIN32
 #	define PATH_SEP '\\'

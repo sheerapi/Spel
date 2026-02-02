@@ -188,7 +188,7 @@ void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_clear_cmd* cmd = (spel_gfx_clear_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_clear_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_clear_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_CLEAR;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -200,7 +200,7 @@ void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream, spel_gfx_buf
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_vertex_cmd* cmd = (spel_gfx_bind_vertex_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_bind_vertex_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_vertex_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_VERTEX;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -214,7 +214,7 @@ void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_index_cmd* cmd = (spel_gfx_bind_index_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_bind_index_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_index_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_INDEX;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -228,7 +228,7 @@ void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline)
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_pipeline_cmd* cmd =
 		(spel_gfx_bind_pipeline_cmd*)cl->ctx->vt->cmdlist_alloc(
-			cl, sizeof(*cmd), alignof(spel_gfx_bind_pipeline_cmd));
+			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_pipeline_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_PIPELINE;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -239,7 +239,7 @@ void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount, uint32_t first
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_draw_cmd* cmd = (spel_gfx_draw_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_draw_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_draw_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_DRAW;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -253,7 +253,7 @@ void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
 	uint64_t start_offset = cl->offset;
 	spel_gfx_draw_indexed_cmd* cmd =
 		(spel_gfx_draw_indexed_cmd*)cl->ctx->vt->cmdlist_alloc(
-			cl, sizeof(*cmd), alignof(spel_gfx_draw_indexed_cmd));
+			cl, sizeof(*cmd), _Alignof(spel_gfx_draw_indexed_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_DRAW_INDEXED;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -504,7 +504,7 @@ void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_texture_cmd* cmd =
 		(spel_gfx_bind_texture_cmd*)cl->ctx->vt->cmdlist_alloc(
-			cl, sizeof(*cmd), alignof(spel_gfx_bind_texture_cmd));
+			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_texture_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_TEXTURE;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -518,7 +518,7 @@ void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_sampler_cmd* cmd =
 		(spel_gfx_bind_sampler_cmd*)cl->ctx->vt->cmdlist_alloc(
-			cl, sizeof(*cmd), alignof(spel_gfx_bind_sampler_cmd));
+			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_sampler_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_SAMPLER;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -531,7 +531,7 @@ void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot, spel_gfx_textur
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_image_cmd* cmd = (spel_gfx_bind_image_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_bind_image_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_image_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_IMAGE;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -773,7 +773,7 @@ void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width, int hei
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_viewport_cmd* cmd = (spel_gfx_viewport_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_viewport_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_viewport_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_VIEWPORT;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
@@ -787,7 +787,7 @@ void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, int heig
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_scissor_cmd* cmd = (spel_gfx_scissor_cmd*)cl->ctx->vt->cmdlist_alloc(
-		cl, sizeof(*cmd), alignof(spel_gfx_scissor_cmd));
+		cl, sizeof(*cmd), _Alignof(spel_gfx_scissor_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_SCISSOR;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);

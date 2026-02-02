@@ -52,6 +52,9 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Setup glslang dependencies
+        run: python subprojects/glslang/update_glslang_sources.py
+
       - name: Meson setup
         run: |
           meson setup build --buildtype=release

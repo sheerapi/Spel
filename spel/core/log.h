@@ -69,48 +69,44 @@ sp_api void spel_log_stderr(spel_log_event evt, void* user);
 const sp_api char* spel_log_sev_to_string(spel_severity severity);
 
 #define sp_log(sev, error, dataVal, dataType, dataSize, msg, ...)                        \
-	spel_log_emit(                                                                       \
-		spel_log_fmt(&(spel_log_event_t){.severity = (sev),                         \
-											  .code = (error),                           \
-											  .message = nullptr,                        \
-											  .length = 0,                               \
-											  .file = __FILE__,                          \
-											  .line = __LINE__,                          \
-											  .data = (dataVal),                         \
-											  .data_type = (dataType),                   \
-											  .data_size = (dataSize),                   \
-											  .timestamp = spel_time_now_ns(),           \
-											  .wall_sec = spel_time_now_sec()},          \
-						  msg, ##__VA_ARGS__))
-
-
+	spel_log_emit(spel_log_fmt(&(spel_log_event_t){.severity = (sev),                    \
+												   .code = (error),                      \
+												   .message = NULL,                      \
+												   .length = 0,                          \
+												   .file = __FILE__,                     \
+												   .line = __LINE__,                     \
+												   .data = (dataVal),                    \
+												   .data_type = (dataType),              \
+												   .data_size = (dataSize),              \
+												   .timestamp = spel_time_now_ns(),      \
+												   .wall_sec = spel_time_now_sec()},     \
+							   msg, ##__VA_ARGS__))
 
 #define sp_info(msg, ...)                                                                \
-	sp_log(SPEL_SEV_INFO, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+	sp_log(SPEL_SEV_INFO, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #define sp_warn(msg, ...)                                                                \
-	sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+	sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #define sp_error(code, msg, ...)                                                         \
-	sp_log(SPEL_SEV_ERROR, code, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+	sp_log(SPEL_SEV_ERROR, code, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #define sp_trace(msg, ...)                                                               \
-	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 
 #ifdef DEBUG
 #	define sp_debug(msg, ...)                                                           \
-		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, nullptr, SPEL_DATA_NONE, 0, msg,           \
-			   ##__VA_ARGS__)
+		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 #	define sp_assert(condition, msg, ...)                                               \
 		spel_log_assert(                                                                 \
 			condition,                                                                   \
-			spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),          \
-												  .code = (SPEL_ERR_ASSERTION_FAILED),   \
-												  .message = "assertion failed: " #condition,                    \
-												  .length = 0,                           \
-												  .file = __FILE__,                      \
-												  .line = __LINE__,                      \
-												  .data = nullptr,                       \
-												  .data_type = SPEL_DATA_NONE,           \
-												  .data_size = 0},                       \
-							  msg, ##__VA_ARGS__))
+			spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),               \
+											 .code = (SPEL_ERR_ASSERTION_FAILED),        \
+											 .message = "assertion failed: " #condition, \
+											 .length = 0,                                \
+											 .file = __FILE__,                           \
+											 .line = __LINE__,                           \
+											 .data = NULL,                               \
+											 .data_type = SPEL_DATA_NONE,                \
+											 .data_size = 0},                            \
+						 msg, ##__VA_ARGS__))
 #else
 #	define sp_debug(msg, ...)
 #	define sp_assert(condition, msg, ...)

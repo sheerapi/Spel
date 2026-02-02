@@ -513,9 +513,9 @@ void spel_panic_file(spel_log_event evt)
 
 	for (size_t i = 0; i < spel.env.envc; i++)
 	{
-		if (strstr(spel.env.envars[i], "TOKEN") != nullptr ||
-			strstr(spel.env.envars[i], "KEY") != nullptr ||
-			strstr(spel.env.envars[i], "PASSWORD") != nullptr)
+		if (strstr(spel.env.envars[i], "TOKEN") != NULL ||
+			strstr(spel.env.envars[i], "KEY") != NULL ||
+			strstr(spel.env.envars[i], "PASSWORD") != NULL)
 		{
 			continue;
 		}

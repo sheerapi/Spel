@@ -23,7 +23,7 @@ char* get_os_release_value(const char* key)
 		if (file == NULL)
 		{
 			perror("Error opening os-release file");
-			return nullptr;
+			return NULL;
 		}
 	}
 
@@ -58,7 +58,7 @@ char* get_os_release_value(const char* key)
 	}
 
 	fclose(file);
-	return nullptr;
+	return NULL;
 }
 
 void spel_fill_process_info(spel_runtime_process_info* out)

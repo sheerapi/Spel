@@ -24,7 +24,7 @@ void spel_log_emit(spel_log_event evt)
 	if ((int)evt->message_owned && evt->message)
 	{
 		spel_memory_free(evt->message);
-		evt->message = nullptr;
+		evt->message = NULL;
 		evt->message_owned = false;
 	}
 }
@@ -47,7 +47,7 @@ spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 	va_list args_copy;
 	va_copy(args_copy, args);
 
-	int len_fmt = vsnprintf(nullptr, 0, fmt, args);
+	int len_fmt = vsnprintf(NULL, 0, fmt, args);
 	if (len_fmt < 0)
 	{
 		va_end(args);
@@ -117,7 +117,7 @@ void spel_log_assert(bool condition, spel_log_event evt)
 
 void spel_log_stderr_install()
 {
-	spel_log_callback_set(&spel_log_stderr, nullptr);
+	spel_log_callback_set(&spel_log_stderr, NULL);
 }
 
 void spel_log_stderr(spel_log_event evt, void* user)

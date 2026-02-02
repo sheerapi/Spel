@@ -53,7 +53,7 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 
 	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
 	{
-		ctx->shaders[i] = nullptr;
+		ctx->shaders[i] = NULL;
 	}
 
 	switch (ctx->backend)
@@ -67,7 +67,7 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "backend creation failed");
 		sp_free(ctx);
-		return nullptr;
+		return NULL;
 	}
 
 	spel_gfx_context_default_data(ctx);
@@ -152,10 +152,10 @@ spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
 	{
 		sp_log(SPEL_SEV_ERROR, SPEL_ERR_FILE_NOT_FOUND, path, SPEL_DATA_STRING,
 			   strlen(path), "file %s does not exist", path);
-		return nullptr;
+		return NULL;
 	}
 
-	char* buffer = nullptr;
+	char* buffer = NULL;
 	long length = 0;
 	FILE* f = fopen(path, "rb");
 
@@ -542,8 +542,8 @@ void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot, spel_gfx_textur
 
 void spel_gfx_context_default_data(spel_gfx_context ctx)
 {
-	ctx->checkerboard = nullptr;
-	ctx->white_tex = nullptr;
+	ctx->checkerboard = NULL;
+	ctx->white_tex = NULL;
 	ctx->cmdlist = spel_gfx_cmdlist_create(ctx);
 
 	spel_gfx_sampler_desc desc = spel_gfx_sampler_default();
@@ -645,7 +645,7 @@ uint8_t* rgb_to_rgba(const uint8_t* src, int pixelCount)
 	uint8_t* dst = sp_malloc((unsigned long)(pixelCount * 4), SPEL_MEM_TAG_GFX);
 	if (!dst)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	for (int i = 0; i < pixelCount; i++)
@@ -713,7 +713,7 @@ spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 			upload_pixels = rgb_to_rgba(pixels, w * h);
 			upload_size = (size_t)w * h * 4;
 			stbi_image_free(pixels);
-			pixels = nullptr;
+			pixels = NULL;
 
 			tex.format = (int)desc->srgb ? SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB
 										 : SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM;

@@ -19,7 +19,7 @@ static GLenum spel_gl_blend_op(spel_gfx_blend_op op);
 static void spel_gl_use_program_stage(GLuint pipeline, GLenum stageBit,
 									  spel_gfx_shader shader)
 {
-	if (shader == nullptr)
+	if (shader == NULL)
 	{
 		return;
 	}
@@ -113,19 +113,19 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	XXH3_state_t* state = XXH3_createState();
 	XXH3_64bits_reset(state);
 
-	if (desc->vertex_shader != nullptr)
+	if (desc->vertex_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->vertex_shader->hash,
 						   sizeof(desc->vertex_shader->hash));
 	}
 
-	if (desc->fragment_shader != nullptr)
+	if (desc->fragment_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->fragment_shader->hash,
 						   sizeof(desc->geometry_shader->hash));
 	}
 
-	if (desc->geometry_shader != nullptr)
+	if (desc->geometry_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->geometry_shader->hash,
 						   sizeof(desc->geometry_shader->hash));
@@ -146,8 +146,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	pipeline->hash = XXH3_64bits_digest(state);
 	XXH3_freeState(state);
 
-	spel_gfx_pipeline cached =
-		spel_gfx_pipeline_cache_get_or_create(&ctx->pipeline_cache, pipeline->hash, pipeline);
+	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
+		&ctx->pipeline_cache, pipeline->hash, pipeline);
 
 	if (cached != pipeline)
 	{

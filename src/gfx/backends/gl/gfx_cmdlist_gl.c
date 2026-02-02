@@ -142,12 +142,13 @@ void exec_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_bind_vertex_cmd* cmd)
 	if (cmd->buf->type != SPEL_GFX_BUFFER_VERTEX)
 	{
 		sp_warn("buffer type does not correspond to binding cmd (vertex). this is "
-				 "allowed, but discouraged");
+				"allowed, but discouraged");
 	}
 
-	if (((spel_gfx_cmdlist_gl*)cl->data)->pipeline == nullptr)
+	if (((spel_gfx_cmdlist_gl*)cl->data)->pipeline == NULL)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "you need to bind a pipeline before binding a vertex buffer");
+		sp_error(SPEL_ERR_INVALID_STATE,
+				 "you need to bind a pipeline before binding a vertex buffer");
 		return;
 	}
 
@@ -254,7 +255,7 @@ void exec_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_bind_index_cmd* cmd)
 	if (cmd->buf->type != SPEL_GFX_BUFFER_INDEX)
 	{
 		sp_warn("buffer type does not correspond to binding cmd (index). this is "
-				 "allowed, but discouraged");
+				"allowed, but discouraged");
 	}
 
 	((spel_gfx_cmdlist_gl*)cl->data)->index_buffer = cmd->buf;
@@ -325,5 +326,6 @@ void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
 
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
-	glScissor(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width, cmd->height);
+	glScissor(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width,
+			  cmd->height);
 }

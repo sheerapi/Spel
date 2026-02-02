@@ -29,7 +29,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	if (!gl->ctx)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to create an opengl context");
-		ctx->vt = nullptr;
+		ctx->vt = NULL;
 		sp_free(gl);
 		return;
 	}
@@ -96,7 +96,7 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 {
 	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
 	{
-		if (ctx->shaders[i] == nullptr)
+		if (ctx->shaders[i] == NULL)
 		{
 			continue;
 		}

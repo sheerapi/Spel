@@ -83,15 +83,15 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 		sp_error(SPEL_ERR_INVALID_ARGUMENT, "shader binary too large");
 		sp_free(shader->data);
 		sp_free(shader);
-		return nullptr;
+		return NULL;
 	}
 	GLsizei src_size = (GLsizei)desc->source_size;
 
 	glShaderBinary(1, &(*(spel_gfx_shader_gl*)shader->data).shader,
 				   GL_SHADER_BINARY_FORMAT_SPIR_V, desc->source, src_size);
 
-	glSpecializeShader((*(spel_gfx_shader_gl*)shader->data).shader, desc->entry, 0,
-					   nullptr, nullptr);
+	glSpecializeShader((*(spel_gfx_shader_gl*)shader->data).shader, desc->entry, 0, NULL,
+					   NULL);
 
 	(*(spel_gfx_shader_gl*)shader->data).program = glCreateProgram();
 
@@ -107,7 +107,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 	glGetShaderiv((*(spel_gfx_shader_gl*)shader->data).shader, GL_COMPILE_STATUS,
 				  &status);
 
-		if (status != GL_TRUE)
+	if (status != GL_TRUE)
 	{
 		char info_log[512];
 		GLsizei info_log_size = 0;

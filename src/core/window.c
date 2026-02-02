@@ -8,7 +8,7 @@ void spel_window_create()
 	spel.window.handle = SDL_CreateWindow(spel.window.title, spel.window.width,
 										  spel.window.height, SDL_WINDOW_OPENGL);
 
-	if (spel.window.handle == nullptr)
+	if (spel.window.handle == NULL)
 	{
 		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to create a window: %s",
 				 SDL_GetError());
@@ -28,8 +28,9 @@ void spel_window_create()
 
 	SDL_GetWindowPosition(spel.window.handle, &spel.window.x, &spel.window.y);
 
-	sp_trace("created window %s (%dx%d) at %d,%d (display %d)", spel.window.title, spel.window.width,
-			 spel.window.height, spel.window.x, spel.window.y, spel.window.display);
+	sp_trace("created window %s (%dx%d) at %d,%d (display %d)", spel.window.title,
+			 spel.window.width, spel.window.height, spel.window.x, spel.window.y,
+			 spel.window.display);
 
 	spel.window.running = true;
 }

@@ -12,7 +12,7 @@ SDL_Event event;
 
 spel_event_id spel_event_intern(const char* name)
 {
-	spel_string_intern* found = nullptr;
+	spel_string_intern* found = NULL;
 	HASH_FIND_STR(spel.events.interns, name, found);
 
 	if (found)
@@ -68,7 +68,7 @@ void spel_event_ensure_capacity(spel_event_id id)
 
 	for (int i = spel.events.capacity; i < new_cap; i++)
 	{
-		spel.events.events[i] = (spel_event_list){nullptr};
+		spel.events.events[i] = (spel_event_list){NULL};
 	}
 
 	spel.events.capacity = new_cap;

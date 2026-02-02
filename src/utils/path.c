@@ -42,7 +42,7 @@ const char* spel_path_filename(const char* path)
 {
 	if (!path)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	const char* last_sep = strrchr(path, PATH_SEP);
@@ -63,7 +63,7 @@ const char* spel_path_extension(const char* path)
 	const char* filename = spel_path_filename(path);
 	if (!filename)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	const char* dot = strrchr(filename, '.');
@@ -72,14 +72,14 @@ const char* spel_path_extension(const char* path)
 	{
 		return dot;
 	}
-	return nullptr;
+	return NULL;
 }
 
 char* spel_path_stem(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	const char* filename = spel_path_filename(path);
@@ -109,7 +109,7 @@ char* spel_path_dirname(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	const char* last_sep = strrchr(path, PATH_SEP);
@@ -147,7 +147,7 @@ char* spel_path_join(const char* base, const char* rel, char* buf, size_t bufsiz
 {
 	if (!base || !rel || !buf || bufsize == 0)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	size_t base_len = strlen(base);
@@ -179,7 +179,7 @@ char* spel_path_normalize(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	char temp[4096];
@@ -210,7 +210,7 @@ char* spel_path_normalize(const char* path, char* buf, size_t bufsize)
 		{
 			parts[part_count++] = token;
 		}
-		token = strtok(nullptr, "/\\");
+		token = strtok(NULL, "/\\");
 	}
 
 	/* Reconstruct path */
@@ -267,7 +267,7 @@ char* spel_path_absolute(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	if (spel_path_is_absolute(path))
@@ -280,7 +280,7 @@ char* spel_path_absolute(const char* path, char* buf, size_t bufsize)
 	char cwd[4096];
 	if (!getcwd(cwd, sizeof(cwd)))
 	{
-		return nullptr;
+		return NULL;
 	}
 
 	char joined[4096];

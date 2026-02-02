@@ -21,7 +21,7 @@ int main(int argc, const char** argv)
 	spel.process.argc = argc;
 	spel.process.argv = argv;
 	spel.window.swapchain.vsync = 1; // vsync on by default
-	spel.log.function = nullptr;
+	spel.log.function = NULL;
 	spel.log.severity = SPEL_SEV_TRACE;
 
 	spel.window.x = 0;
@@ -46,7 +46,8 @@ int main(int argc, const char** argv)
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
 	{
-		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s", SDL_GetError());
+		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s",
+				 SDL_GetError());
 		return -1;
 	}
 

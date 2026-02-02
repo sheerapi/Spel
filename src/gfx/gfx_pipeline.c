@@ -1,8 +1,8 @@
 #include "gfx/gfx_pipeline.h"
 #include "gfx/gfx_internal.h"
-#include "gfx_internal_shaders.h"
 #include "gfx/gfx_shader.h"
 #include "gfx/gfx_types.h"
+#include "gfx_internal_shaders.h"
 
 spel_gfx_pipeline_desc spel_gfx_pipeline_default()
 {
@@ -12,9 +12,9 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_default()
 	desc.fragment_shader = (spel_gfx_shader)0;
 	desc.geometry_shader = (spel_gfx_shader)0;
 
-	desc.vertex_layout.attribs = nullptr;
+	desc.vertex_layout.attribs = NULL;
 	desc.vertex_layout.attrib_count = 0;
-	desc.vertex_layout.streams = nullptr;
+	desc.vertex_layout.streams = NULL;
 	desc.vertex_layout.stream_count = 0;
 
 	desc.topology = SPEL_GFX_TOPOLOGY_TRIANGLES;
@@ -133,7 +133,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 {
 	spel_gfx_pipeline_desc desc = spel_gfx_pipeline_default();
 
-	if (ctx->shaders[2] == nullptr)
+	if (ctx->shaders[2] == NULL)
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_fullscreen_vertex";
@@ -149,9 +149,9 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 	desc.vertex_shader = ctx->shaders[2];
 	desc.fragment_shader = fragment;
 
-	desc.vertex_layout.attribs = nullptr;
+	desc.vertex_layout.attribs = NULL;
 	desc.vertex_layout.attrib_count = 0;
-	desc.vertex_layout.streams = nullptr;
+	desc.vertex_layout.streams = NULL;
 	desc.vertex_layout.stream_count = 0;
 
 	desc.depth_state.depth_test = false;
@@ -162,7 +162,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 
 spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 {
-	if (ctx->shaders[0] == nullptr)
+	if (ctx->shaders[0] == NULL)
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_2d_vertex";
@@ -175,7 +175,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 		ctx->shaders[0]->internal = true;
 	}
 
-	if (ctx->shaders[1] == nullptr)
+	if (ctx->shaders[1] == NULL)
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_2d_fragment";

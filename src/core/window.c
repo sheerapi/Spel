@@ -3,7 +3,7 @@
 #include "core/panic.h"
 #include "core/types.h"
 
-void spel_window_create()
+sp_hidden void spel_window_create()
 {
 	spel.window.handle = SDL_CreateWindow(spel.window.title, spel.window.width,
 										  spel.window.height, SDL_WINDOW_OPENGL);
@@ -35,48 +35,53 @@ void spel_window_create()
 	spel.window.running = true;
 }
 
-void spel_window_close()
+sp_api void spel_window_close()
 {
 	spel.window.running = false;
 }
 
-void spel_window_cleanup()
+sp_hidden void spel_window_cleanup()
 {
 	SDL_DestroyWindow(spel.window.handle);
 }
 
-bool spel_window_running()
+sp_api bool spel_window_running()
 {
 	return spel.window.running;
 }
 
-void spel_window_flash(spel_window_flash_mode mode)
+sp_api void spel_window_flash(spel_window_flash_mode mode)
 {
 	SDL_FlashWindow(spel.window.handle, (SDL_FlashOperation)mode);
 }
 
-void spel_window_resize(int width, int height)
+sp_api void spel_window_resize(int width, int height)
 {
 	SDL_SetWindowSize(spel.window.handle, width, height);
 }
 
-void spel_window_move(int xpos, int ypos)
+sp_api void spel_window_move(int xpos, int ypos)
 {
 	SDL_SetWindowPosition(spel.window.handle, xpos, ypos);
 }
 
-void spel_window_rename(const char* name)
+sp_api void spel_window_rename(const char* name)
 {
 	SDL_SetWindowTitle(spel.window.handle, name);
 	spel.window.title = name;
 }
 
-void spel_window_min_size_set(int width, int height)
+sp_api void spel_window_min_size_set(int width, int height)
 {
 	SDL_SetWindowMinimumSize(spel.window.handle, width, height);
+	spel.window.min_width = width;
+	spel.window.min_height = height;
 }
 
-void spel_window_fullscreen_set(bool fullscreen)
+sp_api void spel_window_fullscreen_set(bool fullscreen)
 {
-	SDL_SetWindowFullscreen(spel.window.handle, fullscreen);
+	if (SDL_SetWindowFullscreen(spel.window.handle, fullscreen))
+	{
+		spel.window.fullscreen = fullscreen;
+	}
 }

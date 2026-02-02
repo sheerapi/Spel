@@ -10,11 +10,11 @@
 #include "utils/time.h"
 #include <stdlib.h>
 
-spel_context spel = {.window = {.title = "Spël",
-								.width = 800,
-								.height = 600,
-								.swapchain = {.vsync = 1},
-								.resizable = true}};
+sp_api spel_context spel = {.window = {.title = "Spël",
+									   .width = 800,
+									   .height = 600,
+									   .swapchain = {.vsync = 1},
+									   .resizable = true}};
 
 int main(int argc, const char** argv)
 {
@@ -76,6 +76,9 @@ int main(int argc, const char** argv)
 
 #ifndef _WIN32
 sp_weak void spel_run()
+#else
+sp_hidden void spel_run_fallback()
+#endif
 {
 	while (spel_window_running())
 	{
@@ -92,9 +95,16 @@ sp_weak void spel_run()
 		spel_gfx_frame_present(spel.gfx);
 	}
 }
-#endif
 
-bool spel_args_has(const char* arg)
+sp_hidden void spel_fallback()
+{
+}
+
+sp_hidden void spel_update_fallback(double delta)
+{
+}
+
+sp_api bool spel_args_has(const char* arg)
 {
 	for (int i = 1; i < spel.process.argc; i++)
 	{

@@ -4,7 +4,7 @@
 #include "gfx/gfx_types.h"
 #include "gfx_internal_shaders.h"
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_default()
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default()
 {
 	spel_gfx_pipeline_desc desc;
 
@@ -49,7 +49,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_default()
 	return desc;
 }
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
 												 spel_gfx_shader fragment)
 {
 	spel_gfx_pipeline_desc desc = spel_gfx_pipeline_default();
@@ -73,7 +73,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
 	return desc;
 }
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
 													  spel_gfx_shader fragment)
 {
 	spel_gfx_pipeline_desc desc = spel_gfx_pipeline_default();
@@ -103,7 +103,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
 	return desc;
 }
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
 												  spel_gfx_shader fragment)
 {
 	spel_gfx_pipeline_desc desc = spel_gfx_pipeline_default();
@@ -128,7 +128,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
 	return desc;
 }
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 													spel_gfx_shader fragment)
 {
 	spel_gfx_pipeline_desc desc = spel_gfx_pipeline_default();
@@ -160,7 +160,7 @@ spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 	return desc;
 }
 
-spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
+sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 {
 	if (ctx->shaders[0] == NULL)
 	{

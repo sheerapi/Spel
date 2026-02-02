@@ -7,13 +7,13 @@
 #include <time.h>
 #include <unistd.h>
 
-void spel_log_callback_set(spel_log_fn fn, void* user)
+sp_api void spel_log_callback_set(spel_log_fn fn, void* user)
 {
 	spel.log.function = fn;
 	spel.log.user = user;
 }
 
-void spel_log_emit(spel_log_event evt)
+sp_api void spel_log_emit(spel_log_event evt)
 {
 	bool should_callback = (evt->severity >= spel.log.severity && spel.log.function) != 0;
 	if (should_callback)
@@ -29,12 +29,12 @@ void spel_log_emit(spel_log_event evt)
 	}
 }
 
-void spel_log_filter(spel_severity severity)
+sp_api void spel_log_filter(spel_severity severity)
 {
 	spel.log.severity = severity;
 }
 
-spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
+sp_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 {
 	if (evt->severity < spel.log.severity)
 	{
@@ -107,7 +107,7 @@ spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 	return evt;
 }
 
-void spel_log_assert(bool condition, spel_log_event evt)
+sp_api void spel_log_assert(bool condition, spel_log_event evt)
 {
 	if (!condition)
 	{
@@ -115,12 +115,12 @@ void spel_log_assert(bool condition, spel_log_event evt)
 	}
 }
 
-void spel_log_stderr_install()
+sp_api void spel_log_stderr_install()
 {
 	spel_log_callback_set(&spel_log_stderr, NULL);
 }
 
-void spel_log_stderr(spel_log_event evt, void* user)
+sp_hidden void spel_log_stderr(spel_log_event evt, void* user)
 {
 	static const char* level_colors[] = {"\x1b[94m", "\x1b[36m", "\x1b[32m",
 										 "\x1b[33m", "\x1b[31m", "\x1b[35m"};
@@ -148,7 +148,7 @@ void spel_log_stderr(spel_log_event evt, void* user)
 	fflush(stderr);
 }
 
-const char* spel_log_sev_to_string(spel_severity severity)
+const sp_api char* spel_log_sev_to_string(spel_severity severity)
 {
 	switch (severity)
 	{

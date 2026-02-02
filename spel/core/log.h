@@ -58,13 +58,13 @@ typedef struct spel_log_event_t
 
 sp_api void spel_log_filter(spel_severity severity);
 sp_api void spel_log_callback_set(spel_log_fn fn, void* user);
-void spel_log_emit(spel_log_event evt);
-spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
+sp_api void spel_log_emit(spel_log_event evt);
+sp_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
 
 sp_api void spel_log_assert(bool condition, spel_log_event evt);
 
 sp_api void spel_log_stderr_install();
-sp_api void spel_log_stderr(spel_log_event evt, void* user);
+sp_hidden void spel_log_stderr(spel_log_event evt, void* user);
 
 const sp_api char* spel_log_sev_to_string(spel_severity severity);
 

@@ -5,7 +5,7 @@
 #	include <unistd.h>
 #endif
 
-bool spel_terminal_detect_ansi()
+sp_api bool spel_terminal_detect_ansi()
 {
 #if defined(_WIN32)
 	spel.terminal_color = true;

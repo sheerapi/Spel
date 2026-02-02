@@ -12,7 +12,7 @@ typedef struct spel_alloc_header
 	spel_memory_tag tag;
 } spel_alloc_header;
 
-void* spel_memory_malloc(size_t size, spel_memory_tag tag)
+sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
@@ -58,7 +58,7 @@ void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 	return (void*)(h + 1);
 }
 
-void spel_memory_free(void* ptr)
+sp_api void spel_memory_free(void* ptr)
 {
 	if (!ptr)
 	{
@@ -84,7 +84,7 @@ void spel_memory_free(void* ptr)
 	free(h);
 }
 
-void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
+sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 {
 
 	if (!ptr)
@@ -166,8 +166,7 @@ void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	return (void*)(new_h + 1);
 }
 
-#ifdef DEBUG
-const char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
+const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 {
 	const char* units[] = {"B", "KB", "MB", "GB"};
 	double size = (double)bytes;
@@ -191,16 +190,15 @@ const char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 	}
 	return buf;
 }
-#endif
 
-static const char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
+const sp_api static char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
 	[SPEL_MEM_TAG_CORE] = "core",
 	[SPEL_MEM_TAG_GFX] = "gfx",
 	[SPEL_MEM_TAG_MISC] = "misc",
 	[SPEL_MEM_TAG_TEMP] = "temp",
 };
 
-void spel_memory_render_terminal()
+sp_api void spel_memory_render_terminal()
 {
 	char cur[32];
 	char peak[32];

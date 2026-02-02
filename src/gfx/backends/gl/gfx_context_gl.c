@@ -20,7 +20,7 @@ typedef struct spel_gfx_context_gl
 	} version;
 } spel_gfx_context_gl;
 
-void spel_gfx_context_create_gl(spel_gfx_context ctx)
+sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 {
 	spel_gfx_context_gl* gl =
 		(ctx->data = sp_malloc(sizeof(spel_gfx_context_gl), SPEL_MEM_TAG_GFX));
@@ -76,7 +76,7 @@ void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
 }
 
-void spel_gfx_context_conf_gl()
+sp_hidden void spel_gfx_context_conf_gl()
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_DEBUG_FLAG, (int)spel.env.debug);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth != 0
@@ -92,7 +92,7 @@ void spel_gfx_context_conf_gl()
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_SAMPLES > 0 ? MSAA_SAMPLES : 0);
 }
 
-void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
+sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 {
 	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
 	{
@@ -145,7 +145,7 @@ void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	sp_debug("GL context destroyed");
 }
 
-void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
+sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
 	glViewport(0, 0, spel.window.width, spel.window.height);
 	glClearColor(0, 0, 0, 1);
@@ -154,14 +154,14 @@ void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 	glBindTextureUnit(0, *(GLuint*)ctx->white_tex->data);
 }
 
-void spel_gfx_frame_end_gl(spel_gfx_context ctx)
+sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	SDL_GL_SwapWindow(spel.window.handle);
 }
 
-static const char* gl_source_to_string(GLenum source)
+const sp_hidden static char* gl_source_to_string(GLenum source)
 {
 	switch (source)
 	{
@@ -182,7 +182,7 @@ static const char* gl_source_to_string(GLenum source)
 	}
 }
 
-static const char* gl_type_to_string(GLenum type)
+const sp_hidden static char* gl_type_to_string(GLenum type)
 {
 	switch (type)
 	{
@@ -209,7 +209,7 @@ static const char* gl_type_to_string(GLenum type)
 	}
 }
 
-static const char* gl_severity_to_string(GLenum severity)
+const sp_hidden static char* gl_severity_to_string(GLenum severity)
 {
 	switch (severity)
 	{
@@ -226,9 +226,9 @@ static const char* gl_severity_to_string(GLenum severity)
 	}
 }
 
-void spel_gfx_debug_callback(unsigned int source, unsigned int type, unsigned int id,
-							 unsigned int severity, int length, const char* message,
-							 const void* userParam)
+sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
+									   unsigned int id, unsigned int severity, int length,
+									   const char* message, const void* userParam)
 {
 	(void)length;
 	(void)userParam;

@@ -4,7 +4,7 @@
 
 static const double SMOOTH_ALPHA = 0.12;
 
-void spel_time_init(spel_time* t)
+sp_hidden void spel_time_init(spel_time* t)
 {
 	*t = (spel_time){.delta = 0.0,
 					 .delta_unscaled = 0.0,
@@ -20,7 +20,7 @@ void spel_time_init(spel_time* t)
 					 .stamp_now = 0};
 }
 
-void spel_time_frame_begin(spel_time* t)
+sp_hidden void spel_time_frame_begin(spel_time* t)
 {
 	if (t->stamp_now == 0)
 	{
@@ -51,14 +51,14 @@ void spel_time_frame_begin(spel_time* t)
 	t->accumulator += t->delta;
 }
 
-uint64_t spel_time_now_ns()
+sp_api uint64_t spel_time_now_ns()
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ((uint64_t)ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
 }
 
-sp_api time_t spel_time_now_sec()
+sp_api sp_api time_t spel_time_now_sec()
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);

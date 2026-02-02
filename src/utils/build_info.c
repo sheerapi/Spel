@@ -3,7 +3,7 @@
 #include "build_info_vcs.generated.h"
 #include "core/types.h"
 
-void spel_build_info_init()
+sp_api void spel_build_info_init()
 {
 	spel.build_info =
 		(spel_build_info){.build_backend = sp_meson_backend,

@@ -10,7 +10,7 @@
 
 SDL_Event event;
 
-spel_event_id spel_event_intern(const char* name)
+sp_hidden spel_event_id spel_event_intern(const char* name)
 {
 	spel_string_intern* found = NULL;
 	HASH_FIND_STR(spel.events.interns, name, found);
@@ -44,7 +44,7 @@ spel_event_id spel_event_intern(const char* name)
 	return found->id;
 }
 
-void spel_event_ensure_capacity(spel_event_id id)
+sp_hidden void spel_event_ensure_capacity(spel_event_id id)
 {
 	if (id < (spel_event_id)spel.events.capacity)
 	{
@@ -74,7 +74,7 @@ void spel_event_ensure_capacity(spel_event_id id)
 	spel.events.capacity = new_cap;
 }
 
-void spel_event_register(const char* name, spel_event_callback cb)
+sp_api void spel_event_register(const char* name, spel_event_callback cb)
 {
 	spel_event_id id = spel_event_intern(name);
 	if (id == (spel_event_id)-1)
@@ -102,7 +102,7 @@ void spel_event_register(const char* name, spel_event_callback cb)
 	list->count++;
 }
 
-void spel_event_emit(const char* name, void* data)
+sp_api void spel_event_emit(const char* name, void* data)
 {
 	spel_event_id id = spel_event_intern(name);
 	if (id == (spel_event_id)-1)
@@ -123,7 +123,7 @@ void spel_event_emit(const char* name, void* data)
 	}
 }
 
-void spel_event_poll()
+sp_api void spel_event_poll()
 {
 	while ((int)SDL_PollEvent(&event) == 1)
 	{
@@ -131,7 +131,7 @@ void spel_event_poll()
 	}
 }
 
-void spel_event_handle(void* event)
+sp_hidden void spel_event_handle(void* event)
 {
 	SDL_Event* ev = (SDL_Event*)event;
 

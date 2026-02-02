@@ -8,7 +8,6 @@ int main(int argc, const char** argv);
 
 sp_hidden void spel_fallback();
 sp_hidden void spel_update_fallback(double delta);
-sp_hidden void spel_error_fallback(const char* msg);
 sp_hidden void spel_run_fallback();
 
 // löve style callbacks

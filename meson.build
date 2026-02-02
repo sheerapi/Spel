@@ -40,6 +40,8 @@ sources = [
     'src/gfx/backends/gl/gfx_texture_gl.c',
 ]
 
+shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl']
+
 compile_args = []
 link_args = []
 
@@ -142,6 +144,48 @@ cmake_args.add_cmake_defines(
     },
 )
 
+# tools
+sh2spv_deps = []
+
+if dependency('glslang').found()
+    sh2spv_deps += dependency('glslang')
+else
+    glslang_args = cmake_args
+    glslang_args.set_override_option('default_library', 'shared')
+    sh2spv_deps += cmake.subproject('glslang', options: cmake_args).dependency('glslang')
+endif
+
+sh2spv = executable(
+    'spel-sh2spv',
+    sources: ['tools/sh2spv.cpp'],
+    dependencies: sh2spv_deps,
+    cpp_args: rel_compile_args,
+    link_args: rel_link_args,
+)
+
+spv2h = executable(
+    'spel-spv2h',
+    sources: ['tools/spv2h.cpp'],
+    dependencies: dependency('nlohmann_json'),
+    cpp_args: rel_compile_args,
+    link_args: rel_link_args,
+)
+
+compile_shaders = custom_target(
+    'compile_shaders',
+    input: shaders,
+    output: 'shaders.json',
+    command: [sh2spv, '@INPUT@'],
+    console: false,
+)
+
+shader_header = custom_target(
+    input: compile_shaders,
+    command: [spv2h, '@INPUT@', '@OUTPUT@'],
+    output: 'gfx_internal_shaders.h',
+)
+
+# Spël
 dependencies = [
     dependency('sdl3'),
     m_dep,
@@ -150,7 +194,7 @@ dependencies = [
 
 spel_lib = library(
     'spel',
-    sources: sources,
+    sources: [sources, shader_header],
     include_directories: include_directories('spel'),
     dependencies: dependencies,
 )
@@ -159,21 +203,6 @@ spel_dep = declare_dependency(
     link_with: spel_lib,
     dependencies: dependencies,
     include_directories: include_directories('spel'),
-)
-
-# tools
-sh2spv_deps = []
-
-glslang_args = cmake_args
-glslang_args.set_override_option('default_library', 'shared')
-sh2spv_deps += cmake.subproject('glslang', options: cmake_args).dependency('glslang')
-
-sh2spv = executable(
-    'spel-sh2spv',
-    sources: ['tools/sh2spv.cpp'],
-    dependencies: sh2spv_deps,
-    cpp_args: rel_compile_args,
-    link_args: rel_link_args,
 )
 
 sandbox_src = ['sandbox/main.c']

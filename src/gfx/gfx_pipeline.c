@@ -1,6 +1,6 @@
 #include "gfx/gfx_pipeline.h"
 #include "gfx/gfx_internal.h"
-#include "gfx/gfx_internal_shaders.h"
+#include "gfx_internal_shaders.h"
 #include "gfx/gfx_shader.h"
 #include "gfx/gfx_types.h"
 

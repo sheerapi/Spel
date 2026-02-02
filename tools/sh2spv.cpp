@@ -1,3 +1,5 @@
+#include "glslang/Public/ShaderLang.h"
+#include "glslang/SPIRV/GlslangToSpv.h"
 #include "glslang/SPIRV/disassemble.h"
 #include <algorithm>
 #include <cctype>
@@ -6,8 +8,6 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include "glslang/Public/ShaderLang.h"
-#include "glslang/SPIRV/GlslangToSpv.h"
 #include <iostream>
 #include <libgen.h>
 #include <optional>
@@ -15,7 +15,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
 auto args_has(int argc, const char** argv, const char* arg) -> int
 {
 	for (int i = 1; i < argc; i++)
@@ -65,6 +64,13 @@ struct stage_config
 {
 	EShLanguage lang;
 	std::string suffix;
+};
+
+struct shader_manifest_entry
+{
+	std::string name;
+	std::string stage;
+	std::string path;
 };
 
 auto stage_from_char(char stage) -> std::optional<stage_config>
@@ -415,47 +421,83 @@ TBuiltInResource GetDefaultResources()
 	return resources;
 }
 
+auto write_manifest(const std::vector<shader_manifest_entry>& entries,
+					const std::filesystem::path& manifest_path) -> bool
+{
+	std::ofstream manifest(manifest_path);
+	if (!manifest.is_open())
+	{
+		std::cerr << "failed to open manifest file: " << manifest_path << "\n";
+		return false;
+	}
+
+	manifest << "{\n";
+	manifest << "  \"shaders\": [\n";
+
+	for (size_t i = 0; i < entries.size(); ++i)
+	{
+		const auto& entry = entries[i];
+		manifest << "	{\n";
+		manifest << "		\"name\": \""
+				 << entry.name.substr(0, entry.name.find("_" + entry.stage)) << "\",\n";
+		manifest << "		\"stage\": \"" << entry.stage << "\",\n";
+		manifest << "		\"path\": \"" << entry.path << "\"\n";
+		manifest << "	}";
+
+		if (i < entries.size() - 1)
+		{
+			manifest << ",";
+		}
+		manifest << "\n";
+	}
+
+	manifest << "  ]\n";
+	manifest << "}\n";
+
+	return true;
+}
+
 auto main(int argc, const char** argv) -> int
 {
 	if (argc < 2)
 	{
-		fprintf(stderr, "usage: %s <input> <output>\n", argv[0]);
+		fprintf(stderr,
+				"usage: %s <input1> [input2 ...] [-o <output>] [-O<level>] [-s<stage>] "
+				"[-D<defines>] [-I<includes>] [-Werror] [-e <entry>] [--out-dir <dir>]\n",
+				argv[0]);
 		return -1;
 	}
 
-	const char* filename = argv[1];
+	std::vector<std::string> input_files;
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i][0] == '-')
+		{
+			break;
+		}
+		input_files.push_back(argv[i]);
+	}
+
+	if (input_files.empty())
+	{
+		fprintf(stderr, "No input files specified\n");
+		return -1;
+	}
+
+	const bool multiple_inputs = input_files.size() > 1;
 	std::vector<std::string> defines;
 	std::vector<std::string> includes;
 
-	FILE* file = fopen(filename, "r");
-	if (file == NULL)
-	{
-		perror(filename);
-		return -1;
-	}
-
-	long length = 0;
-
-	fseek(file, 0, SEEK_END);
-	length = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	std::string source;
-
-	if (length > 0)
-	{
-		source.resize(length);
-		fread(source.data(), 1, length, file);
-	}
-	fclose(file);
-
 	char optimization = 'p';
-	char stage = 'v';
+	char default_stage = 'v';
 	char language = 'g';
 	bool warningsAsErrors{false};
+	bool hasOutDir{false};
+	std::filesystem::path out_dir;
 
 	const char* entry = "main";
 
-	std::string output;
+	std::string output_base;
 
 	if (args_has(argc, argv, "-O") != -1)
 	{
@@ -464,61 +506,18 @@ auto main(int argc, const char** argv) -> int
 
 	if (args_has(argc, argv, "-s") != -1)
 	{
-		stage = argv[args_has(argc, argv, "-s")][2];
+		default_stage = argv[args_has(argc, argv, "-s")][2];
 	}
-	else
+
+	if (args_has(argc, argv, "--out-dir") != -1)
 	{
-		auto name =
-			string_split(std::filesystem::path(filename).filename().string(), ".");
-
-		std::string extension;
-		if (name.size() >= 3)
-		{
-			extension = name[name.size() - 2];
-
-			if (name[name.size() - 1] == "hlsl")
-			{
-				language = 'h';
-			}
-		}
-		else
-		{
-			extension = name[name.size() - 1];
-		}
-
-		if (extension == "vert")
-		{
-			stage = 'v';
-		}
-		else if (extension == "frag")
-		{
-			stage = 'f';
-		}
-		else if (extension == "geo")
-		{
-			stage = 'g';
-		}
-		else if (extension == "comp")
-		{
-			stage = 'c';
-		}
-		else if (extension == "tesc")
-		{
-			stage = 't';
-		}
-		else if (extension == "tese")
-		{
-			stage = 'e';
-		}
+		out_dir = argv[args_has(argc, argv, "--out-dir") + 1];
+		hasOutDir = true;
 	}
 
 	if (args_has(argc, argv, "-o") != -1)
 	{
-		output = (char*)argv[args_has(argc, argv, "-o") + 1];
-	}
-	else
-	{
-		output = std::filesystem::path(filename).filename().replace_extension("spv");
+		output_base = argv[args_has(argc, argv, "-o") + 1];
 	}
 
 	if (args_has(argc, argv, "-D") != -1)
@@ -540,35 +539,15 @@ auto main(int argc, const char** argv) -> int
 
 	if (args_has(argc, argv, "-e") != -1)
 	{
-		entry = (char*)argv[args_has(argc, argv, "-e") + 1];
+		entry = argv[args_has(argc, argv, "-e") + 1];
 	}
 
-	// Initialize glslang
-	glslang::InitializeProcess();
-
-	EShLanguage lang;
-	switch (stage)
+	if (hasOutDir && !std::filesystem::exists(out_dir))
 	{
-	case 'v':
-	default:
-		lang = EShLangVertex;
-		break;
-	case 'f':
-		lang = EShLangFragment;
-		break;
-	case 'g':
-		lang = EShLangGeometry;
-		break;
-	case 'c':
-		lang = EShLangCompute;
-		break;
-	case 't':
-		lang = EShLangTessControl;
-		break;
-	case 'e':
-		lang = EShLangTessEvaluation;
-		break;
+		std::filesystem::create_directories(out_dir);
 	}
+
+	glslang::InitializeProcess();
 
 	file_finder finder;
 
@@ -577,194 +556,334 @@ auto main(int argc, const char** argv) -> int
 		finder.searchPath().push_back(folder);
 	}
 
-	const auto stage_sections = find_stage_sections(source);
-	const bool has_multi_stage = stage_sections.sections.size() > 1;
-	const bool has_explicit_stage = stage_sections.sections.size() > 0;
+	std::vector<shader_manifest_entry> manifest_entries;
 
-	const auto build_output_path = [&](const std::string& stage_suffix,
-									   bool multi_stage_output) -> std::filesystem::path
+	int result = 0;
+	for (const auto& filename : input_files)
 	{
-		if (!multi_stage_output && args_has(argc, argv, "-o") != -1)
+		if (filename == output_base || filename == out_dir)
 		{
-			return std::filesystem::path(output);
+			continue;
 		}
 
-		auto input_path = std::filesystem::path(filename).filename();
-		if (multi_stage_output)
+		FILE* file = fopen(filename.c_str(), "r");
+		if (file == NULL)
 		{
-			if (args_has(argc, argv, "-o") != -1)
+			perror(filename.c_str());
+			result = -1;
+			continue;
+		}
+
+		long length = 0;
+		fseek(file, 0, SEEK_END);
+		length = ftell(file);
+		fseek(file, 0, SEEK_SET);
+		std::string source;
+
+		if (length > 0)
+		{
+			source.resize(length);
+			fread(source.data(), 1, length, file);
+		}
+		fclose(file);
+
+		char stage = default_stage;
+		char file_language = language;
+
+		auto name =
+			string_split(std::filesystem::path(filename).filename().string(), ".");
+
+		std::string extension;
+		if (name.size() >= 3)
+		{
+			extension = name[name.size() - 2];
+
+			if (name[name.size() - 1] == "hlsl")
 			{
-				std::filesystem::path out_path(output);
-				auto base_dir = out_path.parent_path();
-				auto stem = out_path.stem().string();
-				auto ext = out_path.extension().string();
-
-				if (ext.empty())
-				{
-					ext = ".spv";
-				}
-
-				return base_dir / std::filesystem::path(stem + "." + stage_suffix + ext);
+				file_language = 'h';
 			}
-
-			auto stem = input_path.stem().string();
-			return std::filesystem::path(stem + "." + stage_suffix + ".spv");
-		}
-
-		return input_path.replace_extension("spv");
-	};
-
-	auto compile_and_write = [&](const std::string& shader_source,
-								 const stage_config& stage_info,
-								 const std::filesystem::path& output_path) -> bool
-	{
-		glslang::TShader shader(stage_info.lang);
-
-		const char* source_ptr = shader_source.c_str();
-		shader.setStrings(&source_ptr, 1);
-		shader.setEntryPoint(entry);
-		shader.setSourceEntryPoint(entry);
-
-		// Set up preprocessor defines
-		std::string preamble;
-		for (const auto& def : defines)
-		{
-			auto definition = string_split(def, "=");
-			if (definition.size() == 2)
-			{
-				preamble += "#define " + definition[0] + " " + definition[1] + "\n";
-			}
-			else
-			{
-				preamble += "#define " + definition[0] + "\n";
-			}
-		}
-
-		if (!preamble.empty())
-		{
-			shader.setPreamble(preamble.c_str());
-		}
-
-		// Set language/environment
-		if (language == 'h')
-		{
-			shader.setEnvInput(glslang::EShSourceHlsl, stage_info.lang,
-							   glslang::EShClientVulkan, 100);
 		}
 		else
 		{
-			shader.setEnvInput(glslang::EShSourceGlsl, stage_info.lang,
-							   glslang::EShClientVulkan, 100);
-		}
-		shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
-		shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
-
-		// Set auto-mapping for locations
-		shader.setAutoMapLocations(true);
-		shader.setAutoMapBindings(true);
-
-		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
-		if (warningsAsErrors)
-		{
-			messages = (EShMessages)(messages | EShMsgKeepUncalled);
+			extension = name[name.size() - 1];
 		}
 
-		TBuiltInResource resources = GetDefaultResources();
-		CustomIncluder includer(&finder);
-
-		if (!shader.parse(&resources, 100, false, messages, includer))
+		if (args_has(argc, argv, "-s") == -1)
 		{
-			std::cerr << shader.getInfoLog() << "\n";
-			std::cerr << shader.getInfoDebugLog() << "\n";
-			return false;
-		}
-
-		glslang::TProgram program;
-		program.addShader(&shader);
-
-		if (!program.link(messages))
-		{
-			std::cerr << program.getInfoLog() << "\n";
-			std::cerr << program.getInfoDebugLog() << "\n";
-			return false;
-		}
-
-		std::vector<unsigned int> spirv;
-		spv::SpvBuildLogger logger;
-		glslang::SpvOptions spvOptions;
-
-		// Set optimization level
-		switch (optimization)
-		{
-		case '0':
-			spvOptions.optimizeSize = false;
-			spvOptions.disableOptimizer = true;
-			break;
-		case 's':
-		case 'z':
-			spvOptions.optimizeSize = true;
-			spvOptions.disableOptimizer = false;
-			break;
-		case 'p':
-		default:
-			spvOptions.optimizeSize = false;
-			spvOptions.disableOptimizer = false;
-			break;
-		}
-
-		glslang::GlslangToSpv(*program.getIntermediate(stage_info.lang), spirv, &logger,
-							  &spvOptions);
-
-		std::ofstream f(output_path, std::ios::binary | std::ios::out);
-		if (!f.is_open())
-		{
-			std::cerr << "Failed to open output file: " << output_path << "\n";
-			return false;
-		}
-
-		f.write(reinterpret_cast<const char*>(spirv.data()),
-				spirv.size() * sizeof(unsigned int));
-		return true;
-	};
-
-	int result = 0;
-
-	if (has_explicit_stage)
-	{
-		for (const auto& section : stage_sections.sections)
-		{
-			auto stage_info = stage_from_name(section.stage_name);
-
-			if (!stage_info.has_value())
+			if (extension == "vert")
 			{
-				std::cerr << "Unknown shader stage in pragma: " << section.stage_name
-						  << "\n";
-				result = -1;
+				stage = 'v';
+			}
+			else if (extension == "frag")
+			{
+				stage = 'f';
+			}
+			else if (extension == "geo")
+			{
+				stage = 'g';
+			}
+			else if (extension == "comp")
+			{
+				stage = 'c';
+			}
+			else if (extension == "tesc")
+			{
+				stage = 't';
+			}
+			else if (extension == "tese")
+			{
+				stage = 'e';
+			}
+		}
+
+		EShLanguage lang;
+		switch (stage)
+		{
+		case 'v':
+		default:
+			lang = EShLangVertex;
+			break;
+		case 'f':
+			lang = EShLangFragment;
+			break;
+		case 'g':
+			lang = EShLangGeometry;
+			break;
+		case 'c':
+			lang = EShLangCompute;
+			break;
+		case 't':
+			lang = EShLangTessControl;
+			break;
+		case 'e':
+			lang = EShLangTessEvaluation;
+			break;
+		}
+
+		const auto stage_sections = find_stage_sections(source);
+		const bool has_explicit_stage = stage_sections.sections.size() > 0;
+
+		const auto build_output_path =
+			[&](const std::string& stage_suffix, bool multi_stage_output,
+				const std::string& current_file) -> std::filesystem::path
+		{
+			std::filesystem::path base_path;
+
+			if (multiple_inputs || multi_stage_output)
+			{
+
+				auto input_path = std::filesystem::path(current_file).filename();
+				auto stem = input_path.stem().string();
+
+				if (multi_stage_output)
+				{
+					auto path = std::filesystem::path(stem + "." + stage_suffix + ".spv");
+					return hasOutDir ? out_dir / path : path;
+				}
+				else
+				{
+					auto path = input_path.replace_extension("spv");
+					return hasOutDir ? out_dir / path : path;
+				}
+			}
+			else
+			{
+
+				if (!output_base.empty())
+				{
+					auto path = std::filesystem::path(output_base);
+					return hasOutDir ? out_dir / path : path;
+				}
+
+				auto input_path = std::filesystem::path(current_file).filename();
+				return hasOutDir ? out_dir / input_path.replace_extension("spv")
+								 : input_path.replace_extension("spv");
+			}
+		};
+
+		auto compile_and_write = [&](const std::string& shader_source,
+									 const stage_config& stage_info,
+									 const std::filesystem::path& output_path,
+									 const std::string& shader_name) -> bool
+		{
+			glslang::TShader shader(stage_info.lang);
+
+			const char* source_ptr = shader_source.c_str();
+			shader.setStrings(&source_ptr, 1);
+			shader.setEntryPoint(entry);
+			shader.setSourceEntryPoint(entry);
+
+			std::string preamble;
+			for (const auto& def : defines)
+			{
+				auto definition = string_split(def, "=");
+				if (definition.size() == 2)
+				{
+					preamble += "#define " + definition[0] + " " + definition[1] + "\n";
+				}
+				else
+				{
+					preamble += "#define " + definition[0] + "\n";
+				}
+			}
+
+			if (!preamble.empty())
+			{
+				shader.setPreamble(preamble.c_str());
+			}
+
+			if (file_language == 'h')
+			{
+				shader.setEnvInput(glslang::EShSourceHlsl, stage_info.lang,
+								   glslang::EShClientVulkan, 100);
+			}
+			else
+			{
+				shader.setEnvInput(glslang::EShSourceGlsl, stage_info.lang,
+								   glslang::EShClientVulkan, 100);
+			}
+			shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
+			shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+
+			shader.setAutoMapLocations(true);
+			shader.setAutoMapBindings(true);
+
+			EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+			if (warningsAsErrors)
+			{
+				messages = (EShMessages)(messages | EShMsgKeepUncalled);
+			}
+
+			TBuiltInResource resources = GetDefaultResources();
+			CustomIncluder includer(&finder);
+
+			if (!shader.parse(&resources, 100, false, messages, includer))
+			{
+				std::cerr << "failed to compile " << shader_name << ":\n";
+				std::cerr << shader.getInfoLog() << "\n";
+				std::cerr << shader.getInfoDebugLog() << "\n";
+				return false;
+			}
+
+			glslang::TProgram program;
+			program.addShader(&shader);
+
+			if (!program.link(messages))
+			{
+				std::cerr << "failed to link " << shader_name << ":\n";
+				std::cerr << program.getInfoLog() << "\n";
+				std::cerr << program.getInfoDebugLog() << "\n";
+				return false;
+			}
+
+			std::vector<unsigned int> spirv;
+			spv::SpvBuildLogger logger;
+			glslang::SpvOptions spvOptions;
+
+			switch (optimization)
+			{
+			case '0':
+				spvOptions.optimizeSize = false;
+				spvOptions.disableOptimizer = true;
+				break;
+			case 's':
+			case 'z':
+				spvOptions.optimizeSize = true;
+				spvOptions.disableOptimizer = false;
+				break;
+			case 'p':
+			default:
+				spvOptions.optimizeSize = false;
+				spvOptions.disableOptimizer = false;
 				break;
 			}
 
-			std::string stage_source = source.substr(0, stage_sections.prefix_length);
-			stage_source.append(
-				source.substr(section.start, section.end - section.start));
+			glslang::GlslangToSpv(*program.getIntermediate(stage_info.lang), spirv,
+								  &logger, &spvOptions);
 
-			auto output_path = build_output_path(stage_info->suffix,
-												 has_multi_stage || has_explicit_stage);
+			std::ofstream f(output_path, std::ios::binary | std::ios::out);
+			if (!f.is_open())
+			{
+				std::cerr << "failed to open output file: " << output_path << "\n";
+				return false;
+			}
 
-			if (!compile_and_write(stage_source, *stage_info, output_path))
+			f.write(reinterpret_cast<const char*>(spirv.data()),
+					spirv.size() * sizeof(unsigned int));
+
+			manifest_entries.push_back(
+				{shader_name, stage_info.suffix, hasOutDir ? std::filesystem::relative(output_path, out_dir) : output_path});
+
+			return true;
+		};
+
+		if (has_explicit_stage)
+		{
+			for (const auto& section : stage_sections.sections)
+			{
+				auto stage_info = stage_from_name(section.stage_name);
+
+				if (!stage_info.has_value())
+				{
+					std::cerr << "unknown shader stage in pragma: " << section.stage_name
+							  << "\n";
+					result = -1;
+					break;
+				}
+
+				std::string stage_source = source.substr(0, stage_sections.prefix_length);
+				stage_source.append(
+					source.substr(section.start, section.end - section.start));
+
+				auto output_path = build_output_path(stage_info->suffix, true, filename);
+				auto shader_name = std::filesystem::path(filename).stem().string() + "_" +
+								   stage_info->suffix;
+
+				if (!compile_and_write(stage_source, *stage_info, output_path,
+									   shader_name))
+				{
+					result = -1;
+					break;
+				}
+			}
+		}
+		else
+		{
+			auto stage_info = stage_from_char(stage).value_or(stage_config{lang, ""});
+			auto output_path = build_output_path(stage_info.suffix, false, filename);
+			auto shader_name = std::filesystem::path(filename).stem().string();
+
+			if (!compile_and_write(source, stage_info, output_path, shader_name))
 			{
 				result = -1;
-				break;
 			}
 		}
 	}
-	else
-	{
-		auto stage_info = stage_from_char(stage).value_or(stage_config{lang, ""});
-		auto output_path = build_output_path(stage_info.suffix, false);
 
-		if (!compile_and_write(source, stage_info, output_path))
+	if (multiple_inputs && !manifest_entries.empty())
+	{
+		std::filesystem::path manifest_path;
+		if (!output_base.empty())
 		{
+			manifest_path = std::filesystem::path(output_base).replace_extension("json");
+			if (hasOutDir)
+			{
+				manifest_path = out_dir / manifest_path;
+			}
+		}
+		else
+		{
+			manifest_path = hasOutDir ? (out_dir / "shaders.json") : "shaders.json";
+		}
+
+		if (!write_manifest(manifest_entries, manifest_path))
+		{
+			std::cerr << "failed to write manifest\n";
 			result = -1;
+		}
+		else
+		{
+			std::cout << "manifest written to " << manifest_path << "\n";
 		}
 	}
 

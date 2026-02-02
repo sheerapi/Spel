@@ -7,20 +7,20 @@
 #	include "SPIRV/disassemble.h"
 #endif
 
-#	include <algorithm>
-#	include <cctype>
-#	include <cstdio>
-#	include <cstdlib>
-#	include <cstring>
-#	include <filesystem>
-#	include <fstream>
-#	include <iostream>
-#	include <libgen.h>
-#	include <optional>
-#	include <string>
-#	include <unordered_map>
-#	include <unordered_set>
-#	include <vector>
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 auto args_has(int argc, const char** argv, const char* arg) -> int
 {
 	for (int i = 1; i < argc; i++)
@@ -818,7 +818,9 @@ auto main(int argc, const char** argv) -> int
 					spirv.size() * sizeof(unsigned int));
 
 			manifest_entries.push_back(
-				{shader_name, stage_info.suffix, hasOutDir ? std::filesystem::relative(output_path, out_dir) : output_path});
+				{shader_name, stage_info.suffix,
+				 hasOutDir ? std::filesystem::relative(output_path, out_dir)
+						   : output_path});
 
 			return true;
 		};

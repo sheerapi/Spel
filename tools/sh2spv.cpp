@@ -817,10 +817,11 @@ auto main(int argc, const char** argv) -> int
 			f.write(reinterpret_cast<const char*>(spirv.data()),
 					spirv.size() * sizeof(unsigned int));
 
-			manifest_entries.push_back(
-				{shader_name, stage_info.suffix,
-				 hasOutDir ? std::filesystem::relative(output_path, out_dir)
-						   : output_path});
+			manifest_entries.push_back((shader_manifest_entry){
+				.name = shader_name,
+				.stage = stage_info.suffix,
+				.path = hasOutDir ? std::filesystem::relative(output_path, out_dir).string()
+								  : output_path.string()});
 
 			return true;
 		};

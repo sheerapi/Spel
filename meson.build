@@ -57,7 +57,6 @@ if cc.get_id() != 'msvc'
         '-fdata-sections',
         '-fno-unwind-tables',
         '-fno-asynchronous-unwind-tables',
-        '-fno-rtti',
     ]
     rel_link_args = [
         '-Wl,--gc-sections',
@@ -69,7 +68,6 @@ else
     rel_compile_args += [
         '/Gy',
         '/Gw',
-        '/GR-',
     ]
 
     rel_link_args += [

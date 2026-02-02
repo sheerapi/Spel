@@ -3,7 +3,7 @@ project(
     ['c', 'cpp'],
     version: '0.0.1',
     default_options: [
-        'c_std=c2x',
+        'c_std=c17',
         'cpp_std=c++20',
         'default_library=static',
         'b_lto=true',

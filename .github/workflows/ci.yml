@@ -37,7 +37,10 @@ jobs:
             libwayland-dev \
             wayland-protocols \
             libdrm-dev \
-            libudev-dev
+            libdbus-1-dev \
+            libibus-1.0-dev \
+            libudev-dev \
+            libthai-dev
 
       - name: Setup Python
         uses: actions/setup-python@v5

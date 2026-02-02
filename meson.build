@@ -147,7 +147,7 @@ cmake_args.add_cmake_defines(
 # tools
 sh2spv_deps = []
 
-if dependency('glslang').found()
+if dependency('glslang', required: false).found()
     sh2spv_deps += dependency('glslang')
 else
     glslang_args = cmake_args

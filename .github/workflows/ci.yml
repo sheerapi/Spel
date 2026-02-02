@@ -36,7 +36,8 @@ jobs:
             libxcursor-dev \
             libwayland-dev \
             wayland-protocols \
-            libdrm-dev
+            libdrm-dev \
+            libudev-dev
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -57,11 +58,21 @@ jobs:
         shell: bash
 
       - name: Meson setup
-        run: |
-          meson setup build --buildtype=release
+        run: meson setup build --buildtype=release
         shell: bash
+        if: runner.os != 'Windows'
+
+      - name: Meson setup (Windows)
+        run: meson setup build --buildtype=release
+        shell: pwsh
+        if: runner.os == 'Windows'
 
       - name: Build
-        run: |
-          meson compile -C build
+        run: meson compile -C build
         shell: bash
+        if: runner.os != 'Windows'
+
+      - name: Build (Windows)
+        run: meson compile -C build
+        shell: pwsh
+        if: runner.os == 'Windows'

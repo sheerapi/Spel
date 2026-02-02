@@ -24,7 +24,7 @@
 #if defined(__GNUC__) || defined(__clang__)
 #	define sp_hidden __attribute__((visibility("hidden")))
 #else
-#	define sp_weak
+#	define sp_hidden
 #endif
 
 #if defined(_MSC_VER)

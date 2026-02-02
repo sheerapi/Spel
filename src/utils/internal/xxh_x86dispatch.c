@@ -200,7 +200,7 @@ extern "C" {
 #ifndef XXH_DOXYGEN
 #define XXH_INLINE_ALL
 #define XXH_X86DISPATCH
-#include "xxhash.h"
+#include "utils/internal/xxhash.h"
 #endif
 
 /*! @cond Doxygen ignores this part */

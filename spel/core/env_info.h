@@ -1,7 +1,7 @@
 #ifndef SPEL_ENV_INFO
-#	define SPEL_ENV_INFO
+#define SPEL_ENV_INFO
 #include "core/macros.h"
-#	include <stdint.h>
+#include <stdint.h>
 
 typedef struct
 {
@@ -23,7 +23,7 @@ typedef struct
 typedef struct
 {
 	bool debug;
-	
+
 	const char* display_server;
 	const char* session_type;
 

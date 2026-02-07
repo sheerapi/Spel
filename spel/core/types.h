@@ -1,10 +1,10 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
-#include "utils/build_info.h"
 #include "core/env_info.h"
 #include "core/macros.h"
 #include "core/memory.h"
 #include "gfx/gfx_types.h"
+#include "utils/build_info.h"
 #include <stdbool.h>
 
 typedef struct
@@ -98,10 +98,44 @@ typedef struct spel_log
 	void* user;
 } spel_log;
 
+typedef struct spel_app
+{
+	spel_gfx_backend gfx_backend;
+
+	void (*conf)();
+	void (*load)();
+	void (*update)(double);
+	void (*draw)();
+	void (*quit)();
+	void (*run)();
+
+	void (*low_memory)();
+} spel_app;
+
+typedef struct spel_app_desc
+{
+	int argc;
+	const char** argv;
+
+	spel_gfx_backend gfx_backend;
+	bool debug;
+
+	void (*conf)();
+	void (*load)();
+	void (*update)(double);
+	void (*draw)();
+	void (*quit)();
+	void (*run)();
+
+	void (*low_memory)();
+} spel_app_desc;
+
 typedef struct spel_context
 {
 	bool terminal_color;
 	spel_panic_mode panic_mode;
+
+	spel_app app;
 
 	spel_window window;
 	spel_events events;
@@ -114,7 +148,6 @@ typedef struct spel_context
 	spel_runtime_process_info process;
 	spel_runtime_env_info env;
 	spel_runtime_hardware_info hardware;
-
 } spel_context;
 
 sp_api extern spel_context spel;

@@ -144,7 +144,7 @@ sp_hidden void spel_event_handle(void* event)
 		break;
 
 	case SDL_EVENT_LOW_MEMORY:
-		sp_callback(spel_low_memory);
+		sp_callback(spel.app.low_memory);
 		break;
 
 	case SDL_EVENT_WINDOW_RESIZED:

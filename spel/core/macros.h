@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if defined(DEBUG)
+#	define sp_debug_build 1
+#else
+#	define sp_debug_build 0
+#endif
+
 #if defined(_WIN32)
 #	if defined(sp_build)
 #		define sp_api __declspec(dllexport)
@@ -15,8 +21,10 @@
 #	define sp_api __attribute__((visibility("default")))
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#	define sp_weak __attribute__((weak))
+#ifdef SP_WEAK_LINK
+#	if defined(__GNUC__) || defined(__clang__)
+#		define sp_weak __attribute__((weak))
+#	endif
 #else
 #	define sp_weak
 #endif
@@ -27,9 +35,11 @@
 #	define sp_hidden
 #endif
 
-#if defined(_MSC_VER)
-#	define sp_weak_alias(sym, fallback)                                                 \
-		__pragma(comment(linker, "/alternatename:" #sym "=" #fallback))
+#ifdef SP_WEAK_LINK
+#	if defined(_MSC_VER)
+#		define sp_weak_alias(sym, fallback)                                             \
+			__pragma(comment(linker, "/alternatename:" #sym "=" #fallback))
+#	endif
 #else
 #	define sp_weak_alias(sym, fallback)
 #endif
@@ -48,7 +58,7 @@
 #	define sp_align(N) __attribute__((aligned(N)))
 #endif
 
-#	define sp_unused(x) (void)(x)
+#define sp_unused(x) (void)(x)
 
 #if defined(_WIN32)
 #	define sp_platform_win 1

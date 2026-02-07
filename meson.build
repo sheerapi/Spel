@@ -78,6 +78,10 @@ endif
 
 compile_args += ['-D_POSIX_C_SOURCE=200809L', '-D_XOPEN_SOURCE=700']
 
+if get_option('weak')
+    add_project_arguments(['-DSP_WEAK_LINK'], language: 'c')
+endif
+
 if get_option('debug')
     add_project_arguments(['-DDEBUG'], language: 'c')
 
@@ -105,13 +109,13 @@ else
     link_args += rel_link_args
 endif
 
-if cpp.get_id() != 'msvc'
-    add_project_arguments(
+if cc.get_id() != 'msvc'
+    add_global_arguments(
         [
             '-fvisibility=hidden',
             '-fvisibility-inlines-hidden',
         ],
-        language: 'cpp',
+        language: ['c', 'cpp'],
     )
 endif
 

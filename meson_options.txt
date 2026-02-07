@@ -1,1 +1,2 @@
 option('sanitizers', type: 'boolean', value: false)
+option('weak', type: 'boolean', value: true, description: 'Whether to use weak linking')

@@ -34,5 +34,5 @@ layout(binding = 1) uniform FrameData
 void main()
 {
 	vec4 tex = texture(u_texture, v_uv);
-	out_color = tex * v_color * frame.position;
+	out_color = tex * v_color;
 }

@@ -61,7 +61,7 @@ char* get_os_release_value(const char* key)
 	return NULL;
 }
 
-void spel_fill_process_info(spel_runtime_process_info* out)
+void spel_process_info_fill(spel_runtime_process_info* out)
 {
 	static char exe_path[PATH_MAX];
 	static char cwd[PATH_MAX];
@@ -120,7 +120,7 @@ static const char* detect_session_type(void)
 	return "headless";
 }
 
-void spel_fill_env_info(spel_runtime_env_info* out)
+void spel_env_info_fill(spel_runtime_env_info* out)
 {
 	static struct utsname uts;
 	if (uname(&uts) == 0)
@@ -236,7 +236,7 @@ static int core_key_exists(spel_cpu_core_key* keys, size_t count, int phys, int 
 	return 0;
 }
 
-uint32_t spel_detect_physical_cores()
+uint32_t spel_physical_cores_detect()
 {
 	FILE* f = fopen("/proc/cpuinfo", "r");
 	if (!f)
@@ -291,11 +291,11 @@ void spel_runtime_info_setup()
 	spel.process.start_time = spel_time_now_sec();
 	spel.process.start_time_ns = spel_time_now_ns();
 
-	spel_fill_env_info(&spel.env);
-	spel_fill_process_info(&spel.process);
+	spel_env_info_fill(&spel.env);
+	spel_process_info_fill(&spel.process);
 
 	spel.hardware.cpu_model = spel_memory_malloc(128, SPEL_MEM_TAG_CORE);
-	spel.hardware.cpu_cores = spel_detect_physical_cores();
+	spel.hardware.cpu_cores = spel_physical_cores_detect();
 	read_cpu_model(spel.hardware.cpu_model, 128);
 
 	spel.hardware.cpu_threads = (uint32_t)sysconf(_SC_NPROCESSORS_ONLN);

@@ -1,4 +1,5 @@
 #include "core/memory.h"
+#include "SDL3/SDL_stdinc.h"
 #include "core/log.h"
 #include "core/types.h"
 #include "utils/terminal.h"
@@ -198,7 +199,7 @@ const sp_api static char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
 	[SPEL_MEM_TAG_TEMP] = "temp",
 };
 
-sp_api void spel_memory_render_terminal()
+sp_api void spel_memory_dump_terminal()
 {
 	char cur[32];
 	char peak[32];
@@ -220,7 +221,7 @@ sp_api void spel_memory_render_terminal()
 		   spel_memory_fmt_size(spel.memory.total_freed, freed, true), sp_terminal_gray,
 		   sp_terminal_italic, sp_terminal_reset);
 
-	printf("    %sallocs%s:    %s%zu%s\n    %sfrees%s:     %s%zu%s %s%s(%s%zu%s "
+	printf("    %sallocs%s:   %s%zu%s\n    %sfrees%s:    %s%zu%s %s%s(%s%zu%s "
 		   "still alive%s)%s\n",
 		   sp_terminal_bright_blue, sp_terminal_reset, sp_terminal_bright_green,
 		   spel.memory.alloc_count, sp_terminal_reset, sp_terminal_bright_blue,
@@ -240,7 +241,7 @@ sp_api void spel_memory_render_terminal()
 
 		char tag_cur[32];
 		char tag_peak[32];
-		printf("    %s%-10s%s  %-10s %s%s(peak %10s%s%s)%s %s%sallocs: %s%zu%s\n",
+		printf("    %s%-8s%s  %-10s %s%s(peak %10s%s%s)%s	 %s%sallocs: %s%zu%s\n",
 			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
 			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), sp_terminal_italic,
 			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
@@ -251,4 +252,31 @@ sp_api void spel_memory_render_terminal()
 
 	printf("%s%s===========================%s\n", sp_terminal_bright_green,
 		   sp_terminal_bold, sp_terminal_reset);
+}
+
+void* sdl_spel_malloc(size_t size)
+{
+	return spel_memory_malloc(size, SPEL_MEM_TAG_CORE);
+}
+
+void* sdl_spel_calloc(size_t nmemb, size_t size)
+{
+	size_t total_size;
+	if (__builtin_mul_overflow(nmemb, size, &total_size))
+	{
+		return NULL;
+	}
+
+	return spel_memory_malloc(total_size, SPEL_MEM_TAG_CORE);
+}
+
+void* sdl_spel_realloc(void* mem, size_t size)
+{
+	return spel_memory_realloc(mem, size, SPEL_MEM_TAG_CORE);
+}
+
+sp_hidden void spel_memory_sdl_setup()
+{
+	SDL_SetMemoryFunctions(sdl_spel_malloc, sdl_spel_calloc, sdl_spel_realloc,
+						   spel_memory_free);
 }

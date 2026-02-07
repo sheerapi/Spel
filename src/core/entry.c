@@ -95,6 +95,8 @@ sp_api int spel_app_run(spel_app_desc* app)
 		spel.process.name = spel.process.argv[0];
 	}
 
+	spel_memory_sdl_setup();
+	
 	spel_runtime_info_setup();
 	spel_build_info_init();
 	spel_log_stderr_install();

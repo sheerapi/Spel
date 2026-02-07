@@ -31,6 +31,7 @@ sources = [
     'src/core/panic.c',
     'src/utils/build_info.c',
     'src/core/env_info.c',
+    'src/utils/display.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',

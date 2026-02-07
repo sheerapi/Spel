@@ -23,6 +23,14 @@ typedef struct
 	float z;
 } spel_vec3;
 
+typedef struct
+{
+	int x;
+	int y;
+	int width;
+	int height;
+} spel_rect;
+
 sp_color_declare(black);
 sp_color_declare(white);
 

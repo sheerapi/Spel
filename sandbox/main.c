@@ -5,6 +5,7 @@
 #include "gfx/gfx.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_types.h"
+#include "utils/display.h"
 #include <string.h>
 
 spel_gfx_buffer vbuffer;
@@ -53,6 +54,8 @@ void spel_load()
 
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
+
+	spel_memory_dump_terminal();
 }
 
 void spel_draw()

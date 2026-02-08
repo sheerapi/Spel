@@ -13,7 +13,7 @@ int main(int argc, const char** argv);
 
 sp_hidden void spel_run_frame();
 
-#ifdef SP_WEAK_LINK
+#if defined(SP_WEAK_LINK) && (defined(__GNUC__) || defined(__clang__))
 // löve style callbacks
 sp_weak void spel_conf();
 sp_weak void spel_load();

@@ -20,6 +20,8 @@
 #ifdef SP_WEAK_LINK
 #	if defined(__GNUC__) || defined(__clang__)
 #		define sp_weak __attribute__((weak))
+#	else
+#		define sp_weak
 #	endif
 #else
 #	define sp_weak

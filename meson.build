@@ -39,6 +39,7 @@ sources = [
     'src/gfx/backends/gl/gfx_shader_gl.c',
     'src/gfx/backends/gl/gfx_pipeline_gl.c',
     'src/gfx/backends/gl/gfx_texture_gl.c',
+    'src/gfx/backends/gl/gfx_vtable_gl.c'
 ]
 
 shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl']

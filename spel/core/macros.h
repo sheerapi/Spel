@@ -12,11 +12,7 @@
 #endif
 
 #if defined(_WIN32)
-#	if defined(sp_build)
-#		define sp_api __declspec(dllexport)
-#	else
-#		define sp_api __declspec(dllimport)
-#	endif
+#	define sp_api __declspec(dllexport)
 #else
 #	define sp_api __attribute__((visibility("default")))
 #endif

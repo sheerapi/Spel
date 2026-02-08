@@ -286,7 +286,7 @@ uint32_t spel_physical_cores_detect()
 	return key_count > 0 ? (uint32_t)key_count : 0;
 }
 
-void spel_runtime_info_setup()
+sp_hidden void spel_runtime_info_setup()
 {
 	spel.process.start_time = spel_time_now_sec();
 	spel.process.start_time_ns = spel_time_now_ns();

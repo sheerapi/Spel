@@ -1,6 +1,7 @@
 #ifndef SPEL_TYPES
 #define SPEL_TYPES
 #include "core/env_info.h"
+#include "core/event.h"
 #include "core/macros.h"
 #include "core/memory.h"
 #include "gfx/gfx_types.h"
@@ -14,6 +15,9 @@ typedef struct
 	bool fullscreen;
 	bool use_dpi_scaling;
 	bool running;
+
+	bool occluded;
+	bool focused;
 
 	int width;
 	int height;
@@ -37,17 +41,13 @@ typedef struct
 	} swapchain;
 } spel_window;
 
-typedef struct spel_string_intern spel_string_intern;
-typedef struct spel_event_list spel_event_list;
-typedef uint32_t spel_event_id;
-
 typedef struct
 {
-	spel_string_intern* interns;
-	spel_event_list* events;
+	struct spel_event_intern_table interns;
+	struct spel_event_bucket* buckets;
 
-	spel_event_id counter;
-	int capacity;
+	spel_event_id count;
+	size_t capacity;
 } spel_events;
 
 typedef struct spel_time

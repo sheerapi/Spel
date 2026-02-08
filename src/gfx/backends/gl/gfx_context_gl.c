@@ -2,6 +2,7 @@
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/types.h"
+#include "core/window.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
@@ -79,9 +80,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 sp_hidden void spel_gfx_context_conf_gl()
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_DEBUG_FLAG, (int)spel.env.debug);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth != 0
-											   ? spel.window.swapchain.depth
-											   : 16);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth);
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
@@ -147,7 +146,12 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 
 sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
-	glViewport(0, 0, spel.window.width, spel.window.height);
+	if (spel.window.occluded)
+	{
+		return;
+	}
+
+	glViewport(0, 0, ctx->fb_width, ctx->fb_height);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glBindSampler(0, *(GLuint*)ctx->default_sampler->data);
@@ -156,6 +160,11 @@ sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 
 sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
+	if (spel.window.occluded)
+	{
+		return;
+	}
+	
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	SDL_GL_SwapWindow(spel.window.handle);

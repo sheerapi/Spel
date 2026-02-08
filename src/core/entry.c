@@ -11,11 +11,13 @@
 #include "utils/time.h"
 #include <stdlib.h>
 
-sp_api spel_context spel = {.window = {.title = "Spël",
-									   .width = 800,
-									   .height = 600,
-									   .swapchain = {.vsync = 1},
-									   .resizable = true}};
+sp_api spel_context spel = {
+	.window = {.title = "Spël",
+			   .width = 800,
+			   .height = 600,
+			   .borderless = false,
+			   .swapchain = {.vsync = 1, .depth = 16, .stencil = 0, .msaa = 0},
+			   .resizable = true}};
 
 #ifdef SP_WEAK_LINK
 int main(int argc, const char** argv)
@@ -96,7 +98,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 	}
 
 	spel_memory_sdl_setup();
-	
+
 	spel_runtime_info_setup();
 	spel_build_info_init();
 	spel_log_stderr_install();
@@ -139,6 +141,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 
 	spel_gfx_context_destroy(spel.gfx);
 	spel_window_cleanup();
+	spel_event_terminate();
 
 	return 0;
 }

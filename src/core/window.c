@@ -5,8 +5,15 @@
 
 sp_hidden void spel_window_create()
 {
-	spel.window.handle = SDL_CreateWindow(spel.window.title, spel.window.width,
-										  spel.window.height, SDL_WINDOW_OPENGL);
+	uint64_t flags = SDL_WINDOW_OPENGL;
+
+	if (spel.window.use_dpi_scaling)
+	{
+		flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+	}
+
+	spel.window.handle =
+		SDL_CreateWindow(spel.window.title, spel.window.width, spel.window.height, flags);
 
 	if (spel.window.handle == NULL)
 	{
@@ -23,6 +30,7 @@ sp_hidden void spel_window_create()
 
 	SDL_SetWindowFullscreen(spel.window.handle, spel.window.fullscreen);
 	SDL_SetWindowResizable(spel.window.handle, spel.window.resizable);
+	SDL_SetWindowBordered(spel.window.handle, spel.window.borderless);
 
 	spel.window.display = SDL_GetDisplayForWindow(spel.window.handle);
 
@@ -84,4 +92,19 @@ sp_api void spel_window_fullscreen_set(bool fullscreen)
 	{
 		spel.window.fullscreen = fullscreen;
 	}
+}
+
+sp_api spel_vec2 spel_window_framebuffer_size()
+{
+	int w;
+	int h;
+	SDL_GetWindowSizeInPixels(spel.window.handle, &w, &h);
+	return (spel_vec2){.x = (float)w, .y = (float)h};
+}
+
+sp_api spel_vec2 spel_window_dpi()
+{
+	spel_vec2 fb = spel_window_framebuffer_size();
+	return (spel_vec2){.x = fb.x / (float)spel.window.width,
+					   .y = fb.y / (float)spel.window.height};
 }

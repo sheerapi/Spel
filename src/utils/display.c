@@ -2,26 +2,26 @@
 #include "SDL3/SDL_video.h"
 #include "core/memory.h"
 
-sp_api spel_rect spel_display_bounds_get(uint32_t id)
+sp_api spel_rect spel_display_bounds(uint32_t id)
 {
 	static SDL_Rect rect;
 	SDL_GetDisplayBounds(id, &rect);
 	return (spel_rect){.x = rect.x, .y = rect.y, .width = rect.w, .height = rect.h};
 }
 
-sp_api spel_rect spel_display_safe_bounds_get(uint32_t id)
+sp_api spel_rect spel_display_safe_bounds(uint32_t id)
 {
 	static SDL_Rect rect;
 	SDL_GetDisplayUsableBounds(id, &rect);
 	return (spel_rect){.x = rect.x, .y = rect.y, .width = rect.w, .height = rect.h};
 }
 
-const sp_api char* spel_display_name_get(uint32_t id)
+const sp_api char* spel_display_name(uint32_t id)
 {
 	return SDL_GetDisplayName(id);
 }
 
-sp_api uint32_t* spel_displays_get(int32_t* count)
+sp_api uint32_t* spel_display_list(int32_t* count)
 {
 	return SDL_GetDisplays(count);
 }
@@ -47,7 +47,7 @@ sp_api spel_display_mode spel_display_mode_current(uint32_t id)
 							   .refresh_rate = mode->refresh_rate};
 }
 
-sp_api spel_display_mode* spel_display_modes_get(uint32_t id, int* count)
+sp_api spel_display_mode* spel_display_modes(uint32_t id, int* count)
 {
 	SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(id, count);
 
@@ -80,4 +80,9 @@ sp_api spel_display_mode spel_display_mode_nearest(uint32_t id, int w, int h,
 							   .height = mode.h,
 							   .pixel_density = mode.pixel_density,
 							   .refresh_rate = mode.refresh_rate};
+}
+
+sp_api float spel_display_scale(uint32_t id)
+{
+	return SDL_GetDisplayContentScale(id);
 }

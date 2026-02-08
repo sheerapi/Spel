@@ -82,6 +82,12 @@ void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 
 void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 {
+	if (spel.window.occluded)
+	{
+		cl->offset = 0;
+		return;
+	}
+	
 	uint8_t* ptr = cl->buffer;
 	while (ptr < cl->buffer + cl->offset)
 	{

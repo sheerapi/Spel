@@ -110,6 +110,9 @@ typedef struct spel_gfx_context_t
 	bool debug;
 	int vsync;
 
+	int fb_width;
+	int fb_height;
+
 	// default data
 	spel_gfx_cmdlist cmdlist;
 	spel_gfx_pipeline_cache pipeline_cache;

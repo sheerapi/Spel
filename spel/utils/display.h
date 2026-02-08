@@ -21,18 +21,20 @@ typedef enum
 	SPEL_DISPLAY_PORTRAIT_FLIPPED
 } spel_display_orientation;
 
-sp_api spel_rect spel_display_bounds_get(uint32_t id);
-sp_api spel_rect spel_display_safe_bounds_get(uint32_t id);
+sp_api spel_rect spel_display_bounds(uint32_t id);
+sp_api spel_rect spel_display_safe_bounds(uint32_t id);
 
-const sp_api char* spel_display_name_get(uint32_t id);
+const sp_api char* spel_display_name(uint32_t id);
 
 sp_api spel_display_orientation spel_display_orientation_current(uint32_t id);
 sp_api spel_display_orientation spel_display_orientation_natural(uint32_t id);
 
 sp_api spel_display_mode spel_display_mode_current(uint32_t id);
 sp_api spel_display_mode spel_display_mode_nearest(uint32_t id, int w, int h, float refreshRrate, bool hidpi);
-sp_api spel_display_mode* spel_display_modes_get(uint32_t id, int* count);
+sp_api spel_display_mode* spel_display_modes(uint32_t id, int* count);
 
-sp_api uint32_t* spel_displays_get(int32_t* count);
+sp_api float spel_display_scale(uint32_t id);
+
+sp_api uint32_t* spel_display_list(int32_t* count);
 
 #endif

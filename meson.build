@@ -3,7 +3,7 @@ project(
     ['c', 'cpp'],
     version: '0.0.1',
     default_options: [
-        'c_std=c17',
+        'c_std=c11',
         'cpp_std=c++20',
         'default_library=static',
         'b_lto=true',
@@ -197,7 +197,7 @@ sh2spv = executable(
     'spel-sh2spv',
     sources: ['tools/sh2spv.cpp'],
     dependencies: sh2spv_deps,
-    cpp_args: rel_compile_args,
+    cpp_args: [rel_compile_args, '-O3'],
     link_args: rel_link_args,
 )
 
@@ -205,7 +205,7 @@ spv2h = executable(
     'spel-spv2h',
     sources: ['tools/spv2h.cpp'],
     dependencies: dependency('nlohmann_json'),
-    cpp_args: rel_compile_args,
+    cpp_args: [rel_compile_args, '-O3'],
     link_args: rel_link_args,
 )
 
@@ -221,6 +221,13 @@ shader_header = custom_target(
     input: compile_shaders,
     command: [spv2h, '@INPUT@', '@OUTPUT@'],
     output: 'gfx_internal_shaders.h',
+)
+
+executable(
+    'spel-str2fnv',
+    sources: ['tools/str2fnv.c'],
+    cpp_args: [rel_compile_args, '-O3'],
+    link_args: rel_link_args,
 )
 
 # Spël

@@ -1,6 +1,7 @@
 #ifndef SPEL_WINDOW
 #define SPEL_WINDOW
 #include "core/macros.h"
+#include "utils/math.h"
 
 sp_hidden void spel_window_create();
 sp_hidden void spel_window_cleanup();
@@ -22,5 +23,8 @@ sp_api void spel_window_move(int xpos, int ypos);
 sp_api void spel_window_rename(const char* name);
 sp_api void spel_window_min_size_set(int width, int height);
 sp_api void spel_window_fullscreen_set(bool fullscreen);
+
+sp_api spel_vec2 spel_window_framebuffer_size();
+sp_api spel_vec2 spel_window_dpi();
 
 #endif

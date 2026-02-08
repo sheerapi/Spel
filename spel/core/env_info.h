@@ -67,6 +67,6 @@ typedef struct
 	int core_id;
 } spel_cpu_core_key;
 
-sp_api void spel_runtime_info_setup();
+sp_hidden void spel_runtime_info_setup();
 
 #endif

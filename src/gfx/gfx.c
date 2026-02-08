@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/macros.h"
 #include "core/types.h"
+#include "core/window.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_commands.h"
@@ -41,6 +42,10 @@ spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 		(spel_gfx_context)sp_malloc(sizeof(spel_gfx_context_t), SPEL_MEM_TAG_GFX);
 	ctx->backend = desc->backend;
 	ctx->debug = desc->debug;
+
+	spel_vec2 fb = spel_window_framebuffer_size();
+	ctx->fb_width = (int)fb.x;
+	ctx->fb_height = (int)fb.y;
 
 	// Init caches before any allocations performed inside backend creation.
 	ctx->pipeline_cache.entries = NULL;

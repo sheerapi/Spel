@@ -7,8 +7,6 @@
 #include "gl.h"
 #include "gl_types.h"
 
-static spel_gfx_vtable_t GL_VTABLE;
-
 sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx);
 sp_hidden void spel_gfx_context_conf_gl();
 
@@ -62,7 +60,7 @@ sp_hidden spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 
 sp_hidden void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler);
 
-static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
+sp_api static spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
 
 									  .frame_begin = spel_gfx_frame_begin_gl,
 									  .frame_end = spel_gfx_frame_end_gl,

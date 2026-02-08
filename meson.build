@@ -114,10 +114,11 @@ if cc.get_id() != 'msvc'
     add_global_arguments(
         [
             '-fvisibility=hidden',
-            '-fvisibility-inlines-hidden',
         ],
         language: ['c', 'cpp'],
     )
+
+    add_global_arguments(['-fvisibility-inlines-hidden'], language: 'cpp')
 endif
 
 if get_option('sanitizers')

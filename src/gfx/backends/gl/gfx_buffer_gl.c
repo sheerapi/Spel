@@ -60,16 +60,16 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 {
 	GLuint handle = *(GLuint*)buf->data;
-	glDeleteBuffers(1, (GLuint*)buf->data);
+	glDeleteBuffers(1, &handle);
+	sp_debug("destroyed GL buffer %u", handle);
 	sp_free(buf->data);
 	sp_free(buf);
-	sp_debug("destroyed GL buffer %u", handle);
 }
 
 void spel_gfx_buffer_update_gl(spel_gfx_buffer buf, const void* data, size_t size,
 							   size_t offset)
 {
-	glNamedBufferSubData(*(GLuint*)buf->data, offset, size, data);
+	glNamedBufferSubData(*(GLuint*)buf->data, (GLintptr)offset, (GLsizeiptr)size, data);
 }
 
 void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_t size,

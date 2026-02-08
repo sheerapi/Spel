@@ -26,7 +26,7 @@ static void intern_grow(struct spel_event_intern_table* interns)
 {
 	size_t new_cap = interns->capacity ? interns->capacity * 2 : 16;
 	struct spel_event_intern_entry* new_entries =
-		spel_memory_malloc(new_cap * sizeof(spel_event_intern_entry), SPEL_MEM_TAG_CORE);
+		spel_memory_malloc(new_cap * sizeof(struct spel_event_intern_entry), SPEL_MEM_TAG_CORE);
 
 	for (size_t i = 0; i < interns->capacity; ++i)
 	{
@@ -88,7 +88,7 @@ static void event_table_grow(spel_events* events)
 {
 	size_t new_cap = events->capacity ? events->capacity * 2 : 16;
 	struct spel_event_bucket* new_buckets =
-		spel_memory_malloc(new_cap * sizeof(spel_event_bucket), SPEL_MEM_TAG_CORE);
+		spel_memory_malloc(new_cap * sizeof(struct spel_event_bucket), SPEL_MEM_TAG_CORE);
 
 	for (size_t i = 0; i < events->capacity; ++i)
 	{
@@ -154,7 +154,7 @@ sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* 
 	if (b->count >= b->cap)
 	{
 		size_t new_cap = b->cap ? b->cap * 2 : 4;
-		b->entries = spel_memory_realloc(b->entries, new_cap * sizeof(spel_event_entry),
+		b->entries = spel_memory_realloc(b->entries, new_cap * sizeof(struct spel_event_entry),
 										 SPEL_MEM_TAG_CORE);
 		b->cap = new_cap;
 	}

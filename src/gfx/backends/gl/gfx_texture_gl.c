@@ -176,7 +176,7 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 	}
 
 	GLuint handle = *(GLuint*)texture->data;
-	glDeleteTextures(1, texture->data);
+	glDeleteTextures(1, &handle);
 	sp_debug("destroyed GL texture %u", handle);
 	sp_free(texture->data);
 	sp_free(texture);

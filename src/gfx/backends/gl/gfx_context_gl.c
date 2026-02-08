@@ -170,7 +170,7 @@ sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 	SDL_GL_SwapWindow(spel.window.handle);
 }
 
-const sp_hidden static char* gl_source_to_string(GLenum source)
+const static char* gl_source_to_string(GLenum source)
 {
 	switch (source)
 	{
@@ -191,7 +191,7 @@ const sp_hidden static char* gl_source_to_string(GLenum source)
 	}
 }
 
-const sp_hidden static char* gl_type_to_string(GLenum type)
+const static char* gl_type_to_string(GLenum type)
 {
 	switch (type)
 	{
@@ -218,7 +218,7 @@ const sp_hidden static char* gl_type_to_string(GLenum type)
 	}
 }
 
-const sp_hidden static char* gl_severity_to_string(GLenum severity)
+const static char* gl_severity_to_string(GLenum severity)
 {
 	switch (severity)
 	{

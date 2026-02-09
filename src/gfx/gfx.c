@@ -337,7 +337,7 @@ sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }
 
-sp_api spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+sp_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline)
 {
 	if (cache->count * 10 >= cache->capacity * 7)

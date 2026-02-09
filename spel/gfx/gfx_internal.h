@@ -159,11 +159,14 @@ typedef struct spel_gfx_vtable_t
 	void (*sampler_destroy)(spel_gfx_sampler);
 } spel_gfx_vtable_t;
 
-extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
+sp_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
 
-extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+sp_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
 sp_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
+
+sp_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
+											  const spel_gfx_shader_desc* desc);
 // initialization
 
 #endif

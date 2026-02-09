@@ -83,6 +83,7 @@ sp_api bool spel_args_has(const char* arg)
 
 sp_api int spel_app_run(spel_app_desc* app)
 {
+	uint64_t start_ns = spel_time_now_ns();
 	spel_app_transform(app);
 
 	spel.window.swapchain.vsync = 1; // vsync on by default
@@ -136,6 +137,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 
 	sp_callback(spel.app.load);
 
+	sp_trace("started application in %dms", (spel_time_now_ns() - start_ns) / 1000000);
 	sp_callback(spel.app.run);
 	sp_callback(spel.app.quit);
 

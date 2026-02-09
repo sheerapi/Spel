@@ -23,10 +23,6 @@ sources = [
     'src/gfx/gfx.c',
     'src/utils/path.c',
     'src/gfx/gfx_pipeline.c',
-    'src/utils/internal/xxh_x86dispatch.c',
-    'src/utils/internal/xxhash.c',
-    'src/utils/internal/execinfo.c',
-    'src/utils/internal/stacktraverse.c',
     'src/utils/terminal.c',
     'src/core/panic.c',
     'src/utils/build_info.c',
@@ -39,7 +35,13 @@ sources = [
     'src/gfx/backends/gl/gfx_shader_gl.c',
     'src/gfx/backends/gl/gfx_pipeline_gl.c',
     'src/gfx/backends/gl/gfx_texture_gl.c',
-    'src/gfx/backends/gl/gfx_vtable_gl.c'
+    'src/gfx/backends/gl/gfx_vtable_gl.c',
+
+    'src/utils/internal/xxh_x86dispatch.c',
+    'src/utils/internal/xxhash.c',
+    'src/utils/internal/execinfo.c',
+    'src/utils/internal/stacktraverse.c',
+    'src/utils/internal/spirv_reflect.c',
 ]
 
 shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl']
@@ -199,7 +201,7 @@ sh2spv = executable(
     'spel-sh2spv',
     sources: ['tools/sh2spv.cpp'],
     dependencies: sh2spv_deps,
-    cpp_args: [rel_compile_args, '-O3'],
+    cpp_args: [rel_compile_args],
     link_args: rel_link_args,
 )
 
@@ -207,7 +209,7 @@ spv2h = executable(
     'spel-spv2h',
     sources: ['tools/spv2h.cpp'],
     dependencies: dependency('nlohmann_json'),
-    cpp_args: [rel_compile_args, '-O3'],
+    cpp_args: [rel_compile_args],
     link_args: rel_link_args,
 )
 
@@ -215,7 +217,7 @@ compile_shaders = custom_target(
     'compile_shaders',
     input: shaders,
     output: 'shaders.json',
-    command: [sh2spv, '@INPUT@'],
+    command: [sh2spv, '@INPUT@', '-Oz'],
     console: false,
 )
 
@@ -228,7 +230,7 @@ shader_header = custom_target(
 executable(
     'spel-str2fnv',
     sources: ['tools/str2fnv.c'],
-    cpp_args: [rel_compile_args, '-O3'],
+    cpp_args: [rel_compile_args],
     link_args: rel_link_args,
 )
 

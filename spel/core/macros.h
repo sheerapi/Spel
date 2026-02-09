@@ -36,7 +36,8 @@
 #ifdef SP_WEAK_LINK
 #	if defined(_MSC_VER)
 #		define sp_weak_alias(sym, fallback)                                             \
-			__pragma(comment(linker, "/alternatename:" #sym "=" #fallback))
+			_Pragma("message(\"aliasing " #sym " to " #fallback "\")")                  \
+			_Pragma("comment(linker, \"/alternatename:\"" #sym "=" #fallback ")")
 #	endif
 #else
 #	define sp_weak_alias(sym, fallback)

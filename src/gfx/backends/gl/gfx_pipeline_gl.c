@@ -113,23 +113,34 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	XXH3_state_t* state = XXH3_createState();
 	XXH3_64bits_reset(state);
 
+	uint8_t shaderCount = 0;
+	spel_gfx_shader shaders[3];
+
 	if (desc->vertex_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->vertex_shader->hash,
 						   sizeof(desc->vertex_shader->hash));
+		shaderCount++;
+		shaders[0] = desc->vertex_shader;
 	}
 
 	if (desc->fragment_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->fragment_shader->hash,
 						   sizeof(desc->geometry_shader->hash));
+		shaderCount++;
+		shaders[1] = desc->fragment_shader;
 	}
 
 	if (desc->geometry_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->geometry_shader->hash,
 						   sizeof(desc->geometry_shader->hash));
+		shaderCount++;
+		shaders[2] = desc->geometry_shader;
 	}
+
+	spel_gfx_pipeline_merge_reflections(pipeline, shaders, shaderCount);
 
 	spel_hash_vertex_layout(state, &desc->vertex_layout);
 

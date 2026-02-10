@@ -69,7 +69,7 @@ sp_api spel_event_id spel_event_intern(const char* name)
 
 		if (!e->key)
 		{
-			e->key = strdup(name);
+			e->key = spel_memory_strdup(name, SPEL_MEM_TAG_CORE);
 			e->id = spel.events.interns.next_id++;
 			spel.events.interns.count++;
 			return e->id;

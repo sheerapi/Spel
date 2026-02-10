@@ -233,6 +233,16 @@ typedef enum
 	SPEL_GFX_SAMPLER_WRAP_MIRROR,
 } spel_gfx_sampler_wrap;
 
+typedef enum
+{
+	SPEL_GFX_UNIFORM_UNKNOWN,
+
+	SPEL_GFX_UNIFORM_SAMPLER1D,
+	SPEL_GFX_UNIFORM_SAMPLER2D,
+	SPEL_GFX_UNIFORM_SAMPLER3D,
+	SPEL_GFX_UNIFORM_SAMPLER_CUBE,
+} spel_gfx_uniform_type;
+
 typedef struct
 {
 	const char* name;

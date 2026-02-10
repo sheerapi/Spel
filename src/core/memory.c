@@ -4,6 +4,7 @@
 #include "core/types.h"
 #include "utils/terminal.h"
 #include <limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -18,6 +19,7 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
 		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid memory tag %d", tag);
+		raise(SIGTRAP);
 		return NULL;
 	}
 
@@ -73,6 +75,7 @@ sp_api void spel_memory_free(void* ptr)
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
 		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in free", tag);
+		raise(SIGTRAP);
 		return;
 	}
 
@@ -106,6 +109,7 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	if ((int)old_tag < 0 || old_tag >= SPEL_MEM_TAG_COUNT)
 	{
 		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in realloc", old_tag);
+		raise(SIGTRAP);
 		return NULL;
 	}
 
@@ -114,12 +118,14 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	if ((int)use_tag < 0 || use_tag >= SPEL_MEM_TAG_COUNT)
 	{
 		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid tag %d in realloc", use_tag);
+		raise(SIGTRAP);
 		return NULL;
 	}
 
 	if (newSize > SIZE_MAX - sizeof(spel_alloc_header))
 	{
 		sp_error(SPEL_ERR_INVALID_ARGUMENT, "requested realloc too large (%zu)", newSize);
+		raise(SIGTRAP);
 		return NULL;
 	}
 
@@ -256,7 +262,7 @@ sp_api void spel_memory_dump_terminal()
 
 void* sdl_spel_malloc(size_t size)
 {
-	return spel_memory_malloc(size, SPEL_MEM_TAG_CORE);
+	return spel_memory_malloc(size, SPEL_MEM_TAG_MISC);
 }
 
 void* sdl_spel_calloc(size_t nmemb, size_t size)
@@ -267,16 +273,34 @@ void* sdl_spel_calloc(size_t nmemb, size_t size)
 		return NULL;
 	}
 
-	return spel_memory_malloc(total_size, SPEL_MEM_TAG_CORE);
+	return spel_memory_malloc(total_size, SPEL_MEM_TAG_MISC);
 }
 
 void* sdl_spel_realloc(void* mem, size_t size)
 {
-	return spel_memory_realloc(mem, size, SPEL_MEM_TAG_CORE);
+	return spel_memory_realloc(mem, size, SPEL_MEM_TAG_MISC);
 }
 
 sp_hidden void spel_memory_sdl_setup()
 {
 	SDL_SetMemoryFunctions(sdl_spel_malloc, sdl_spel_calloc, sdl_spel_realloc,
 						   spel_memory_free);
+}
+
+sp_api char* spel_memory_strdup(const char* src, spel_memory_tag tag)
+{
+	char* str;
+	char* p;
+	int len = 0;
+
+	while (src[len]) {
+		len++;
+}
+	str = spel_memory_malloc(len + 1, tag);
+	p = str;
+	while (*src) {
+		*p++ = *src++;
+}
+	*p = '\0';
+	return str;
 }

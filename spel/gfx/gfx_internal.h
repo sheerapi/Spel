@@ -32,11 +32,50 @@ typedef struct spel_gfx_buffer_t
 } spel_gfx_buffer_t;
 
 // shaders
+typedef struct spel_gfx_shader_uniform
+{
+	char* name;
+	uint8_t stage_mask;
+	bool used;
+	spel_gfx_uniform_type type;
+
+	uint32_t binding;
+	uint32_t offset;
+	uint32_t size;
+	uint32_t array_count;
+} spel_gfx_shader_uniform;
+
+typedef struct spel_gfx_shader_block
+{
+	char* name;
+	uint32_t binding;
+	uint32_t size;
+	spel_gfx_buffer_type type;
+	bool accessed;
+
+	spel_gfx_shader_uniform* members;
+	uint32_t member_count;
+} spel_gfx_shader_block;
+
+typedef struct spel_gfx_shader_reflection
+{
+	spel_gfx_shader_block* uniforms;
+	uint32_t uniform_count;
+
+	spel_gfx_shader_block* storage;
+	uint32_t storage_count;
+
+	spel_gfx_shader_uniform* samplers;
+	uint32_t sampler_count;
+} spel_gfx_shader_reflection;
+
 typedef struct spel_gfx_shader_t
 {
 	spel_gfx_shader_stage type;
+	char* entry;
 	bool internal;
 	spel_gfx_context ctx;
+	spel_gfx_shader_reflection reflection;
 	void* data;
 	uint64_t hash;
 } spel_gfx_shader_t;
@@ -53,6 +92,7 @@ typedef struct spel_gfx_pipeline_t
 	spel_gfx_context ctx;
 	spel_gfx_pipeline_type type;
 
+	spel_gfx_shader_reflection reflection;
 	uint64_t hash;
 
 	void* data;
@@ -167,6 +207,10 @@ sp_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 
 sp_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
 											  const spel_gfx_shader_desc* desc);
+
+#ifdef DEBUG
+sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
+#endif
 // initialization
 
 #endif

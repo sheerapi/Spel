@@ -137,8 +137,6 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_fullscreen_vertex";
-		vertex_desc.entry = "main";
-		vertex_desc.stage = SPEL_GFX_SHADER_VERTEX;
 		vertex_desc.source = spel_internal_fullscreen_vert_spv;
 		vertex_desc.source_size = spel_internal_fullscreen_vert_spv_len;
 
@@ -166,8 +164,6 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_2d_vertex";
-		vertex_desc.entry = "main";
-		vertex_desc.stage = SPEL_GFX_SHADER_VERTEX;
 		vertex_desc.source = spel_internal_2d_vert_spv;
 		vertex_desc.source_size = spel_internal_2d_vert_spv_len;
 
@@ -179,8 +175,6 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 	{
 		spel_gfx_shader_desc vertex_desc;
 		vertex_desc.debug_name = "spel_internal_2d_fragment";
-		vertex_desc.entry = "main";
-		vertex_desc.stage = SPEL_GFX_SHADER_FRAGMENT;
 		vertex_desc.source = spel_internal_2d_frag_spv;
 		vertex_desc.source_size = spel_internal_2d_frag_spv_len;
 

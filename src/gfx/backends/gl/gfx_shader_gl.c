@@ -28,6 +28,7 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 		return;
 	}
 
+	sp_debug("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).program);
 	glDeleteProgram((*(spel_gfx_shader_gl*)shader->data).program);
 	sp_free(shader->data);
 	sp_free(shader);
@@ -64,7 +65,8 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 		(spel_gfx_shader)sp_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);
 
 	shader->ctx = ctx;
-	shader->type = desc->stage;
+
+	spel_gfx_shader_reflect(shader, desc);
 
 	XXH3_state_t* state = XXH3_createState();
 	XXH3_64bits_reset(state);
@@ -76,7 +78,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 
 	shader->data = sp_malloc(sizeof(spel_gfx_shader_gl), SPEL_MEM_TAG_GFX);
 	(*(spel_gfx_shader_gl*)shader->data).shader =
-		glCreateShader(spel_gfx_shader_stage_to_gl(desc->stage));
+		glCreateShader(spel_gfx_shader_stage_to_gl(shader->type));
 
 	if (desc->source_size > (size_t)INT_MAX)
 	{
@@ -90,8 +92,8 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 	glShaderBinary(1, &(*(spel_gfx_shader_gl*)shader->data).shader,
 				   GL_SHADER_BINARY_FORMAT_SPIR_V, desc->source, src_size);
 
-	glSpecializeShader((*(spel_gfx_shader_gl*)shader->data).shader, desc->entry, 0, NULL,
-					   NULL);
+	glSpecializeShader((*(spel_gfx_shader_gl*)shader->data).shader, shader->entry, 0,
+					   NULL, NULL);
 
 	(*(spel_gfx_shader_gl*)shader->data).program = glCreateProgram();
 
@@ -122,7 +124,15 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
 		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
 			   sizeof(log), "failed to compile shader %s: %s", desc->debug_name,
 			   info_log);
+
+		glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
+		return NULL;
 	}
+
+	sp_debug("created %s GL shader %u (%s, %lu bytes)",
+			 spel_gfx_shader_type_str(shader->type),
+			 (*(spel_gfx_shader_gl*)shader->data).program, desc->debug_name,
+			 desc->source_size);
 
 	glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
 

@@ -150,9 +150,7 @@ sp_api void spel_gfx_shader_destroy(spel_gfx_shader shader)
 	shader->ctx->vt->shader_destroy(shader);
 }
 
-sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path,
-											const char* entry,
-											spel_gfx_shader_stage stage)
+sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path)
 {
 	if (!spel_path_exists(path))
 	{
@@ -179,8 +177,6 @@ sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* pa
 	}
 
 	spel_gfx_shader_desc shader_desc;
-	shader_desc.stage = stage;
-	shader_desc.entry = entry;
 	shader_desc.debug_name = spel_path_filename(path);
 	shader_desc.source = buffer;
 	shader_desc.source_size = length;
@@ -805,3 +801,23 @@ sp_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, i
 	cmd->width = width;
 	cmd->height = height;
 }
+
+#ifdef DEBUG
+sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage)
+{
+	switch (stage)
+	{
+	case SPEL_GFX_SHADER_VERTEX:
+		return "vertex";
+
+	case SPEL_GFX_SHADER_FRAGMENT:
+		return "fragment";
+
+	case SPEL_GFX_SHADER_GEOMETRY:
+		return "geometry";
+
+	case SPEL_GFX_SHADER_COMPUTE:
+		return "compute";
+	}
+}
+#endif

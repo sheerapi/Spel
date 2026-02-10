@@ -52,7 +52,7 @@ char* get_os_release_value(const char* key)
 			if (strcmp(current_key, key) == 0)
 			{
 				fclose(file);
-				return strdup(value);
+				return spel_memory_strdup(value, SPEL_MEM_TAG_CORE);
 			}
 		}
 	}

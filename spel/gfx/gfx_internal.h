@@ -35,10 +35,12 @@ typedef struct spel_gfx_buffer_t
 typedef struct spel_gfx_shader_uniform
 {
 	char* name;
+	uint8_t stage_mask;
 	bool used;
 	spel_gfx_uniform_type type;
 
 	uint32_t binding;
+	uint32_t location;
 	uint32_t offset;
 	uint32_t size;
 	uint32_t array_count;
@@ -109,6 +111,26 @@ typedef struct
 	uint32_t capacity;
 	uint32_t count;
 } spel_gfx_pipeline_cache;
+
+// uniforms
+typedef struct spel_gfx_uniform_t
+{
+	char* name;
+	union
+	{
+		struct
+		{
+			uint32_t binding;
+			uint32_t offset;
+			uint32_t size;
+		} uniform;
+
+		struct
+		{
+			uint32_t binding;
+		} sampler;
+	};
+} spel_gfx_uniform_t;
 
 // textures & samplers
 typedef struct spel_gfx_texture_t
@@ -184,7 +206,7 @@ typedef struct spel_gfx_vtable_t
 	void (*buffer_unmap)(spel_gfx_buffer);
 	void (*buffer_flush)(spel_gfx_buffer, size_t, size_t);
 
-	spel_gfx_shader (*shader_create)(spel_gfx_context, const spel_gfx_shader_desc*);
+	spel_gfx_shader (*shader_create)(spel_gfx_context, spel_gfx_shader_desc*);
 	void (*shader_destroy)(spel_gfx_shader);
 
 	spel_gfx_pipeline (*pipeline_create)(spel_gfx_context, const spel_gfx_pipeline_desc*);
@@ -205,14 +227,14 @@ sp_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 sp_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 
 sp_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
-											  const spel_gfx_shader_desc* desc);
+											spel_gfx_shader_desc* desc);
 
 sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipeline,
-												   spel_gfx_shader* shaders,
-												   uint32_t shaderCount);
+														  spel_gfx_shader* shaders,
+														  uint32_t shaderCount);
 
 #ifdef DEBUG
-	sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
+sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
 #endif
 // initialization
 

@@ -70,8 +70,8 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(spel_gfx_debug_callback, ctx);
 
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
-							  0, NULL, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
+							  0, NULL, GL_TRUE);
 	}
 
 	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
@@ -259,21 +259,21 @@ sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
 	if (severity == GL_DEBUG_SEVERITY_HIGH || type == GL_DEBUG_TYPE_ERROR)
 	{
 		sp_log(SPEL_SEV_ERROR, SPEL_ERR_CONTEXT_FAILED, &msg, SPEL_DATA_GFX_MSG,
-			   sizeof(msg), "error from opengl (%s): %s", src, message);
+			   sizeof(msg), "error from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
 	{
 		sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
-			   "warning from opengl (%s): %s", src, message);
+			   "warning from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_LOW)
 	{
 		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
-			   "debug info from opengl (%s): %s", src, message);
+			   "debug info from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else
 	{
 		sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
-			   "trace info from opengl (%s): %s", src, message);
+			   "trace info from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 }

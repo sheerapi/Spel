@@ -491,6 +491,7 @@ typedef struct SpvReflectDescriptorBinding {
   SpvReflectImageTraits               image;
   SpvReflectBlockVariable             block;
   SpvReflectBindingArrayTraits        array;
+  uint32_t location;
   uint32_t                            count;
   uint32_t                            accessed;
   uint32_t                            uav_counter_id;
@@ -1584,4 +1585,4 @@ const char* spvReflectBlockVariableTypeName(
 
 #endif // SPIRV_REFLECT_H
 
-// clang-format on
+	// clang-format on

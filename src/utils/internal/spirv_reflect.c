@@ -2870,6 +2870,7 @@ static SpvReflectResult ParseDescriptorBindings(SpvReflectPrvParser* p_parser,
 		p_descriptor->type_description = p_type;
 		p_descriptor->decoration_flags = ApplyDecorations(&p_node->decorations);
 		p_descriptor->user_type = p_node->decorations.user_type;
+		p_descriptor->location = p_node->decorations.location.value;
 
 		// Flags like non-writable and non-readable are found as member decorations only.
 		// If all members have one of those decorations set, promote the decoration up

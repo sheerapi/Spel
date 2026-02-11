@@ -3,8 +3,6 @@
 #include "core/memory.h"
 #include "core/panic.h"
 #include "gfx/gfx.h"
-#include "gfx/gfx_buffer.h"
-#include "gfx/gfx_types.h"
 #include "utils/display.h"
 #include <string.h>
 
@@ -68,6 +66,7 @@ void spel_draw()
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
+	spel_gfx_cmd_bind_texture(cl, 1, spel_gfx_texture_white_get(spel.gfx));
 
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 

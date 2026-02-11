@@ -73,10 +73,7 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
 	desc.fragment_shader = fragment;
 
 	static const spel_gfx_vertex_attrib ATTRIBS[] = {
-		{.location = 0,
-		 .format = spel_gfx_vertex_format_float3,
-		 .offset = 0,
-		 .stream = 0}};
+		{.location = 0, .format = sp_gfx_vertex_format_float3, .offset = 0, .stream = 0}};
 
 	static const spel_gfx_vertex_stream STREAMS[] = {
 		{.stride = sizeof(float) * 3, .rate = SPEL_GFX_VERTEX_RATE_VERTEX}};
@@ -97,8 +94,8 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader ver
 	desc.fragment_shader = fragment;
 
 	static const spel_gfx_vertex_attrib ATTRIBS[] = {
-		{0, spel_gfx_vertex_format_float2, 0, 0},	// position
-		{1, spel_gfx_vertex_format_ubyte4n, 8, 0}}; // color
+		{0, sp_gfx_vertex_format_float2, 0, 0},	  // position
+		{1, sp_gfx_vertex_format_ubyte4n, 8, 0}}; // color
 
 	static const spel_gfx_vertex_stream STREAMS[] = {
 		{.stride = ((sizeof(float) * 2) + sizeof(char) * 4),
@@ -128,8 +125,8 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
 	desc.fragment_shader = fragment;
 
 	static const spel_gfx_vertex_attrib ATTRIBS[] = {
-		{0, spel_gfx_vertex_format_float3, 0, 0}, // position
-		{1, spel_gfx_vertex_format_float2, 12, 0} // uv
+		{0, sp_gfx_vertex_format_float3, 0, 0}, // position
+		{1, sp_gfx_vertex_format_float2, 12, 0} // uv
 	};
 
 	static const spel_gfx_vertex_stream STREAMS[] = {
@@ -203,9 +200,9 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 	desc.fragment_shader = ctx->shaders[1];
 
 	static const spel_gfx_vertex_attrib ATTRIBS[] = {
-		{0, spel_gfx_vertex_format_float2, 0, 0},	 // position
-		{1, spel_gfx_vertex_format_float2, 8, 0},	 // uv
-		{2, spel_gfx_vertex_format_ubyte4n, 16, 0}}; // color
+		{0, sp_gfx_vertex_format_float2, 0, 0},	   // position
+		{1, sp_gfx_vertex_format_float2, 8, 0},	   // uv
+		{2, sp_gfx_vertex_format_ubyte4n, 16, 0}}; // color
 
 	static const spel_gfx_vertex_stream STREAMS[] = {
 		{.stride = ((sizeof(float) * 2) + (sizeof(float) * 2) + ((sizeof(char) * 4))),
@@ -341,9 +338,10 @@ sp_hidden int32_t spel_gfx_find_block_by_binding(spel_gfx_shader_block* blocks,
 {
 	for (uint32_t i = 0; i < count; i++)
 	{
-		if (blocks[i].binding == binding) {
+		if (blocks[i].binding == binding)
+		{
 			return (int32_t)i;
-}
+		}
 	}
 	return -1;
 }
@@ -353,9 +351,10 @@ sp_hidden int32_t spel_gfx_find_sampler_by_binding(spel_gfx_shader_uniform* samp
 {
 	for (uint32_t i = 0; i < count; i++)
 	{
-		if (samplers[i].binding == binding) {
+		if (samplers[i].binding == binding)
+		{
 			return (int32_t)i;
-}
+		}
 	}
 	return -1;
 }
@@ -436,4 +435,6 @@ sp_hidden void spel_gfx_verify_sampler_compatibility(
 				 existing->binding, spel_gfx_uniform_type_to_string(existing->type),
 				 spel_gfx_uniform_type_to_string(newSampler->type));
 	}
+
+	existing->stage_mask |= newSampler->stage_mask;
 }

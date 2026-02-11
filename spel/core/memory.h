@@ -37,6 +37,7 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag);
 sp_api void spel_memory_free(void* ptr);
 sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag);
 const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors);
+sp_api bool spel_memory_owns(void* ptr);
 
 // not really memory-related, but i don't feel like writing string.h again
 sp_api char* spel_memory_strdup(const char* src, spel_memory_tag tag);

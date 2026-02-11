@@ -1,4 +1,6 @@
 #include "glslang/Public/ShaderLang.h"
+#include <csignal>
+#include <map>
 #ifdef SPEL_SYSTEM_GLSLANG
 #	include "glslang/SPIRV/GlslangToSpv.h"
 #	include "glslang/SPIRV/disassemble.h"
@@ -32,6 +34,114 @@ auto args_has(int argc, const char** argv, const char* arg) -> int
 	}
 
 	return -1;
+}
+
+struct sampler_info
+{
+	uint32_t spirv_id;
+	uint32_t binding;
+};
+
+constexpr uint32_t OP_TYPE_SAMPLER = 26;
+constexpr uint32_t OP_TYPE_SAMPLED_IMAGE = 27;
+constexpr uint32_t OP_TYPE_POINTER = 32;
+constexpr uint32_t OP_VARIABLE = 59;
+constexpr uint32_t OP_DECORATE = 71;
+constexpr uint32_t DECORATION_BINDING = 33;
+constexpr uint32_t DECORATION_LOCATION = 30;
+
+auto find_samplers(const std::vector<uint32_t>& spirv) -> std::vector<sampler_info>
+{
+	std::vector<sampler_info> samplers;
+	std::unordered_map<uint32_t, uint32_t> id_to_binding;
+	std::unordered_map<uint32_t, uint32_t> type_ids;
+	std::unordered_map<uint32_t, bool> is_sampler_type;
+
+	size_t idx = 5;
+
+	while (idx < spirv.size())
+	{
+		uint16_t opcode = spirv[idx] & 0xFFFF;
+		uint16_t word_count = spirv[idx] >> 16;
+
+		if (opcode == OP_DECORATE && spirv[idx + 2] == DECORATION_BINDING)
+		{
+			uint32_t target_id = spirv[idx + 1];
+			uint32_t binding = spirv[idx + 3];
+			id_to_binding[target_id] = binding;
+		}
+		else if (opcode == OP_TYPE_SAMPLED_IMAGE || opcode == OP_TYPE_SAMPLER)
+		{
+			uint32_t result_id = spirv[idx + 1];
+			is_sampler_type[result_id] = true;
+		}
+		else if (opcode == OP_TYPE_POINTER)
+		{
+
+			uint32_t result_id = spirv[idx + 1];
+			uint32_t pointee_type = spirv[idx + 3];
+
+			if (is_sampler_type.count(pointee_type))
+			{
+				is_sampler_type[result_id] = true;
+			}
+		}
+		else if (opcode == OP_VARIABLE)
+		{
+
+			uint32_t result_type = spirv[idx + 1];
+			uint32_t result_id = spirv[idx + 2];
+
+			if (is_sampler_type.count(result_type) && id_to_binding.count(result_id))
+			{
+				samplers.push_back({result_id, id_to_binding[result_id]});
+			}
+		}
+
+		idx += word_count;
+	}
+
+	return samplers;
+}
+
+auto find_decoration_insert_point(const std::vector<uint32_t>& spirv) -> size_t
+{
+	size_t idx = 5;
+
+	while (idx < spirv.size())
+	{
+		uint16_t opcode = spirv[idx] & 0xFFFF;
+		uint16_t word_count = spirv[idx] >> 16;
+
+		if (opcode >= 19 && opcode <= 68)
+		{
+			return idx;
+		}
+
+		idx += word_count;
+	}
+
+	return idx;
+}
+
+void add_sampler_locations(
+	std::vector<uint32_t>& spirv,
+	const std::vector<std::pair<uint32_t, uint32_t>>& idLocationPairs)
+{
+	size_t insert_pos = find_decoration_insert_point(spirv);
+
+	std::vector<uint32_t> all_decorations;
+
+	for (const auto& [sampler_id, location] : idLocationPairs)
+	{
+		all_decorations.push_back((4 << 16) | OP_DECORATE);
+		all_decorations.push_back(sampler_id);
+		all_decorations.push_back(DECORATION_LOCATION);
+		all_decorations.push_back(location);
+	}
+
+	spirv.insert(spirv.begin() + insert_pos, all_decorations.begin(),
+				 all_decorations.end());
 }
 
 auto string_split(const std::string& str, const std::string& delimiter)
@@ -463,6 +573,72 @@ auto write_manifest(const std::vector<shader_manifest_entry>& entries,
 	return true;
 }
 
+struct resource_binding
+{
+	uint32_t set;
+	uint32_t binding;
+	std::string name;
+};
+
+auto validate_bindings(const std::vector<uint32_t>& spirv) -> bool
+{
+	std::map<std::pair<uint32_t, uint32_t>, std::string> binding_map;
+
+	constexpr uint32_t DECORATION_DESCRIPTOR_SET = 34;
+
+	std::unordered_map<uint32_t, uint32_t> id_to_binding;
+	std::unordered_map<uint32_t, uint32_t> id_to_set;
+	std::unordered_map<uint32_t, std::string> id_to_name;
+
+	size_t idx = 5;
+
+	while (idx < spirv.size())
+	{
+		uint16_t opcode = spirv[idx] & 0xFFFF;
+		uint16_t word_count = spirv[idx] >> 16;
+
+		if (opcode == OP_DECORATE)
+		{
+			uint32_t target_id = spirv[idx + 1];
+			uint32_t decoration = spirv[idx + 2];
+
+			if (decoration == DECORATION_BINDING)
+			{
+				id_to_binding[target_id] = spirv[idx + 3];
+			}
+			else if (decoration == DECORATION_DESCRIPTOR_SET)
+			{
+				id_to_set[target_id] = spirv[idx + 3];
+			}
+		}
+
+		idx += word_count;
+	}
+
+	bool valid = true;
+	for (const auto& [id, binding] : id_to_binding)
+	{
+		uint32_t set = id_to_set.contains(id) ? id_to_set[id] : 0;
+		auto key = std::make_pair(set, binding);
+
+		if (binding_map.contains(key))
+		{
+			fprintf(stderr, "Error: Duplicate binding: set=%u, binding=%u\n", set,
+					binding);
+			fprintf(stderr, "  Conflicts: '%s' and resource ID %u\n",
+					binding_map[key].c_str(), id);
+			valid = false;
+		}
+		else
+		{
+			binding_map[key] =
+				id_to_name.contains(id) ? id_to_name[id] : std::to_string(id);
+		}
+	}
+
+	return valid;
+}
+
 auto main(int argc, const char** argv) -> int
 {
 	if (argc < 2)
@@ -707,14 +883,14 @@ auto main(int argc, const char** argv) -> int
 			}
 		};
 
-		auto compile_and_write = [&](const std::string& shader_source,
-									 const stage_config& stage_info,
-									 const std::filesystem::path& output_path,
-									 const std::string& shader_name) -> bool
+		auto compile_and_write = [&](const std::string& shaderSource,
+									 const stage_config& stageInfo,
+									 const std::filesystem::path& outputPath,
+									 const std::string& shaderName) -> bool
 		{
-			glslang::TShader shader(stage_info.lang);
+			glslang::TShader shader(stageInfo.lang);
 
-			const char* source_ptr = shader_source.c_str();
+			const char* source_ptr = shaderSource.c_str();
 			shader.setStrings(&source_ptr, 1);
 			shader.setEntryPoint(entry);
 			shader.setSourceEntryPoint(entry);
@@ -740,12 +916,12 @@ auto main(int argc, const char** argv) -> int
 
 			if (file_language == 'h')
 			{
-				shader.setEnvInput(glslang::EShSourceHlsl, stage_info.lang,
+				shader.setEnvInput(glslang::EShSourceHlsl, stageInfo.lang,
 								   glslang::EShClientVulkan, 100);
 			}
 			else
 			{
-				shader.setEnvInput(glslang::EShSourceGlsl, stage_info.lang,
+				shader.setEnvInput(glslang::EShSourceGlsl, stageInfo.lang,
 								   glslang::EShClientVulkan, 100);
 			}
 			shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_0);
@@ -754,7 +930,7 @@ auto main(int argc, const char** argv) -> int
 			shader.setAutoMapLocations(true);
 			shader.setAutoMapBindings(true);
 
-			EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+			auto messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 			if (warningsAsErrors)
 			{
 				messages = (EShMessages)(messages | EShMsgKeepUncalled);
@@ -763,9 +939,9 @@ auto main(int argc, const char** argv) -> int
 			TBuiltInResource resources = GetDefaultResources();
 			CustomIncluder includer(&finder);
 
-			if (!shader.parse(&resources, 100, false, messages, includer))
+			if (!shader.parse(&resources, 100, true, messages, includer))
 			{
-				std::cerr << "failed to compile " << shader_name << ":\n";
+				std::cerr << "failed to compile " << shaderName << ":\n";
 				std::cerr << shader.getInfoLog() << "\n";
 				std::cerr << shader.getInfoDebugLog() << "\n";
 				return false;
@@ -776,7 +952,7 @@ auto main(int argc, const char** argv) -> int
 
 			if (!program.link(messages))
 			{
-				std::cerr << "failed to link " << shader_name << ":\n";
+				std::cerr << "failed to link " << shaderName << ":\n";
 				std::cerr << program.getInfoLog() << "\n";
 				std::cerr << program.getInfoDebugLog() << "\n";
 				return false;
@@ -785,6 +961,18 @@ auto main(int argc, const char** argv) -> int
 			std::vector<unsigned int> spirv;
 			spv::SpvBuildLogger logger;
 			glslang::SpvOptions spvOptions;
+
+			spvOptions.validate = true;
+
+			std::vector<unsigned int> spirv_unoptimized;
+			glslang::GlslangToSpv(*program.getIntermediate(stageInfo.lang),
+								  spirv_unoptimized);
+
+			if (!validate_bindings(spirv_unoptimized))
+			{
+				result = -1;
+				return false;
+			}
 
 			switch (optimization)
 			{
@@ -804,13 +992,25 @@ auto main(int argc, const char** argv) -> int
 				break;
 			}
 
-			glslang::GlslangToSpv(*program.getIntermediate(stage_info.lang), spirv,
+			glslang::GlslangToSpv(*program.getIntermediate(stageInfo.lang), spirv,
 								  &logger, &spvOptions);
 
-			std::ofstream f(output_path, std::ios::binary | std::ios::out);
+			auto samplers = find_samplers(spirv);
+
+			std::vector<std::pair<uint32_t, uint32_t>> id_location_pairs;
+			id_location_pairs.reserve(samplers.size());
+
+			for (const auto& sampler : samplers)
+			{
+				id_location_pairs.emplace_back(sampler.spirv_id, sampler.binding);
+			}
+
+			add_sampler_locations(spirv, id_location_pairs);
+
+			std::ofstream f(outputPath, std::ios::binary | std::ios::out);
 			if (!f.is_open())
 			{
-				std::cerr << "failed to open output file: " << output_path << "\n";
+				std::cerr << "failed to open output file: " << outputPath << "\n";
 				return false;
 			}
 
@@ -818,10 +1018,11 @@ auto main(int argc, const char** argv) -> int
 					spirv.size() * sizeof(unsigned int));
 
 			manifest_entries.push_back(shader_manifest_entry{
-				.name = shader_name,
-				.stage = stage_info.suffix,
-				.path = hasOutDir ? std::filesystem::relative(output_path, out_dir).string()
-								  : output_path.string()});
+				.name = shaderName,
+				.stage = stageInfo.suffix,
+				.path = hasOutDir
+							? std::filesystem::relative(outputPath, out_dir).string()
+							: outputPath.string()});
 
 			return true;
 		};

@@ -12,10 +12,10 @@
 #include <string.h>
 
 spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
-												const spel_gfx_shader_desc* desc);
+												spel_gfx_shader_desc* desc);
 
 spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
-										  const spel_gfx_shader_desc* desc)
+										spel_gfx_shader_desc* desc)
 {
 	return spel_gfx_shader_create_spirv_gl(ctx, desc);
 }
@@ -59,7 +59,7 @@ GLenum spel_gfx_shader_stage_to_gl(spel_gfx_shader_stage stage)
 }
 
 spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_context ctx,
-												const spel_gfx_shader_desc* desc)
+												spel_gfx_shader_desc* desc)
 {
 	spel_gfx_shader shader =
 		(spel_gfx_shader)sp_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);

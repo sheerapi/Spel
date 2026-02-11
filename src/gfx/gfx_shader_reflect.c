@@ -4,6 +4,11 @@
 #include "utils/internal/spirv_reflect.h"
 #include <stdio.h>
 
+#define SPIR_V_MAGIC 0x07230203
+#define OP_DECORATE 71
+#define OP_TYPE_POINTER 32
+#define DECORATION_LOCATION 30
+
 spel_gfx_shader_stage spel_gfx_spvreflect_stage_to_spel(
 	SpvReflectShaderStageFlagBits bits)
 {
@@ -30,16 +35,16 @@ spel_gfx_shader_stage spel_gfx_spvreflect_stage_to_spel(
 sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 										   SpvReflectDescriptorBinding* binding,
 										   spel_gfx_buffer_type type,
-										   const spel_gfx_shader_desc* desc);
+										   const spel_gfx_shader_desc* desc,
+										   spel_gfx_shader shader);
 sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 												const spel_gfx_shader_desc* desc);
 sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 											  const char* prefix,
 											  spel_gfx_shader_uniform* uniforms,
-											  uint32_t* index);
+											  uint32_t* index, spel_gfx_shader shader);
 
-sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader,
-									   const spel_gfx_shader_desc* desc)
+sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_desc* desc)
 {
 	SpvReflectShaderModule module;
 
@@ -122,6 +127,9 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader,
 	uint32_t ssbo_idx = 0;
 	uint32_t sampler_idx = 0;
 
+	uint32_t sampler_ids[sampler_count];
+	uint32_t sampler_bindings[sampler_count];
+
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
 		SpvReflectDescriptorBinding* binding = &bindings[i];
@@ -137,13 +145,15 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader,
 		case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 		{
 			spel_gfx_shader_block* block = &shader->reflection.uniforms[ubo_idx++];
-			spel_gfx_reflect_fill_block(block, binding, SPEL_GFX_BUFFER_UNIFORM, desc);
+			spel_gfx_reflect_fill_block(block, binding, SPEL_GFX_BUFFER_UNIFORM, desc,
+										shader);
 			break;
 		}
 		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 		{
 			spel_gfx_shader_block* block = &shader->reflection.storage[ssbo_idx++];
-			spel_gfx_reflect_fill_block(block, binding, SPEL_GFX_BUFFER_STORAGE, desc);
+			spel_gfx_reflect_fill_block(block, binding, SPEL_GFX_BUFFER_STORAGE, desc,
+										shader);
 			break;
 		}
 		case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
@@ -153,7 +163,10 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader,
 			sampler->name = spel_memory_strdup(binding->name, SPEL_MEM_TAG_GFX);
 			sampler->binding = binding->binding;
 			sampler->array_count = binding->count;
+			sampler->stage_mask = shader->type;
 			sampler->type = (spel_gfx_uniform_type)(binding->image.dim + 1);
+			sampler_ids[sampler_idx - 1] = binding->spirv_id;
+			sampler_bindings[sampler_idx - 1] = binding->binding;
 			break;
 		}
 		default:
@@ -167,7 +180,8 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader,
 sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 										   SpvReflectDescriptorBinding* binding,
 										   spel_gfx_buffer_type type,
-										   const spel_gfx_shader_desc* desc)
+										   const spel_gfx_shader_desc* desc,
+										   spel_gfx_shader shader)
 {
 	block->name =
 		spel_memory_strdup(binding->type_description->type_name, SPEL_MEM_TAG_GFX);
@@ -182,7 +196,7 @@ sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 	block->member_count = 0;
 
 	spel_gfx_flatten_block_members(&binding->block, "", block->members,
-								   &block->member_count);
+								   &block->member_count, shader);
 }
 
 sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
@@ -198,8 +212,9 @@ sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 	{
 		if (block->members[i].flags == SPV_REFLECT_VARIABLE_FLAGS_UNUSED)
 		{
-			sp_warn("shader block member %s%s%s is never accessed (%s)", block->name, strlen(block->name) != 0 ? "." : "",
-					block->members[i].name, desc->debug_name);
+			sp_warn("shader block member %s%s%s is never accessed (%s)", block->name,
+					strlen(block->name) != 0 ? "." : "", block->members[i].name,
+					desc->debug_name);
 		}
 		count += spel_gfx_count_block_members(&block->members[i], desc);
 	}
@@ -210,7 +225,7 @@ sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 											  const char* prefix,
 											  spel_gfx_shader_uniform* uniforms,
-											  uint32_t* index)
+											  uint32_t* index, spel_gfx_shader shader)
 {
 	char full_name[128];
 
@@ -220,7 +235,8 @@ sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 		{
 			snprintf(full_name, sizeof(full_name), "%s%s%s", prefix,
 					 strlen(prefix) > 0 ? "." : "", var->name);
-			spel_gfx_flatten_block_members(&var->members[i], full_name, uniforms, index);
+			spel_gfx_flatten_block_members(&var->members[i], full_name, uniforms, index,
+										   shader);
 		}
 	}
 	else
@@ -232,6 +248,7 @@ sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 		uniform->name = spel_memory_strdup(full_name, SPEL_MEM_TAG_GFX);
 		uniform->offset = var->offset;
 		uniform->size = var->size;
+		uniform->stage_mask = shader->type;
 		uniform->array_count = var->array.dims_count > 0 ? var->array.dims[0] : 1;
 	}
 }

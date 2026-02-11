@@ -140,7 +140,7 @@ sp_api void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
 }
 
 sp_api spel_gfx_shader spel_gfx_shader_create(spel_gfx_context ctx,
-											  const spel_gfx_shader_desc* desc)
+											  spel_gfx_shader_desc* desc)
 {
 	return ctx->vt->shader_create(ctx, desc);
 }
@@ -276,9 +276,8 @@ sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
-static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
-												  uint64_t hash,
-												  spel_gfx_pipeline pipeline)
+static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache, uint64_t hash,
+										   spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0)
 	{

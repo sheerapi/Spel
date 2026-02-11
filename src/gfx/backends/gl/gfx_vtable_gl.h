@@ -39,7 +39,7 @@ sp_hidden void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size
 
 // shaders
 sp_hidden spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
-													const spel_gfx_shader_desc* desc);
+													spel_gfx_shader_desc* desc);
 
 sp_hidden void spel_gfx_shader_destroy_gl(spel_gfx_shader shader);
 

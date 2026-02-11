@@ -1,3 +1,4 @@
+
 #define _GNU_SOURCE
 #include "core/panic.h"
 #include "core/memory.h"
@@ -9,6 +10,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <math.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -622,5 +624,6 @@ _Noreturn void spel_panic(spel_log_event evt)
 {
 	spel_panic_file(evt);
 	spel_panic_stderr(evt);
+	raise(SIGTRAP);
 	abort();
 }

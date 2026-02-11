@@ -43,13 +43,13 @@ static void spel_gl_configure_vertex_layout(GLuint vao,
 	{
 		const spel_gfx_vertex_attrib* attrib = &layout->attribs[i];
 
-		const uint32_t FLAGS = spel_vtx_flags(attrib->format);
+		const uint32_t FLAGS = sp_vtx_flags(attrib->format);
 		const bool INTEGER = (FLAGS & SPEL_GFX_VERTEX_INTEGER) != 0;
 		const bool NORMALIZED = (FLAGS & SPEL_GFX_VERTEX_NORMALIZED) != 0;
 
-		const GLenum TYPE = spel_gl_vertex_type(spel_vtx_base(attrib->format),
-												spel_vtx_bits(attrib->format));
-		const GLint SIZE = (GLint)spel_vtx_comps(attrib->format);
+		const GLenum TYPE =
+			spel_gl_vertex_type(sp_vtx_base(attrib->format), sp_vtx_bits(attrib->format));
+		const GLint SIZE = (GLint)sp_vtx_comps(attrib->format);
 
 		glEnableVertexArrayAttrib(vao, attrib->location);
 
@@ -195,6 +195,31 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	for (size_t i = 0; i < desc->vertex_layout.stream_count; i++)
 	{
 		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
+	}
+
+	for (uint32_t i = 0; i < pipeline->reflection.sampler_count; i++)
+	{
+		spel_gfx_shader_uniform sampler = pipeline->reflection.samplers[i];
+		
+		if (sampler.stage_mask & SPEL_GFX_SHADER_VERTEX)
+		{
+			glProgramUniform1i(
+				((spel_gfx_shader_gl*)desc->vertex_shader->data)->program,
+				(GLint)sampler.location, (GLint)i);
+		}
+
+		if (sampler.stage_mask & SPEL_GFX_SHADER_FRAGMENT)
+		{
+			glProgramUniform1i(((spel_gfx_shader_gl*)desc->fragment_shader->data)->program,
+							   (GLint)sampler.binding, (GLint)i);
+		}
+
+		if (sampler.stage_mask & SPEL_GFX_SHADER_GEOMETRY)
+		{
+			glProgramUniform1i(
+				((spel_gfx_shader_gl*)desc->geometry_shader->data)->program,
+				(GLint)sampler.location, (GLint)i);
+		}
 	}
 
 	return pipeline;

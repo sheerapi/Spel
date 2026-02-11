@@ -1,6 +1,7 @@
 #include "core/memory.h"
 #include "SDL3/SDL_stdinc.h"
 #include "core/log.h"
+#include "core/panic.h"
 #include "core/types.h"
 #include "utils/terminal.h"
 #include <limits.h>
@@ -10,6 +11,7 @@
 
 typedef struct spel_alloc_header
 {
+	uint32_t magic;
 	size_t size;
 	spel_memory_tag tag;
 } spel_alloc_header;
@@ -37,6 +39,7 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 
 	memset(h, 0, total);
 
+	h->magic = 0x5350454C;
 	h->size = size;
 	h->tag = tag;
 
@@ -72,6 +75,12 @@ sp_api void spel_memory_free(void* ptr)
 	size_t size = h->size;
 	spel_memory_tag tag = h->tag;
 
+	if (h->magic != 0x5350454C)
+	{
+		sp_panic(SPEL_ERR_INVALID_ARGUMENT, "this block (%p) does NOT belong to me!",
+				 ptr);
+	}
+
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
 		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in free", tag);
@@ -86,6 +95,23 @@ sp_api void spel_memory_free(void* ptr)
 	spel.memory.tags[tag].bytes_current -= size;
 
 	free(h);
+}
+
+sp_api bool spel_memory_owns(void* ptr)
+{
+	if (!ptr)
+	{
+		return false;
+	}
+
+	spel_alloc_header* h = ((spel_alloc_header*)ptr) - 1;
+
+	if (h->magic != 0x5350454C)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
@@ -293,14 +319,16 @@ sp_api char* spel_memory_strdup(const char* src, spel_memory_tag tag)
 	char* p;
 	int len = 0;
 
-	while (src[len]) {
+	while (src[len])
+	{
 		len++;
-}
+	}
 	str = spel_memory_malloc(len + 1, tag);
 	p = str;
-	while (*src) {
+	while (*src)
+	{
 		*p++ = *src++;
-}
+	}
 	*p = '\0';
 	return str;
 }

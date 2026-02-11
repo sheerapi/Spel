@@ -175,7 +175,7 @@ void exec_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_bind_pipeline_cmd* cmd
 	((spel_gfx_cmdlist_gl*)cl->data)->pipeline = cmd->pipeline;
 	spel_gfx_pipeline_gl* p = (spel_gfx_pipeline_gl*)cmd->pipeline->data;
 
-	glBindProgramPipeline(p->pipeline);
+	glUseProgram(p->program);
 	glBindVertexArray(p->vao);
 
 	if (p->depth_state.test)
@@ -297,19 +297,6 @@ static inline size_t spel_gl_index_size(GLenum type)
 
 void exec_cmd_draw_indexed(spel_gfx_cmdlist cl, spel_gfx_draw_indexed_cmd* cmd)
 {
-	GLint pipeline = 0;
-	glGetIntegerv(GL_PROGRAM_PIPELINE_BINDING, &pipeline);
-	assert(pipeline != 0);
-
-	GLint vs = 0;
-	GLint fs = 0;
-
-	glGetProgramPipelineiv(pipeline, GL_VERTEX_SHADER, &vs);
-	glGetProgramPipelineiv(pipeline, GL_FRAGMENT_SHADER, &fs);
-
-	assert(vs != 0);
-	assert(fs != 0);
-	
 	spel_gfx_cmdlist_gl* exec = (spel_gfx_cmdlist_gl*)cl->data;
 	spel_gfx_pipeline_gl* p = (spel_gfx_pipeline_gl*)exec->pipeline->data;
 

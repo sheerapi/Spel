@@ -6,6 +6,8 @@
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
 #include "utils/internal/xxhash.h"
+#include <stdio.h>
+#include <string.h>
 
 static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits);
 static GLenum spel_gl_primitive(spel_gfx_primitive_topology t);
@@ -15,18 +17,6 @@ static GLenum spel_gl_compare(spel_gfx_compare_func f);
 static GLenum spel_gl_stencil_op(spel_gfx_stencil_op op);
 static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f);
 static GLenum spel_gl_blend_op(spel_gfx_blend_op op);
-
-static void spel_gl_use_program_stage(GLuint pipeline, GLenum stageBit,
-									  spel_gfx_shader shader)
-{
-	if (shader == NULL)
-	{
-		return;
-	}
-
-	spel_gfx_shader_gl* shader_gl = (spel_gfx_shader_gl*)shader->data;
-	glUseProgramStages(pipeline, stageBit, shader_gl->program);
-}
 
 static void spel_gl_configure_vertex_layout(GLuint vao,
 											const spel_gfx_vertex_layout* layout)
@@ -175,15 +165,6 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	spel_gfx_pipeline_gl* gl_pipeline = (spel_gfx_pipeline_gl*)pipeline->data;
 	gl_pipeline->scissor_test = desc->scissor_test;
 
-	glCreateProgramPipelines(1, &gl_pipeline->pipeline);
-
-	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_VERTEX_SHADER_BIT,
-							  desc->vertex_shader);
-	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_FRAGMENT_SHADER_BIT,
-							  desc->fragment_shader);
-	spel_gl_use_program_stage(gl_pipeline->pipeline, GL_GEOMETRY_SHADER_BIT,
-							  desc->geometry_shader);
-
 	glCreateVertexArrays(1, &gl_pipeline->vao);
 	spel_gl_configure_vertex_layout(gl_pipeline->vao, &desc->vertex_layout);
 
@@ -197,47 +178,52 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
 	}
 
-	glValidateProgramPipeline(gl_pipeline->pipeline);
+	gl_pipeline->program = glCreateProgram();
 
-	GLint status;
-	glGetProgramPipelineiv(gl_pipeline->pipeline, GL_VALIDATE_STATUS, &status);
-
-	if (!status)
+	if (desc->vertex_shader != NULL)
 	{
-		GLint log_length;
-		glGetProgramPipelineiv(gl_pipeline->pipeline, GL_INFO_LOG_LENGTH, &log_length);
-
-		char* log = spel_memory_malloc(log_length, SPEL_MEM_TAG_GFX);
-		glGetProgramPipelineInfoLog(gl_pipeline->pipeline, log_length, NULL, log);
-
-		sp_error(SPEL_ERR_INVALID_RESOURCE, "failed to create pipeline: %s", log);
-		spel_memory_free(log);
-		return NULL;
+		glAttachShader(gl_pipeline->program,
+					   ((spel_gfx_shader_gl*)desc->vertex_shader->data)->shader);
 	}
 
-	for (uint32_t i = 0; i < pipeline->reflection.sampler_count; i++)
+	if (desc->fragment_shader != NULL)
 	{
-		spel_gfx_shader_uniform sampler = pipeline->reflection.samplers[i];
+		glAttachShader(gl_pipeline->program,
+					   ((spel_gfx_shader_gl*)desc->fragment_shader->data)->shader);
+	}
 
-		if (sampler.stage_mask & SPEL_GFX_SHADER_VERTEX)
-		{
-			glProgramUniform1i(((spel_gfx_shader_gl*)desc->vertex_shader->data)->program,
-							   (GLint)sampler.location, (GLint)i);
-		}
+	if (desc->geometry_shader != NULL)
+	{
+		glAttachShader(gl_pipeline->program,
+					   ((spel_gfx_shader_gl*)desc->geometry_shader->data)->shader);
+	}
 
-		if (sampler.stage_mask & SPEL_GFX_SHADER_FRAGMENT)
-		{
-			glProgramUniform1i(
-				((spel_gfx_shader_gl*)desc->fragment_shader->data)->program,
-				(GLint)sampler.binding, (GLint)i);
-		}
+	glLinkProgram(gl_pipeline->program);
 
-		if (sampler.stage_mask & SPEL_GFX_SHADER_GEOMETRY)
-		{
-			glProgramUniform1i(
-				((spel_gfx_shader_gl*)desc->geometry_shader->data)->program,
-				(GLint)sampler.location, (GLint)i);
-		}
+	int status;
+	glGetProgramiv(gl_pipeline->program, GL_LINK_STATUS, &status);
+
+	if (status != GL_TRUE)
+	{
+		char info_log[512];
+		GLsizei info_log_size = 0;
+		glGetProgramInfoLog(gl_pipeline->program, sizeof(info_log), &info_log_size,
+						   (GLchar*)info_log);
+
+		char str[24];
+		snprintf(str, sizeof(str), "%lx", pipeline->hash);
+		
+		spel_gfx_shader_log log = {.name = str,
+								   .name_size = strlen(str),
+								   .log = info_log,
+								   .log_size = info_log_size};
+
+		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
+			   sizeof(log), "failed to compile pipeline %s: %s", str,
+			   info_log);
+
+		glDeleteProgram(gl_pipeline->program);
+		return NULL;
 	}
 
 	return pipeline;
@@ -257,9 +243,9 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 		glDeleteVertexArrays(1, &glp->vao);
 	}
 
-	if (glp->pipeline)
+	if (glp->program)
 	{
-		glDeleteProgramPipelines(1, &glp->pipeline);
+		glDeleteProgram(glp->program);
 	}
 
 	sp_free(pipeline->data);

@@ -6,12 +6,11 @@
 typedef struct
 {
 	GLuint shader;
-	GLuint program;
 } spel_gfx_shader_gl;
 
 typedef struct
 {
-	GLuint pipeline;
+	GLuint program;
 	GLuint vao;
 
 	GLsizei* strides;

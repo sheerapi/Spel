@@ -160,6 +160,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 			sampler->name = spel_memory_strdup(binding->name, SPEL_MEM_TAG_GFX);
 			sampler->binding = binding->binding;
 			sampler->array_count = binding->count;
+			sampler->location = binding->location;
 			sampler->stage_mask = shader->type;
 			sampler->type = (spel_gfx_uniform_type)(binding->image.dim + 1);
 			break;

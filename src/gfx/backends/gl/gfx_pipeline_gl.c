@@ -197,21 +197,39 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
 	}
 
+	glValidateProgramPipeline(gl_pipeline->pipeline);
+
+	GLint status;
+	glGetProgramPipelineiv(gl_pipeline->pipeline, GL_VALIDATE_STATUS, &status);
+
+	if (!status)
+	{
+		GLint log_length;
+		glGetProgramPipelineiv(gl_pipeline->pipeline, GL_INFO_LOG_LENGTH, &log_length);
+
+		char* log = spel_memory_malloc(log_length, SPEL_MEM_TAG_GFX);
+		glGetProgramPipelineInfoLog(gl_pipeline->pipeline, log_length, NULL, log);
+
+		sp_error(SPEL_ERR_INVALID_RESOURCE, "failed to create pipeline: %s", log);
+		spel_memory_free(log);
+		return NULL;
+	}
+
 	for (uint32_t i = 0; i < pipeline->reflection.sampler_count; i++)
 	{
 		spel_gfx_shader_uniform sampler = pipeline->reflection.samplers[i];
-		
+
 		if (sampler.stage_mask & SPEL_GFX_SHADER_VERTEX)
 		{
-			glProgramUniform1i(
-				((spel_gfx_shader_gl*)desc->vertex_shader->data)->program,
-				(GLint)sampler.location, (GLint)i);
+			glProgramUniform1i(((spel_gfx_shader_gl*)desc->vertex_shader->data)->program,
+							   (GLint)sampler.location, (GLint)i);
 		}
 
 		if (sampler.stage_mask & SPEL_GFX_SHADER_FRAGMENT)
 		{
-			glProgramUniform1i(((spel_gfx_shader_gl*)desc->fragment_shader->data)->program,
-							   (GLint)sampler.binding, (GLint)i);
+			glProgramUniform1i(
+				((spel_gfx_shader_gl*)desc->fragment_shader->data)->program,
+				(GLint)sampler.binding, (GLint)i);
 		}
 
 		if (sampler.stage_mask & SPEL_GFX_SHADER_GEOMETRY)

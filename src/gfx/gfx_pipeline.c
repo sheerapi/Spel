@@ -273,6 +273,9 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 		{
 			continue;
 		}
+
+		spel_memory_free(shaders[i]->entry);
+		
 		spel_gfx_shader_reflection* refl = &shaders[i]->reflection;
 
 		for (uint32_t j = 0; j < refl->uniform_count; j++)
@@ -290,6 +293,8 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 			{
 				spel_gfx_copy_block(&all_ubos[ubo_idx++], block);
 			}
+
+			spel_memory_free(block->name);
 		}
 
 		for (uint32_t j = 0; j < refl->storage_count; j++)
@@ -306,6 +311,8 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 			{
 				spel_gfx_copy_block(&all_ssbos[ssbo_idx++], block);
 			}
+
+			spel_memory_free(block->name);
 		}
 
 		for (uint32_t j = 0; j < refl->sampler_count; j++)
@@ -322,7 +329,12 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 			{
 				spel_gfx_copy_sampler(&all_samplers[sampler_idx++], sampler);
 			}
+			spel_memory_free(sampler->name);
 		}
+
+		spel_memory_free(shaders[i]->reflection.samplers);
+		spel_memory_free(shaders[i]->reflection.uniforms);
+		spel_memory_free(shaders[i]->reflection.storage);
 	}
 
 	pipeline->reflection.uniforms = all_ubos;

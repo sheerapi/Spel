@@ -58,16 +58,8 @@ rel_link_args = []
 
 if cc.get_id() != 'msvc'
     rel_compile_args = [
-        '-ffunction-sections',
-        '-fdata-sections',
-        '-fno-unwind-tables',
-        '-fno-asynchronous-unwind-tables',
     ]
     rel_link_args = [
-        '-Wl,--gc-sections',
-        '-Wl,--strip-all',
-        '-Wl,--exclude-libs,ALL',
-        '-Wl,--no-as-needed',
     ]
 else
     rel_compile_args += [
@@ -140,8 +132,8 @@ if get_option('sanitizers')
     endif
 endif
 
-add_project_arguments(compile_args, language: ['c', 'cpp'])
-add_project_link_arguments(link_args, language: ['c', 'cpp'])
+add_global_arguments(compile_args, language: ['c', 'cpp'])
+add_global_link_arguments(link_args, language: ['c', 'cpp'])
 
 conf = configuration_data()
 conf.set('SPEL_COMPILER_ID', cc.get_id())
@@ -176,8 +168,6 @@ m_dep = cc.find_library('m', required: false)
 cmake = import('cmake')
 cmake_args = cmake.subproject_options()
 
-cmake_args.append_compile_args('cpp', rel_compile_args)
-cmake_args.append_link_args([rel_link_args])
 cmake_args.add_cmake_defines(
     {
         'SPIRV_CROSS_ENABLE_TESTS': false,
@@ -209,7 +199,6 @@ sh2spv = executable(
     sources: ['tools/sh2spv.cpp'],
     dependencies: sh2spv_deps,
     cpp_args: [rel_compile_args],
-    link_args: rel_link_args,
 )
 
 spv2h = executable(
@@ -217,7 +206,6 @@ spv2h = executable(
     sources: ['tools/spv2h.cpp'],
     dependencies: dependency('nlohmann_json'),
     cpp_args: [rel_compile_args],
-    link_args: rel_link_args,
 )
 
 compile_shaders = custom_target(
@@ -238,7 +226,6 @@ executable(
     'spel-str2fnv',
     sources: ['tools/str2fnv.c'],
     cpp_args: [rel_compile_args],
-    link_args: rel_link_args,
 )
 
 # Spël

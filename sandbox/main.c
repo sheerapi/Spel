@@ -5,6 +5,7 @@
 #include "gfx/gfx.h"
 #include "utils/display.h"
 #include <string.h>
+#include <time.h>
 
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;

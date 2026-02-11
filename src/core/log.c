@@ -113,6 +113,15 @@ sp_api void spel_log_assert(bool condition, spel_log_event evt)
 	{
 		spel_panic(evt);
 	}
+	else
+	{
+		if (evt->message_owned && evt->message)
+		{
+			spel_memory_free(evt->message);
+			evt->message = NULL;
+			evt->message_owned = false;
+		}
+	}
 }
 
 sp_api void spel_log_stderr_install()

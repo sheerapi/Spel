@@ -127,9 +127,6 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 	uint32_t ssbo_idx = 0;
 	uint32_t sampler_idx = 0;
 
-	uint32_t sampler_ids[sampler_count];
-	uint32_t sampler_bindings[sampler_count];
-
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
 		SpvReflectDescriptorBinding* binding = &bindings[i];
@@ -165,8 +162,6 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 			sampler->array_count = binding->count;
 			sampler->stage_mask = shader->type;
 			sampler->type = (spel_gfx_uniform_type)(binding->image.dim + 1);
-			sampler_ids[sampler_idx - 1] = binding->spirv_id;
-			sampler_bindings[sampler_idx - 1] = binding->binding;
 			break;
 		}
 		default:

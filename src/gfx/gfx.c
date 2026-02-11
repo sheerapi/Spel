@@ -329,6 +329,9 @@ sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 {
 	spel_gfx_pipeline_cache_remove(&pipeline->ctx->pipeline_cache, pipeline->hash,
 								   pipeline);
+	spel_memory_free(pipeline->reflection.samplers);
+	spel_memory_free(pipeline->reflection.storage);
+	spel_memory_free(pipeline->reflection.uniforms);
 	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }
 

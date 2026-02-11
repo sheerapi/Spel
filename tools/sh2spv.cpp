@@ -992,6 +992,9 @@ auto main(int argc, const char** argv) -> int
 				break;
 			}
 
+			spvOptions.disableOptimizer = true;
+			spvOptions.generateDebugInfo = true;
+
 			glslang::GlslangToSpv(*program.getIntermediate(stageInfo.lang), spirv,
 								  &logger, &spvOptions);
 

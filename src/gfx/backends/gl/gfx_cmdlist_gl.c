@@ -326,12 +326,12 @@ void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 
 void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
 {
-	glViewport(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width,
+	glViewport(cmd->x, cl->ctx->fb_height - (cmd->y + cmd->height), cmd->width,
 			   cmd->height);
 }
 
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
-	glScissor(cmd->x, spel.window.height - (cmd->y + cmd->height), cmd->width,
+	glScissor(cmd->x, cl->ctx->fb_height - (cmd->y + cmd->height), cmd->width,
 			  cmd->height);
 }

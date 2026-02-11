@@ -58,8 +58,16 @@ rel_link_args = []
 
 if cc.get_id() != 'msvc'
     rel_compile_args = [
+        '-ffunction-sections',
+        '-fdata-sections',
+        '-fno-unwind-tables',
+        '-fno-asynchronous-unwind-tables',
     ]
     rel_link_args = [
+        '-Wl,--gc-sections',
+        '-Wl,--strip-all',
+        '-Wl,--exclude-libs,ALL',
+        '-Wl,--no-as-needed',
     ]
 else
     rel_compile_args += [
@@ -170,15 +178,8 @@ cmake_args = cmake.subproject_options()
 
 cmake_args.add_cmake_defines(
     {
-        'SPIRV_CROSS_ENABLE_TESTS': false,
-        'SPIRV_CROSS_CLI': false,
-        'SPIRV_CROSS_ENABLE_HLSL': false,
-        'SPIRV_CROSS_ENABLE_MSL': false,
-        'SPIRV_CROSS_ENABLE_CPP': false,
-        'SPIRV_CROSS_ENABLE_REFLECT': false,
-        'SPIRV_CROSS_FORCE_PIC': true,
         'ENABLE_GLSLANG_BINARIES': false,
-        'CMAKE_BUILD_TYPE': 'MinSizeRel'
+        'CMAKE_BUILD_TYPE': 'MinSizeRel',
     },
 )
 
@@ -229,10 +230,7 @@ executable(
 )
 
 # Spël
-dependencies = [
-    dependency('sdl3'),
-    m_dep
-]
+dependencies = [dependency('sdl3'), m_dep]
 
 spel_lib = library(
     'spel',

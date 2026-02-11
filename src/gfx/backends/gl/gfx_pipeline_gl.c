@@ -117,7 +117,7 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	if (desc->fragment_shader != NULL)
 	{
 		XXH3_64bits_update(state, &desc->fragment_shader->hash,
-						   sizeof(desc->geometry_shader->hash));
+						   sizeof(desc->fragment_shader->hash));
 		shaderCount++;
 		shaders[1] = desc->fragment_shader;
 	}
@@ -223,6 +223,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 			   info_log);
 
 		glDeleteProgram(gl_pipeline->program);
+		spel_gfx_pipeline_cache_remove(&ctx->pipeline_cache, pipeline->hash,
+											  pipeline);
 		return NULL;
 	}
 

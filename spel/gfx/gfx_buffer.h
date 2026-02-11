@@ -9,6 +9,7 @@ typedef struct spel_gfx_buffer_desc
 	spel_gfx_buffer_type type;
 	spel_gfx_buffer_usage usage;
 	spel_gfx_buffer_access access;
+	bool persistent;
 	size_t size;
 	const void* data;
 } spel_gfx_buffer_desc;

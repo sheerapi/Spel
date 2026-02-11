@@ -40,7 +40,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
-	glNamedBufferData(*(GLuint*)buf->data, desc->size, desc->data,
+	glNamedBufferStorage(*(GLuint*)buf->data, desc->size, desc->data,
 					  spel_gfx_gl_buffer_usage(desc->access, desc->usage));
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)

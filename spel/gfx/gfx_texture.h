@@ -2,6 +2,7 @@
 #define SPEL_GFX_TEXTURE
 #include "core/macros.h"
 #include "gfx/gfx_types.h"
+#include "utils/math.h"
 
 typedef struct
 {
@@ -42,6 +43,8 @@ typedef struct
 
 sp_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
 												const spel_gfx_texture_desc* desc);
+
+sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx, spel_color color);
 
 sp_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
 sp_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);

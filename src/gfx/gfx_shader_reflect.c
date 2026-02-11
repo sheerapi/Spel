@@ -68,10 +68,11 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 		return;
 	}
 
-	SpvReflectDescriptorBinding* bindings = spel_memory_malloc(
-		binding_count * sizeof(SpvReflectDescriptorBinding), SPEL_MEM_TAG_GFX);
+	SpvReflectDescriptorBinding** bindings =
+		(SpvReflectDescriptorBinding**)spel_memory_malloc(
+			binding_count * sizeof(*bindings), SPEL_MEM_TAG_GFX);
 
-	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, &bindings) !=
+	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, bindings) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
 		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
@@ -85,7 +86,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
-		switch (bindings[i].descriptor_type)
+		switch (bindings[i]->descriptor_type)
 		{
 		case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 			ubo_count++;
@@ -129,7 +130,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
-		SpvReflectDescriptorBinding* binding = &bindings[i];
+		SpvReflectDescriptorBinding* binding = bindings[i];
 
 		if (binding->accessed != true)
 		{
@@ -170,6 +171,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 		}
 	}
 
+	spel_memory_free((void*)bindings);
 	spvReflectDestroyShaderModule(&module);
 }
 

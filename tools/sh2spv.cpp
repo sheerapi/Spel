@@ -42,107 +42,8 @@ struct sampler_info
 	uint32_t binding;
 };
 
-constexpr uint32_t OP_TYPE_SAMPLER = 26;
-constexpr uint32_t OP_TYPE_SAMPLED_IMAGE = 27;
-constexpr uint32_t OP_TYPE_POINTER = 32;
-constexpr uint32_t OP_VARIABLE = 59;
 constexpr uint32_t OP_DECORATE = 71;
 constexpr uint32_t DECORATION_BINDING = 33;
-constexpr uint32_t DECORATION_LOCATION = 30;
-
-auto find_samplers(const std::vector<uint32_t>& spirv) -> std::vector<sampler_info>
-{
-	std::vector<sampler_info> samplers;
-	std::unordered_map<uint32_t, uint32_t> id_to_binding;
-	std::unordered_map<uint32_t, uint32_t> type_ids;
-	std::unordered_map<uint32_t, bool> is_sampler_type;
-
-	size_t idx = 5;
-
-	while (idx < spirv.size())
-	{
-		uint16_t opcode = spirv[idx] & 0xFFFF;
-		uint16_t word_count = spirv[idx] >> 16;
-
-		if (opcode == OP_DECORATE && spirv[idx + 2] == DECORATION_BINDING)
-		{
-			uint32_t target_id = spirv[idx + 1];
-			uint32_t binding = spirv[idx + 3];
-			id_to_binding[target_id] = binding;
-		}
-		else if (opcode == OP_TYPE_SAMPLED_IMAGE || opcode == OP_TYPE_SAMPLER)
-		{
-			uint32_t result_id = spirv[idx + 1];
-			is_sampler_type[result_id] = true;
-		}
-		else if (opcode == OP_TYPE_POINTER)
-		{
-
-			uint32_t result_id = spirv[idx + 1];
-			uint32_t pointee_type = spirv[idx + 3];
-
-			if (is_sampler_type.count(pointee_type))
-			{
-				is_sampler_type[result_id] = true;
-			}
-		}
-		else if (opcode == OP_VARIABLE)
-		{
-
-			uint32_t result_type = spirv[idx + 1];
-			uint32_t result_id = spirv[idx + 2];
-
-			if (is_sampler_type.count(result_type) && id_to_binding.count(result_id))
-			{
-				samplers.push_back({result_id, id_to_binding[result_id]});
-			}
-		}
-
-		idx += word_count;
-	}
-
-	return samplers;
-}
-
-auto find_decoration_insert_point(const std::vector<uint32_t>& spirv) -> size_t
-{
-	size_t idx = 5;
-
-	while (idx < spirv.size())
-	{
-		uint16_t opcode = spirv[idx] & 0xFFFF;
-		uint16_t word_count = spirv[idx] >> 16;
-
-		if (opcode >= 19 && opcode <= 68)
-		{
-			return idx;
-		}
-
-		idx += word_count;
-	}
-
-	return idx;
-}
-
-void add_sampler_locations(
-	std::vector<uint32_t>& spirv,
-	const std::vector<std::pair<uint32_t, uint32_t>>& idLocationPairs)
-{
-	size_t insert_pos = find_decoration_insert_point(spirv);
-
-	std::vector<uint32_t> all_decorations;
-
-	for (const auto& [sampler_id, location] : idLocationPairs)
-	{
-		all_decorations.push_back((4 << 16) | OP_DECORATE);
-		all_decorations.push_back(sampler_id);
-		all_decorations.push_back(DECORATION_LOCATION);
-		all_decorations.push_back(location);
-	}
-
-	spirv.insert(spirv.begin() + insert_pos, all_decorations.begin(),
-				 all_decorations.end());
-}
 
 auto string_split(const std::string& str, const std::string& delimiter)
 	-> std::vector<std::string>
@@ -997,18 +898,6 @@ auto main(int argc, const char** argv) -> int
 
 			glslang::GlslangToSpv(*program.getIntermediate(stageInfo.lang), spirv,
 								  &logger, &spvOptions);
-
-			auto samplers = find_samplers(spirv);
-
-			std::vector<std::pair<uint32_t, uint32_t>> id_location_pairs;
-			id_location_pairs.reserve(samplers.size());
-
-			for (const auto& sampler : samplers)
-			{
-				id_location_pairs.emplace_back(sampler.spirv_id, sampler.binding);
-			}
-
-			add_sampler_locations(spirv, id_location_pairs);
 
 			std::ofstream f(outputPath, std::ios::binary | std::ios::out);
 			if (!f.is_open())

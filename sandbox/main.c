@@ -10,6 +10,7 @@
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
 spel_gfx_pipeline pipeline;
+spel_gfx_texture red;
 
 void spel_conf()
 {
@@ -54,6 +55,8 @@ void spel_load()
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
 
+	red = spel_gfx_texture_color_create(spel.gfx, spel_color_red());
+
 	spel_memory_dump_terminal();
 }
 
@@ -67,7 +70,7 @@ void spel_draw()
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
-	spel_gfx_cmd_bind_texture(cl, 1, spel_gfx_texture_white_get(spel.gfx));
+	spel_gfx_cmd_bind_texture(cl, 1, red);
 
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 
@@ -76,6 +79,7 @@ void spel_draw()
 
 void spel_quit()
 {
+	spel_gfx_texture_destroy(red);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_buffer_destroy(vbuffer);
 	spel_gfx_buffer_destroy(ibuffer);

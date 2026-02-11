@@ -276,7 +276,7 @@ sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
-static void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache, uint64_t hash,
+sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache, uint64_t hash,
 										   spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0)
@@ -767,7 +767,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
 													 const char* path)
 {
-	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB,
+	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
 									   .usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
 									   .mip_count = 0,
 									   .srgb = false};
@@ -823,3 +823,19 @@ sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stag
 	}
 }
 #endif
+
+sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
+													  spel_color color)
+{
+	const spel_gfx_texture_desc COLOR_TEX = {
+		.type = SPEL_GFX_TEXTURE_2D,
+		.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
+		.usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
+		.width = 1,
+		.height = 1,
+		.depth = 1,
+		.mip_count = 1,
+		.data = &color,
+		.data_size = sizeof(color)};
+	return spel_gfx_texture_create(ctx, &COLOR_TEX);
+}

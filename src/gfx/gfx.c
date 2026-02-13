@@ -329,6 +329,40 @@ sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 {
 	spel_gfx_pipeline_cache_remove(&pipeline->ctx->pipeline_cache, pipeline->hash,
 								   pipeline);
+
+	for (uint32_t i = 0; i < pipeline->reflection.uniform_count; ++i)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		if (block->members)
+		{
+			for (uint32_t m = 0; m < block->member_count; ++m)
+			{
+				spel_memory_free(block->members[m].name);
+			}
+			spel_memory_free(block->members);
+		}
+		spel_memory_free(block->name);
+	}
+
+	for (uint32_t i = 0; i < pipeline->reflection.storage_count; ++i)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		if (block->members)
+		{
+			for (uint32_t m = 0; m < block->member_count; ++m)
+			{
+				spel_memory_free(block->members[m].name);
+			}
+			spel_memory_free(block->members);
+		}
+		spel_memory_free(block->name);
+	}
+
+	for (uint32_t i = 0; i < pipeline->reflection.sampler_count; ++i)
+	{
+		spel_memory_free(pipeline->reflection.samplers[i].name);
+	}
+
 	spel_memory_free(pipeline->reflection.samplers);
 	spel_memory_free(pipeline->reflection.storage);
 	spel_memory_free(pipeline->reflection.uniforms);

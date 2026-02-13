@@ -4,6 +4,7 @@
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
 #include "gl.h"
+#include "gl_types.h"
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
@@ -320,8 +321,35 @@ void exec_cmd_bind_sampler(spel_gfx_cmdlist cl, spel_gfx_bind_sampler_cmd* cmd)
 
 void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 {
-	glBindTextureUnit(cmd->slot, *(GLuint*)cmd->texture->data);
-	glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
+	GLuint handle = *(GLuint*)cmd->texture->data;
+
+	GLint internal_format = 0;
+	glGetTextureLevelParameteriv(handle, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+	if (internal_format == 0)
+	{
+		// Fallback to a sane default to avoid GL errors; this should not happen.
+		internal_format = GL_RGBA8;
+	}
+
+	GLboolean layered = GL_FALSE;
+	switch (cmd->texture->type)
+	{
+	case SPEL_GFX_TEXTURE_2D_ARRAY:
+	case SPEL_GFX_TEXTURE_3D:
+	case SPEL_GFX_TEXTURE_CUBE:
+		layered = GL_TRUE;
+		break;
+	default:
+		break;
+	}
+
+	glBindImageTexture(cmd->slot, handle, 0, layered, 0, GL_READ_WRITE,
+					   (GLenum)internal_format);
+
+	if (cmd->sampler)
+	{
+		glBindSampler(cmd->slot, *(GLuint*)cmd->sampler->data);
+	}
 }
 
 void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)

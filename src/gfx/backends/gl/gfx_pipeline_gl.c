@@ -147,15 +147,6 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	pipeline->hash = XXH3_64bits_digest(state);
 	XXH3_freeState(state);
 
-	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
-		&ctx->pipeline_cache, pipeline->hash, pipeline);
-
-	if (cached != pipeline)
-	{
-		sp_free(pipeline);
-		return cached;
-	}
-
 	pipeline->ctx = ctx;
 	pipeline->type = SPEL_GFX_PIPELINE_GRAPHIC;
 
@@ -218,14 +209,22 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 								   .log = info_log,
 								   .log_size = info_log_size};
 
-		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
-			   sizeof(log), "failed to compile pipeline %s: %s", str,
-			   info_log);
+			sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
+				   sizeof(log), "failed to compile pipeline %s: %s", str,
+				   info_log);
 
-		glDeleteProgram(gl_pipeline->program);
-		spel_gfx_pipeline_cache_remove(&ctx->pipeline_cache, pipeline->hash,
-											  pipeline);
-		return NULL;
+			glDeleteProgram(gl_pipeline->program);
+			spel_gfx_pipeline_destroy(pipeline);
+			return NULL;
+		}
+
+	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
+		&ctx->pipeline_cache, pipeline->hash, pipeline);
+
+	if (cached != pipeline)
+	{
+		spel_gfx_pipeline_destroy(pipeline);
+		return cached;
 	}
 
 	return pipeline;

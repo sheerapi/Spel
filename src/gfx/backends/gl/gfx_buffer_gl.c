@@ -4,9 +4,6 @@
 #include "gfx/gfx_types.h"
 #include "gl.h"
 
-static GLenum spel_gfx_gl_buffer_usage(spel_gfx_buffer_access access,
-									   spel_gfx_buffer_usage usage);
-
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access);
 
 spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
@@ -40,12 +37,15 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
-	glNamedBufferStorage(*(GLuint*)buf->data, desc->size, desc->data,
-					  spel_gfx_gl_buffer_usage(desc->access, desc->usage));
+	GLbitfield storage_flags = GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT |
+							   GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
+							   GL_MAP_COHERENT_BIT;
+
+	glNamedBufferStorage(*(GLuint*)buf->data, desc->size, desc->data, storage_flags);
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferData error 0x%x", err);
+		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
 		glDeleteBuffers(1, (GLuint*)buf->data);
 		sp_free(buf->data);
 		sp_free(buf);
@@ -75,9 +75,9 @@ void spel_gfx_buffer_update_gl(spel_gfx_buffer buf, const void* data, size_t siz
 void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_t size,
 							 spel_gfx_access access)
 {
-	buf->persistent = true;
-	return glMapNamedBufferRange(*(GLuint*)buf->data, offset, size,
-								 spel_gfx_gl_map_access(access));
+	GLbitfield flags = spel_gfx_gl_map_access(access);
+	buf->persistent = (access & sp_gfx_access_persistent) != 0;
+	return glMapNamedBufferRange(*(GLuint*)buf->data, offset, size, flags);
 }
 
 void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf)
@@ -93,17 +93,6 @@ void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf)
 void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 {
 	glFlushMappedNamedBufferRange(*(GLuint*)buf->data, offset, size);
-}
-
-GLenum spel_gfx_gl_buffer_usage(spel_gfx_buffer_access access,
-								spel_gfx_buffer_usage usage)
-{
-	static const GLenum SPEL_GL_USAGE_TABLE[3][3] = {
-		{GL_STREAM_DRAW, GL_STREAM_READ, GL_STREAM_COPY},
-		{GL_STATIC_DRAW, GL_STATIC_READ, GL_STATIC_COPY},
-		{GL_DYNAMIC_DRAW, GL_DYNAMIC_READ, GL_DYNAMIC_COPY}};
-
-	return SPEL_GL_USAGE_TABLE[usage][access];
 }
 
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)

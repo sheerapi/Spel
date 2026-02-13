@@ -364,6 +364,7 @@ sp_hidden void spel_gfx_copy_block(spel_gfx_shader_block* dest,
 								   const spel_gfx_shader_block* src)
 {
 	memcpy(dest, src, sizeof(spel_gfx_shader_block));
+	dest->name = spel_memory_strdup(src->name, SPEL_MEM_TAG_GFX);
 
 	if (src->member_count > 0)
 	{
@@ -371,6 +372,12 @@ sp_hidden void spel_gfx_copy_block(spel_gfx_shader_block* dest,
 			src->member_count * sizeof(spel_gfx_shader_uniform), SPEL_MEM_TAG_GFX);
 		memcpy(dest->members, src->members,
 			   src->member_count * sizeof(spel_gfx_shader_uniform));
+
+		for (uint32_t i = 0; i < src->member_count; ++i)
+		{
+			dest->members[i].name =
+				spel_memory_strdup(src->members[i].name, SPEL_MEM_TAG_GFX);
+		}
 	}
 }
 
@@ -378,6 +385,7 @@ sp_hidden void spel_gfx_copy_sampler(spel_gfx_shader_uniform* dest,
 									 const spel_gfx_shader_uniform* src)
 {
 	memcpy(dest, src, sizeof(spel_gfx_shader_uniform));
+	dest->name = spel_memory_strdup(src->name, SPEL_MEM_TAG_GFX);
 }
 
 sp_hidden void spel_gfx_verify_block_compatibility(spel_gfx_shader_block* existing,

@@ -1087,7 +1087,6 @@ sp_api void spel_gfx_buffer_flush(spel_gfx_buffer buf, size_t offset, size_t siz
 }
 
 sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
-											spel_gfx_uniform location,
 											spel_gfx_uniform_buffer buf)
 {
 	uint64_t start_offset = cl->offset;
@@ -1098,7 +1097,7 @@ sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_SHADER_BUFFER;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->buf = buf.buffer;
-	cmd->location = location.location;
+	cmd->location = buf.location;
 }
 
 sp_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_t* count)
@@ -1157,6 +1156,7 @@ sp_api spel_gfx_uniform_buffer spel_gfx_uniform_buffer_create(spel_gfx_pipeline 
 	buffer_desc.size = block->size;
 
 	return (spel_gfx_uniform_buffer){
+		.location = block->location,
 		.buffer = spel_gfx_buffer_create(pipeline->ctx, &buffer_desc),
 		.size = block->size};
 }

@@ -23,6 +23,16 @@ typedef struct
 
 typedef struct
 {
+	union
+	{
+		uint32_t location;
+		struct
+		{
+			uint16_t set;
+			uint16_t binding;
+		};
+	};
+	
 	spel_gfx_buffer buffer;
 	uint32_t size;
 } spel_gfx_uniform_buffer;

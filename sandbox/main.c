@@ -64,6 +64,8 @@ void spel_load()
 	color_handle = spel_gfx_uniform_get(pipeline, "color");
 
 	ubuffer = spel_gfx_uniform_buffer_create(pipeline, "FrameData");
+
+	spel_memory_dump_terminal();
 }
 
 float color_data[8] = {
@@ -85,7 +87,7 @@ void spel_draw()
 	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position, sizeof(position));
 	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, &color_data, sizeof(color_data));
 
-	spel_gfx_cmd_bind_shader_buffer(cl, position_handle, ubuffer);
+	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer);
 
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);

@@ -47,7 +47,6 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 										size_t size);
 
 sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
-											spel_gfx_uniform location,
 											spel_gfx_uniform_buffer buf);
 
 #endif

@@ -49,4 +49,7 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 											spel_gfx_uniform_buffer buf);
 
+sp_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pass);
+sp_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl);
+
 #endif

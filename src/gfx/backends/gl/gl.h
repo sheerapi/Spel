@@ -21374,9 +21374,9 @@ static void glad_gl_free_extensions(char **exts_i) {
     if (exts_i != NULL) {
         unsigned int index;
         for(index = 0; exts_i[index]; index++) {
-            sp_free((void *) (exts_i[index]));
+            spel_memory_free((void *) (exts_i[index]));
         }
-        sp_free((void *)exts_i);
+        spel_memory_free((void *)exts_i);
         exts_i = NULL;
     }
 }
@@ -21387,7 +21387,7 @@ static int glad_gl_get_extensions( const char **out_exts, char ***out_exts_i) {
         unsigned int num_exts_i = 0;
         char **exts_i = NULL;
         glad_glGetIntegerv(GL_NUM_EXTENSIONS, (int*) &num_exts_i);
-        exts_i = (char **) sp_malloc((num_exts_i + 1) * (sizeof *exts_i), SPEL_MEM_TAG_GFX);
+        exts_i = (char **) spel_memory_malloc((num_exts_i + 1) * (sizeof *exts_i), SPEL_MEM_TAG_GFX);
         if (exts_i == NULL) {
             return 0;
         }
@@ -21395,7 +21395,7 @@ static int glad_gl_get_extensions( const char **out_exts, char ***out_exts_i) {
             const char *gl_str_tmp = (const char*) glad_glGetStringi(GL_EXTENSIONS, index);
             size_t len = strlen(gl_str_tmp) + 1;
 
-            char *local_str = (char*) sp_malloc(len * sizeof(char), SPEL_MEM_TAG_GFX);
+            char *local_str = (char*) spel_memory_malloc(len * sizeof(char), SPEL_MEM_TAG_GFX);
             if(local_str == NULL) {
                 exts_i[index] = NULL;
                 glad_gl_free_extensions(exts_i);
@@ -22513,13 +22513,13 @@ static void* glad_get_dlopen_handle(const char *lib_names[], int length) {
 #if GLAD_PLATFORM_WIN32
   #if GLAD_PLATFORM_UWP
         size_t buffer_size = (strlen(lib_names[i]) + 1) * sizeof(WCHAR);
-        LPWSTR buffer = (LPWSTR) sp_malloc(buffer_size, SPEL_MEM_TAG_GFX);
+        LPWSTR buffer = (LPWSTR) spel_memory_malloc(buffer_size, SPEL_MEM_TAG_GFX);
         if (buffer != NULL) {
             int ret = MultiByteToWideChar(CP_ACP, 0, lib_names[i], -1, buffer, buffer_size);
             if (ret != 0) {
                 handle = (void*) LoadPackagedLibrary(buffer, 0);
             }
-            sp_free((void*) buffer);
+            spel_memory_free((void*) buffer);
         }
   #else
         handle = (void*) LoadLibraryA(lib_names[i]);

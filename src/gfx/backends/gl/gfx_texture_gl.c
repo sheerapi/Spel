@@ -4,6 +4,7 @@
 #include "gfx/gfx_texture.h"
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
+#include <math.h>
 
 static GLenum spel_gl_filter(spel_gfx_sampler_filter f)
 {
@@ -83,17 +84,21 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
+	uint32_t depth = desc->depth == 0 ? 1 : desc->depth;
+	uint32_t max_mips = 1 + (uint32_t)floor(log2(fmax(desc->width, desc->height)));
+
+	uint32_t mip_count = desc->mip_count == 0 ? max_mips : desc->mip_count;
 #ifdef DEBUG
 	if (desc->data)
 	{
-		size_t expected = (size_t)desc->width * (size_t)desc->height *
-						  (size_t)desc->depth * (size_t)fmt->bytes_per_pixel;
+		size_t expected = (size_t)desc->width * (size_t)desc->height * (size_t)depth *
+						  (size_t)fmt->bytes_per_pixel;
 		sp_assert(desc->data_size >= expected, "i expected more data");
 	}
 #endif
 
 	spel_gfx_texture texture =
-		(spel_gfx_texture)sp_malloc(sizeof(*texture), SPEL_MEM_TAG_GFX);
+		(spel_gfx_texture)spel_memory_malloc(sizeof(*texture), SPEL_MEM_TAG_GFX);
 	if (!texture)
 	{
 		sp_error(SPEL_ERR_OOM, "failed to allocate texture object");
@@ -104,11 +109,11 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	texture->type = desc->type;
 	texture->internal = false;
 
-	texture->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
+	texture->data = spel_memory_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	if (!texture->data)
 	{
 		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
-		sp_free(texture);
+		spel_memory_free(texture);
 		return NULL;
 	}
 	GLuint* gl_handle = (GLuint*)texture->data;
@@ -118,19 +123,19 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	if (*gl_handle == 0)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateTextures returned 0");
-		sp_free(texture->data);
-		sp_free(texture);
+		spel_memory_free(texture->data);
+		spel_memory_free(texture);
 		return NULL;
 	}
 
 	if (desc->type == SPEL_GFX_TEXTURE_2D)
 	{
-		glTextureStorage2D(*gl_handle, (int)desc->mip_count, fmt->internal_format,
+		glTextureStorage2D(*gl_handle, (int)mip_count, fmt->internal_format,
 						   (int)desc->width, (int)desc->height);
 	}
 	else
 	{
-		glTextureStorage3D(*gl_handle, (int)desc->mip_count, fmt->internal_format,
+		glTextureStorage3D(*gl_handle, (int)mip_count, fmt->internal_format,
 						   (int)desc->width, (int)desc->height, (int)desc->depth);
 	}
 
@@ -153,13 +158,13 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		}
 	}
 
-	if (desc->mip_count > 1 && desc->data)
+	if ((desc->mip_count > 1 || desc->mip_count == 0) && desc->data)
 	{
 		glGenerateTextureMipmap(*gl_handle);
 	}
 
 	glTextureParameteri(*gl_handle, GL_TEXTURE_BASE_LEVEL, 0);
-	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, (int)desc->mip_count - 1);
+	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, (int)mip_count);
 
 	sp_debug("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
 			 desc->height, desc->depth, desc->mip_count, desc->format);
@@ -178,18 +183,18 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 	GLuint handle = *(GLuint*)texture->data;
 	glDeleteTextures(1, &handle);
 	sp_debug("destroyed GL texture %u", handle);
-	sp_free(texture->data);
-	sp_free(texture);
+	spel_memory_free(texture->data);
+	spel_memory_free(texture);
 }
 
 spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 											const spel_gfx_sampler_desc* desc)
 {
 	spel_gfx_sampler sampler =
-		(spel_gfx_sampler)sp_malloc(sizeof(*sampler), SPEL_MEM_TAG_GFX);
+		(spel_gfx_sampler)spel_memory_malloc(sizeof(*sampler), SPEL_MEM_TAG_GFX);
 
 	sampler->ctx = ctx;
-	sampler->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
+	sampler->data = spel_memory_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	GLuint* gl_handle = (GLuint*)sampler->data;
 
 	glCreateSamplers(1, gl_handle);
@@ -231,6 +236,6 @@ void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler)
 		glDeleteSamplers(1, gl_handle);
 	}
 
-	sp_free(sampler->data);
-	sp_free(sampler);
+	spel_memory_free(sampler->data);
+	spel_memory_free(sampler);
 }

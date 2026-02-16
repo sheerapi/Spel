@@ -39,8 +39,8 @@ sp_api void spel_gfx_context_conf(spel_gfx_backend backend)
 
 sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 {
-	spel_gfx_context ctx =
-		(spel_gfx_context)sp_malloc(sizeof(spel_gfx_context_t), SPEL_MEM_TAG_GFX);
+	spel_gfx_context ctx = (spel_gfx_context)spel_memory_malloc(
+		sizeof(spel_gfx_context_t), SPEL_MEM_TAG_GFX);
 	ctx->backend = desc->backend;
 	ctx->debug = desc->debug;
 
@@ -72,7 +72,7 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	if (ctx->vt == NULL)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "backend creation failed");
-		sp_free(ctx);
+		spel_memory_free(ctx);
 		return NULL;
 	}
 
@@ -84,7 +84,7 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 sp_api void spel_gfx_context_destroy(spel_gfx_context ctx)
 {
 	ctx->vt->ctx_destroy(ctx);
-	sp_free(ctx);
+	spel_memory_free(ctx);
 }
 
 sp_api void spel_gfx_frame_begin(spel_gfx_context ctx)
@@ -206,7 +206,7 @@ sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* pa
 		fseek(f, 0, SEEK_END);
 		length = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		buffer = sp_malloc(length, SPEL_MEM_TAG_GFX);
+		buffer = spel_memory_malloc(length, SPEL_MEM_TAG_GFX);
 		if (buffer)
 		{
 			fread(buffer, 1, length, f);
@@ -218,9 +218,9 @@ sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* pa
 	shader_desc.debug_name = spel_path_filename(path);
 	shader_desc.source = buffer;
 	shader_desc.source_size = length;
+	shader_desc.shader_source = SPEL_GFX_SHADER_DYNAMIC;
 
 	spel_gfx_shader shader = spel_gfx_shader_create(spel.gfx, &shader_desc);
-	sp_free(buffer);
 	return shader;
 }
 
@@ -416,7 +416,7 @@ sp_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
 
 		spel_gfx_pipeline_cache_entry* new_entries =
-			sp_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+			spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
 		memset(new_entries, 0, new_capacity * sizeof(*new_entries));
 
 		for (uint32_t i = 0; i < old_capacity; ++i)
@@ -438,7 +438,7 @@ sp_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 			new_entries[index] = *old;
 		}
 
-		sp_free(cache->entries);
+		spel_memory_free(cache->entries);
 		cache->entries = new_entries;
 		cache->capacity = new_capacity;
 	}
@@ -471,7 +471,7 @@ sp_api bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 {
 	bool valid = true;
 
-	if (desc->width <= 0 || desc->height <= 0 || desc->depth <= 0 || desc->mip_count <= 0)
+	if (desc->width <= 0 || desc->height <= 0 || desc->depth < 0 || desc->mip_count < 0)
 	{
 		valid = false;
 	}
@@ -522,7 +522,7 @@ sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
 
 		spel_gfx_sampler_cache_entry* new_entries =
-			sp_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+			spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
 		memset(new_entries, 0, new_capacity * sizeof(*new_entries));
 
 		for (uint32_t i = 0; i < old_capacity; ++i)
@@ -544,7 +544,7 @@ sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 			new_entries[index] = *old;
 		}
 
-		sp_free(cache->entries);
+		spel_memory_free(cache->entries);
 		cache->entries = new_entries;
 		cache->capacity = new_capacity;
 	}
@@ -718,7 +718,7 @@ sp_api spel_gfx_sampler_desc spel_gfx_sampler_default()
 
 uint8_t* rgb_to_rgba(const uint8_t* src, int pixelCount)
 {
-	uint8_t* dst = sp_malloc((unsigned long)(pixelCount * 4), SPEL_MEM_TAG_GFX);
+	uint8_t* dst = spel_memory_malloc((unsigned long)(pixelCount * 4), SPEL_MEM_TAG_GFX);
 	if (!dst)
 	{
 		return NULL;
@@ -814,7 +814,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* 
 
 	if (upload_pixels && upload_pixels != pixels)
 	{
-		sp_free(upload_pixels);
+		spel_memory_free(upload_pixels);
 	}
 
 	if (pixels)
@@ -1199,4 +1199,34 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 sp_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
 {
 	spel_gfx_buffer_destroy(buf.buffer);
+}
+
+sp_api spel_gfx_framebuffer
+spel_gfx_framebuffer_create(spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc)
+{
+	return ctx->vt->framebuffer_create(ctx, desc);
+}
+
+sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb)
+{
+	fb->ctx->vt->framebuffer_destroy(fb);
+}
+
+sp_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pass)
+{
+}
+
+sp_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
+{
+}
+
+sp_api spel_gfx_render_pass
+spel_gfx_render_pass_create(spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc)
+{
+	return ctx->vt->render_pass_create(ctx, desc);
+}
+
+sp_api void spel_gfx_render_pass_destroy(spel_gfx_render_pass pass)
+{
+	pass->ctx->vt->render_pass_destroy(pass);
 }

@@ -110,12 +110,12 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 
 	if (!ptr)
 	{
-		return sp_malloc(newSize, tag);
+		return spel_memory_malloc(newSize, tag);
 	}
 
 	if (newSize == 0)
 	{
-		sp_free(ptr);
+		spel_memory_free(ptr);
 		return NULL;
 	}
 

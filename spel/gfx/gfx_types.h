@@ -10,6 +10,8 @@ typedef struct spel_gfx_pipeline_t* spel_gfx_pipeline;
 typedef struct spel_gfx_shader_t* spel_gfx_shader;
 typedef struct spel_gfx_texture_t* spel_gfx_texture;
 typedef struct spel_gfx_sampler_t* spel_gfx_sampler;
+typedef struct spel_gfx_framebuffer_t* spel_gfx_framebuffer;
+typedef struct spel_gfx_render_pass_t* spel_gfx_render_pass;
 
 typedef enum
 {
@@ -245,12 +247,32 @@ typedef enum
 
 typedef enum
 {
+	// the shader code is loaded at runtime (e.g: from a file)
+	SPEL_GFX_SHADER_DYNAMIC,
+
 	// the shader code is immutable (e.g: internal shaders)
 	SPEL_GFX_SHADER_STATIC,
-
-	// the shader code is loaded at runtime (e.g: from a file)
-	SPEL_GFX_SHADER_DYNAMIC
 } spel_gfx_shader_source;
+
+typedef enum
+{
+	SPEL_GFX_ATTACHMENT_COLOR,
+	SPEL_GFX_ATTACHMENT_DEPTH,
+	SPEL_GFX_ATTACHMENT_DEPTH_STENCIL,
+} spel_gfx_attachment_type;
+
+typedef enum
+{
+	SPEL_GFX_LOAD_CLEAR,
+	SPEL_GFX_LOAD_LOAD,
+	SPEL_GFX_LOAD_DONT_CARE,
+} spel_gfx_load_op;
+
+typedef enum
+{
+	SPEL_GFX_STORE_STORE,
+	SPEL_GFX_STORE_DONT_CARE,
+} spel_gfx_store_op;
 
 typedef struct
 {

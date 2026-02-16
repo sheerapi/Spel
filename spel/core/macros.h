@@ -101,14 +101,4 @@
 	{                                                                                    \
 		return (spel_color){r, g, b, 255};                                               \
 	}
-
-#ifdef DEBUG
-#	define sp_malloc(size, tag) spel_memory_malloc(size, tag)
-#	define sp_free(ptr) spel_memory_free(ptr)
-#	define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
-#else
-#	define sp_malloc(size, tag) spel_memory_malloc(size, tag)
-#	define sp_free(ptr) spel_memory_free(ptr)
-#	define sp_realloc(ptr, size, tag) spel_memory_realloc(ptr, size, tag)
-#endif
 #endif

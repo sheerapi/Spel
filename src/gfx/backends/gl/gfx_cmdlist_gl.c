@@ -42,14 +42,15 @@ typedef struct
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 {
-	spel_gfx_cmdlist cl = (spel_gfx_cmdlist)sp_malloc(sizeof(*cl), SPEL_MEM_TAG_GFX);
+	spel_gfx_cmdlist cl =
+		(spel_gfx_cmdlist)spel_memory_malloc(sizeof(*cl), SPEL_MEM_TAG_GFX);
 	cl->capacity = (int)sp_cmdlist_default_size;
 	cl->offset = 0;
 	cl->ctx = ctx;
-	cl->buffer = sp_malloc(cl->capacity, SPEL_MEM_TAG_GFX);
+	cl->buffer = spel_memory_malloc(cl->capacity, SPEL_MEM_TAG_GFX);
 
-	spel_gfx_cmdlist_gl* data =
-		(spel_gfx_cmdlist_gl*)sp_malloc(sizeof(spel_gfx_cmdlist_gl), SPEL_MEM_TAG_GFX);
+	spel_gfx_cmdlist_gl* data = (spel_gfx_cmdlist_gl*)spel_memory_malloc(
+		sizeof(spel_gfx_cmdlist_gl), SPEL_MEM_TAG_GFX);
 	cl->data = data;
 
 	cl->dirty_buffer_cap = 8;
@@ -63,10 +64,10 @@ spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 
 void spel_gfx_cmdlist_destroy_gl(spel_gfx_cmdlist cl)
 {
-	sp_free(cl->dirty_buffers);
-	sp_free(cl->data);
-	sp_free(cl->buffer);
-	sp_free(cl);
+	spel_memory_free(cl->dirty_buffers);
+	spel_memory_free(cl->data);
+	spel_memory_free(cl->buffer);
+	spel_memory_free(cl);
 }
 
 void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
@@ -80,7 +81,8 @@ void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 	while (padded_end > cl->capacity)
 	{
 		cl->capacity *= 2;
-		void* new_buffer = sp_realloc(cl->buffer, cl->capacity, SPEL_MEM_TAG_GFX);
+		void* new_buffer =
+			spel_memory_realloc(cl->buffer, cl->capacity, SPEL_MEM_TAG_GFX);
 		if (new_buffer == NULL)
 		{
 			sp_error(SPEL_ERR_OOM, "out of memory?");

@@ -98,7 +98,7 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 											  const spel_gfx_pipeline_desc* desc)
 {
 	spel_gfx_pipeline pipeline =
-		(spel_gfx_pipeline)sp_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
+		(spel_gfx_pipeline)spel_memory_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
 
 	XXH3_state_t* state = XXH3_createState();
 	XXH3_64bits_reset(state);
@@ -150,8 +150,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	pipeline->ctx = ctx;
 	pipeline->type = SPEL_GFX_PIPELINE_GRAPHIC;
 
-	pipeline->data =
-		(spel_gfx_pipeline_gl*)sp_malloc(sizeof(spel_gfx_pipeline_gl), SPEL_MEM_TAG_GFX);
+	pipeline->data = (spel_gfx_pipeline_gl*)spel_memory_malloc(
+		sizeof(spel_gfx_pipeline_gl), SPEL_MEM_TAG_GFX);
 
 	spel_gfx_pipeline_gl* gl_pipeline = (spel_gfx_pipeline_gl*)pipeline->data;
 	gl_pipeline->scissor_test = desc->scissor_test;
@@ -161,8 +161,8 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 
 	spel_gl_cache_pipeline_state(gl_pipeline, desc);
 
-	gl_pipeline->strides =
-		sp_malloc(sizeof(GLsizei) * desc->vertex_layout.stream_count, SPEL_MEM_TAG_GFX);
+	gl_pipeline->strides = spel_memory_malloc(
+		sizeof(GLsizei) * desc->vertex_layout.stream_count, SPEL_MEM_TAG_GFX);
 
 	for (size_t i = 0; i < desc->vertex_layout.stream_count; i++)
 	{
@@ -235,7 +235,7 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 
 	if (glp->strides)
 	{
-		sp_free(glp->strides);
+		spel_memory_free(glp->strides);
 	}
 
 	if (glp->vao)
@@ -248,8 +248,8 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 		glDeleteProgram(glp->program);
 	}
 
-	sp_free(pipeline->data);
-	sp_free(pipeline);
+	spel_memory_free(pipeline->data);
+	spel_memory_free(pipeline);
 }
 
 static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits)

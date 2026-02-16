@@ -24,14 +24,14 @@ typedef struct spel_gfx_context_gl
 sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 {
 	spel_gfx_context_gl* gl =
-		(ctx->data = sp_malloc(sizeof(spel_gfx_context_gl), SPEL_MEM_TAG_GFX));
+		(ctx->data = spel_memory_malloc(sizeof(spel_gfx_context_gl), SPEL_MEM_TAG_GFX));
 
 	gl->ctx = SDL_GL_CreateContext(spel.window.handle);
 	if (!gl->ctx)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to create an opengl context");
 		ctx->vt = NULL;
-		sp_free(gl);
+		spel_memory_free(gl);
 		return;
 	}
 
@@ -49,7 +49,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		SDL_GL_DestroyContext(gl->ctx);
 		ctx->vt = NULL;
 		ctx->data = NULL;
-		sp_free(gl);
+		spel_memory_free(gl);
 		return;
 	}
 	if (gladLoaderLoadGL() == 0)
@@ -58,7 +58,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		SDL_GL_DestroyContext(gl->ctx);
 		ctx->vt = NULL;
 		ctx->data = NULL;
-		sp_free(gl);
+		spel_memory_free(gl);
 		return;
 	}
 
@@ -70,8 +70,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(spel_gfx_debug_callback, ctx);
 
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE,
-							  0, NULL, GL_TRUE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 	}
 
 	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
@@ -136,9 +135,9 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
-	sp_free(ctx->pipeline_cache.entries);
-	sp_free(ctx->sampler_cache.entries);
-	sp_free(gl);
+	spel_memory_free(ctx->pipeline_cache.entries);
+	spel_memory_free(ctx->sampler_cache.entries);
+	spel_memory_free(gl);
 	ctx->data = NULL;
 
 	sp_debug("GL context destroyed");
@@ -164,7 +163,7 @@ sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 	{
 		return;
 	}
-	
+
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	SDL_GL_SwapWindow(spel.window.handle);

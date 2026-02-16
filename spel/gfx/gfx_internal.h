@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
+#include "gfx/gfx_framebuffer.h"
 #include "gfx_pipeline.h"
 #include "gfx_shader.h"
 #include "gfx_texture.h"
@@ -167,6 +168,19 @@ typedef struct
 	uint32_t count;
 } spel_gfx_sampler_cache;
 
+// framebuffers
+typedef struct spel_gfx_framebuffer_t
+{
+	spel_gfx_context ctx;
+	void* data;
+} spel_gfx_framebuffer_t;
+
+typedef struct spel_gfx_render_pass_t
+{
+	spel_gfx_context ctx;
+	void* data;
+} spel_gfx_render_pass_t;
+
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
 
@@ -222,8 +236,16 @@ typedef struct spel_gfx_vtable_t
 	void (*texture_destroy)(spel_gfx_texture);
 
 	spel_gfx_sampler (*sampler_create)(spel_gfx_context,
-									   const spel_gfx_sampler_desc* desc);
+									   const spel_gfx_sampler_desc*);
 	void (*sampler_destroy)(spel_gfx_sampler);
+
+	spel_gfx_framebuffer (*framebuffer_create)(spel_gfx_context,
+											   const spel_gfx_framebuffer_desc*);
+	void (*framebuffer_destroy)(spel_gfx_framebuffer);
+
+	spel_gfx_render_pass (*render_pass_create)(spel_gfx_context,
+											   const spel_gfx_render_pass_desc*);
+	void (*render_pass_destroy)(spel_gfx_render_pass pass);
 } spel_gfx_vtable_t;
 
 sp_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);

@@ -11,7 +11,8 @@ GLbitfield spel_gfx_gl_map_access(spel_gfx_access access);
 spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 										  const spel_gfx_buffer_desc* desc)
 {
-	spel_gfx_buffer buf = (spel_gfx_buffer)sp_malloc(sizeof(*buf), SPEL_MEM_TAG_GFX);
+	spel_gfx_buffer buf =
+		(spel_gfx_buffer)spel_memory_malloc(sizeof(*buf), SPEL_MEM_TAG_GFX);
 	if (!buf)
 	{
 		sp_error(SPEL_ERR_OOM, "failed to allocate buffer object");
@@ -19,11 +20,11 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	}
 
 	buf->ctx = ctx;
-	buf->data = sp_malloc(sizeof(spel_gfx_gl_buffer), SPEL_MEM_TAG_GFX);
+	buf->data = spel_memory_malloc(sizeof(spel_gfx_gl_buffer), SPEL_MEM_TAG_GFX);
 	if (!buf->data)
 	{
 		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
-		sp_free(buf);
+		spel_memory_free(buf);
 		return NULL;
 	}
 
@@ -47,8 +48,8 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
-		sp_free(buf->data);
-		sp_free(buf);
+		spel_memory_free(buf->data);
+		spel_memory_free(buf);
 		return NULL;
 	}
 
@@ -63,8 +64,8 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	{
 		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
 		glDeleteBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
-		sp_free(buf->data);
-		sp_free(buf);
+		spel_memory_free(buf->data);
+		spel_memory_free(buf);
 		return NULL;
 	}
 
@@ -84,8 +85,8 @@ void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
 	glDeleteBuffers(1, &handle);
 	sp_debug("destroyed GL buffer %u", handle);
-	sp_free(buf->data);
-	sp_free(buf);
+	spel_memory_free(buf->data);
+	spel_memory_free(buf);
 }
 
 void spel_gfx_buffer_update_gl(spel_gfx_buffer buf, const void* data, size_t size,
@@ -124,7 +125,7 @@ void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 		{
 			return;
 		}
-		
+
 		uint32_t range = glBuf->dirty_max - glBuf->dirty_min;
 		glNamedBufferSubData(glBuf->buffer, glBuf->dirty_min, range,
 							 (uint8_t*)glBuf->mirror + glBuf->dirty_min);

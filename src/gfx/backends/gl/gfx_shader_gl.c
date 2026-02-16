@@ -21,7 +21,7 @@ spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
 										  spel_gfx_shader_desc* desc)
 {
 	spel_gfx_shader shader =
-		(spel_gfx_shader)sp_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);
+		(spel_gfx_shader)spel_memory_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);
 
 	shader->ctx = ctx;
 	spel_gfx_shader_reflect(shader, desc);
@@ -43,8 +43,8 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 
 	sp_debug("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).shader);
 	glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
-	sp_free(shader->data);
-	sp_free(shader);
+	spel_memory_free(shader->data);
+	spel_memory_free(shader);
 }
 
 GLenum spel_gfx_shader_stage_to_gl(spel_gfx_shader_stage stage)
@@ -82,15 +82,15 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 	shader->hash = XXH3_64bits_digest(state);
 	XXH3_freeState(state);
 
-	shader->data = sp_malloc(sizeof(spel_gfx_shader_gl), SPEL_MEM_TAG_GFX);
+	shader->data = spel_memory_malloc(sizeof(spel_gfx_shader_gl), SPEL_MEM_TAG_GFX);
 	(*(spel_gfx_shader_gl*)shader->data).shader =
 		glCreateShader(spel_gfx_shader_stage_to_gl(shader->type));
 
 	if (desc->source_size > (size_t)INT_MAX)
 	{
 		sp_error(SPEL_ERR_INVALID_ARGUMENT, "shader binary too large");
-		sp_free(shader->data);
-		sp_free(shader);
+		spel_memory_free(shader->data);
+		spel_memory_free(shader);
 		return NULL;
 	}
 	GLsizei src_size = (GLsizei)desc->source_size;
@@ -123,8 +123,8 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 		spel_gfx_shader_reflection_free(shader);
 		spel_memory_free(shader->entry);
 		glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
-		sp_free(shader->data);
-		sp_free(shader);
+		spel_memory_free(shader->data);
+		spel_memory_free(shader);
 		return NULL;
 	}
 

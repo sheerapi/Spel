@@ -41,7 +41,7 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 	spel_gfx_shader_reflection_free(shader);
 	spel_memory_free(shader->entry);
 
-	sp_debug("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).shader);
+	sp_trace("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).shader);
 	glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
 	spel_memory_free(shader->data);
 	spel_memory_free(shader);
@@ -130,7 +130,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 
 	spel_memory_free(desc->source);
 
-	sp_debug(
+	sp_trace(
 		"created %s GL shader %u (%s, %lu bytes)", spel_gfx_shader_type_str(shader->type),
 		(*(spel_gfx_shader_gl*)shader->data).shader, desc->debug_name, desc->source_size);
 

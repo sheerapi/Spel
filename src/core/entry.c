@@ -137,7 +137,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 
 	sp_callback(spel.app.load);
 
-	sp_trace("started application in %dms", (spel_time_now_ns() - start_ns) / 1000000);
+	sp_debug("started application in %dms", (spel_time_now_ns() - start_ns) / 1000000);
 	sp_callback(spel.app.run);
 	sp_callback(spel.app.quit);
 

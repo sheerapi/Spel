@@ -71,6 +71,10 @@ spel_gfx_render_pass_create_gl(spel_gfx_context ctx, const spel_gfx_render_pass_
 
 sp_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass);
 
+sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect srcRegion,
+						 spel_gfx_framebuffer dst, spel_rect dstRegion,
+						 uint8_t attachment, spel_gfx_sampler_filter filter);
+
 extern spel_gfx_vtable_t GL_VTABLE;
 
 #endif

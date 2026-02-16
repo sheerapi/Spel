@@ -11,7 +11,7 @@ layout(location = 1) out vec4 v_color;
 layout(set = 0, binding = 1) uniform FrameData
 {
 	vec2 position;
-	vec3 color[2];
+	vec4 color;
 };
 
 void main()
@@ -35,11 +35,11 @@ layout(set = 0, binding = 0) uniform sampler2D u_texture;
 layout(set = 0, binding = 1) uniform FrameData
 {
 	vec2 position;
-	vec3 color[2];
+	vec4 color;
 };
 
 void main()
 {
 	vec4 tex = texture(u_texture, v_uv);
-	out_color = tex * mix(vec4(color[0], 1), vec4(color[1], 1), 0.5) * v_color;
+	out_color = tex * color * v_color;
 }

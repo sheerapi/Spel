@@ -36,7 +36,7 @@ sp_hidden void spel_window_create()
 
 	SDL_GetWindowPosition(spel.window.handle, &spel.window.x, &spel.window.y);
 
-	sp_trace("created window %s (%dx%d) at %d,%d (display %d)", spel.window.title,
+	sp_debug("created window %s (%dx%d) at %d,%d (display %d)", spel.window.title,
 			 spel.window.width, spel.window.height, spel.window.x, spel.window.y,
 			 spel.window.display);
 

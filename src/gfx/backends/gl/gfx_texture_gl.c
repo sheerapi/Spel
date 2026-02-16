@@ -166,7 +166,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	glTextureParameteri(*gl_handle, GL_TEXTURE_BASE_LEVEL, 0);
 	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, (int)mip_count);
 
-	sp_debug("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
+	sp_trace("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
 			 desc->height, desc->depth, desc->mip_count, desc->format);
 
 	return texture;
@@ -182,7 +182,7 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 
 	GLuint handle = *(GLuint*)texture->data;
 	glDeleteTextures(1, &handle);
-	sp_debug("destroyed GL texture %u", handle);
+	sp_trace("destroyed GL texture %u", handle);
 	spel_memory_free(texture->data);
 	spel_memory_free(texture);
 }

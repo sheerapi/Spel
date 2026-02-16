@@ -1,5 +1,6 @@
 #include "core/entry.h"
 #include "core/log.h"
+#include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
@@ -108,6 +109,11 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 	{
 		cl->offset = 0;
 		return;
+	}
+
+	if (((spel_gfx_cmdlist_gl*)cl->data)->current_pass != NULL)
+	{
+		spel_gfx_cmd_end_pass(cl);
 	}
 
 	for (size_t i = 0; i < cl->dirty_buffer_count; i++)

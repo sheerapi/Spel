@@ -305,7 +305,9 @@ sp_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
 
 sp_api spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
 {
-	return ctx->cmdlist;
+	spel_gfx_cmdlist cmdlist = ctx->cmdlist;
+	spel_gfx_cmd_begin_pass(cmdlist, spel_gfx_render_pass_default(ctx));
+	return cmdlist;
 }
 
 sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
@@ -656,6 +658,17 @@ void spel_gfx_context_default_data(spel_gfx_context ctx)
 
 	ctx->white_tex->internal = true;
 	ctx->checkerboard->internal = true;
+
+	spel_gfx_render_pass_desc backbuffer_pass_desc = {
+		.name = "Back Buffer",
+		.framebuffer = NULL,
+		.color_load = {SPEL_GFX_LOAD_DONT_CARE},
+		.color_store = {SPEL_GFX_STORE_STORE},
+		.depth_load = SPEL_GFX_LOAD_DONT_CARE,
+		.depth_store = SPEL_GFX_STORE_DONT_CARE,
+	};
+
+	ctx->default_pass = spel_gfx_render_pass_create(ctx, &backbuffer_pass_desc);
 }
 
 void spel_checker_rgba8_make(uint8_t* out, int width, int height, int tileSize)
@@ -1244,4 +1257,84 @@ spel_gfx_render_pass_create(spel_gfx_context ctx, const spel_gfx_render_pass_des
 sp_api void spel_gfx_render_pass_destroy(spel_gfx_render_pass pass)
 {
 	pass->ctx->vt->render_pass_destroy(pass);
+}
+
+sp_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect srcRegion,
+										   spel_gfx_framebuffer dst, spel_rect dstRegion,
+										   uint8_t attachment,
+										   spel_gfx_sampler_filter filter)
+{
+	spel_gfx_framebuffer fb = NULL;
+
+	if (src)
+	{
+		fb = src;
+	}
+	else if (src == NULL && dst)
+	{
+		fb = dst;
+	}
+	else
+	{
+		sp_error(SPEL_ERR_INVALID_ARGUMENT,
+				 "i couldn't get a context from these framebuffers!");
+	}
+
+	fb->ctx->vt->framebuffer_blit(src, srcRegion, dst, dstRegion, attachment, filter);
+}
+
+sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcRegion,
+									  spel_gfx_framebuffer dst, spel_rect dstRegion)
+{
+	spel_gfx_framebuffer_blit_mask(src, srcRegion, dst, dstRegion,
+								   SPEL_GFX_ATTACHMENT_COLOR |
+									   SPEL_GFX_ATTACHMENT_DEPTH_STENCIL,
+								   SPEL_GFX_SAMPLER_FILTER_NEAREST);
+}
+
+sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
+										spel_gfx_framebuffer dst)
+{
+	spel_rect src_region;
+	spel_rect dst_region;
+
+	if (dst == NULL && src)
+	{
+		spel_vec2 size = spel_gfx_framebuffer_size(src);
+		src_region = (spel_rect){.width = size.x, .height = size.y, .x = 0, .y = 0};
+
+		dst_region = (spel_rect){
+			.width = src->ctx->fb_width, .height = src->ctx->fb_height, .x = 0, .y = 0};
+	}
+	else
+	{
+		spel_vec2 size = spel_gfx_framebuffer_size(src);
+		dst_region = (spel_rect){.width = size.x, .height = size.y, .x = 0, .y = 0};
+
+		src_region = (spel_rect){
+			.width = src->ctx->fb_width, .height = src->ctx->fb_height, .x = 0, .y = 0};
+	}
+
+	spel_gfx_framebuffer_blit(src, src_region, dst, dst_region);
+}
+
+sp_api spel_vec2 spel_gfx_framebuffer_size(spel_gfx_framebuffer fb)
+{
+	return (spel_vec2){.x = fb->desc.width, .y = fb->desc.height};
+}
+
+sp_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb,
+												   uint32_t index)
+{
+	return fb->desc.color[index].texture;
+}
+
+sp_api spel_gfx_texture spel_gfx_framebuffer_depth(spel_gfx_framebuffer fb)
+{
+	return fb->desc.depth.texture;
+}
+
+sp_api spel_gfx_render_pass spel_gfx_render_pass_default(spel_gfx_context ctx)
+{
+	return ctx->default_pass;
 }

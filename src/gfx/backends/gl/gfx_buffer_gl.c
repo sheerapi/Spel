@@ -69,7 +69,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
-	sp_debug("created GL buffer %u size=%zu", ((spel_gfx_gl_buffer*)buf->data)->buffer,
+	sp_trace("created GL buffer %u size=%zu", ((spel_gfx_gl_buffer*)buf->data)->buffer,
 			 desc->size);
 
 	return buf;
@@ -84,7 +84,7 @@ void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 
 	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
 	glDeleteBuffers(1, &handle);
-	sp_debug("destroyed GL buffer %u", handle);
+	sp_trace("destroyed GL buffer %u", handle);
 	spel_memory_free(buf->data);
 	spel_memory_free(buf);
 }

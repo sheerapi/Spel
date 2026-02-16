@@ -256,7 +256,7 @@ typedef enum
 
 typedef enum
 {
-	SPEL_GFX_ATTACHMENT_COLOR,
+	SPEL_GFX_ATTACHMENT_COLOR = 1,
 	SPEL_GFX_ATTACHMENT_DEPTH,
 	SPEL_GFX_ATTACHMENT_DEPTH_STENCIL,
 } spel_gfx_attachment_type;

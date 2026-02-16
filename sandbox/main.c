@@ -4,6 +4,7 @@
 #include "core/panic.h"
 #include "gfx/gfx.h"
 #include "utils/display.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -21,11 +22,13 @@ spel_gfx_texture offscreen_color;
 spel_gfx_texture offscreen_depth;
 spel_gfx_framebuffer offscreen_fb;
 spel_gfx_render_pass offscreen_pass;
-spel_gfx_render_pass backbuffer_pass;
+
+spel_color color_data = {.r = 0, .g = 0, .b = 0, .a = 255};
 
 void spel_conf()
 {
 	spel.window.resizable = false;
+	spel.log.severity = SPEL_SEV_DEBUG;
 }
 
 void spel_load()
@@ -117,56 +120,33 @@ void spel_load()
 		.clear_depth = 1.0F,
 	};
 
-	spel_gfx_render_pass_desc backbuffer_pass_desc = {
-		.name = "Back Buffer",
-		.framebuffer = NULL,
-		.color_load = {SPEL_GFX_LOAD_DONT_CARE},
-		.color_store = {SPEL_GFX_STORE_STORE},
-		.depth_load = SPEL_GFX_LOAD_DONT_CARE,
-		.depth_store = SPEL_GFX_STORE_DONT_CARE,
-	};
-
 	offscreen_pass = spel_gfx_render_pass_create(spel.gfx, &offscreen_pass_desc);
-	backbuffer_pass = spel_gfx_render_pass_create(spel.gfx, &backbuffer_pass_desc);
-
-	spel_memory_dump_terminal();
 }
 
-float color_data[8] = {1, 0, 0, 1, 0, 1, 0, 1};
-
 spel_vec2 position;
+
+void spel_update(double delta)
+{
+	color_data.g = ((sin(spel.time.time) / 2.0F) + 0.5F) * 255;
+}
 
 void spel_draw()
 {
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 
-	// first pass: rendering
-	spel_gfx_cmd_begin_pass(cl, offscreen_pass);
-
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
-	position.y += spel.time.delta;
+	position.y += spel.time.delta * 0.025F;
 
 	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position,
 								sizeof(position));
-	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, &color_data,
-								sizeof(color_data));
+	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
+								sizeof(float) * 4);
 
 	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer);
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
-	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
+	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_white_get(spel.gfx));
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
-
-	spel_gfx_cmd_end_pass(cl);
-
-	// second pass: offscreen -> backbuffer
-	spel_gfx_cmd_begin_pass(cl, backbuffer_pass);
-
-	spel_gfx_cmd_bind_pipeline(cl, fullscreen_pipeline);
-	spel_gfx_cmd_bind_texture(cl, 0, offscreen_color);
-	spel_gfx_cmd_draw(cl, 3, 0);
-
-	spel_gfx_cmd_end_pass(cl);
 
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
@@ -174,6 +154,11 @@ void spel_draw()
 
 void spel_quit()
 {
+	spel_gfx_framebuffer_destroy(offscreen_fb);
+	spel_gfx_texture_destroy(offscreen_color);
+	spel_gfx_texture_destroy(offscreen_depth);
+	spel_gfx_render_pass_destroy(offscreen_pass);
+
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_pipeline_destroy(fullscreen_pipeline);
 	spel_gfx_uniform_buffer_destroy(ubuffer);

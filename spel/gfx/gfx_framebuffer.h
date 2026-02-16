@@ -25,7 +25,7 @@ typedef struct
 typedef struct
 {
 	const char* name;
-	
+
 	spel_gfx_framebuffer framebuffer;
 
 	spel_gfx_load_op color_load[SPEL_GFX_MAX_COLOR_ATTACHMENTS];
@@ -41,8 +41,20 @@ sp_api spel_gfx_framebuffer
 spel_gfx_framebuffer_create(spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc);
 
 sp_api spel_vec2 spel_gfx_framebuffer_size(spel_gfx_framebuffer fb);
-sp_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb, uint32_t index);
+sp_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb,
+												   uint32_t index);
 sp_api spel_gfx_texture spel_gfx_framebuffer_depth(spel_gfx_framebuffer fb);
+
+sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcRegion,
+									  spel_gfx_framebuffer dst, spel_rect dstRegion);
+
+sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
+										spel_gfx_framebuffer dst);
+
+sp_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect srcRegion,
+										   spel_gfx_framebuffer dst, spel_rect dstRegion,
+										   uint8_t attachment,
+										   spel_gfx_sampler_filter filter);
 
 sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb);
 

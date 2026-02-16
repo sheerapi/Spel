@@ -63,8 +63,8 @@ sp_api spel_color spel_color_hsv(int h, float s, float v, uint8_t a)
 	g += m;
 	b += m;
 
-	return (spel_color){(uint8_t)(r * 255.0F), (uint8_t)(g * 255.0F), (uint8_t)(b * 255.0F),
-				   a};
+	return (spel_color){(uint8_t)(r * 255.0F), (uint8_t)(g * 255.0F),
+						(uint8_t)(b * 255.0F), a};
 }
 
 sp_api spel_color spel_color_hsl(int h, float s, float l, uint8_t a)
@@ -124,8 +124,8 @@ sp_api spel_color spel_color_hsl(int h, float s, float l, uint8_t a)
 	g += m;
 	b += m;
 
-	return (spel_color){(uint8_t)(r * 255.0F), (uint8_t)(g * 255.0F), (uint8_t)(b * 255.0F),
-				   a};
+	return (spel_color){(uint8_t)(r * 255.0F), (uint8_t)(g * 255.0F),
+						(uint8_t)(b * 255.0F), a};
 }
 
 sp_api spel_color spel_color_mix(spel_color a, spel_color b, float t)
@@ -133,15 +133,15 @@ sp_api spel_color spel_color_mix(spel_color a, spel_color b, float t)
 	int ti = (int)(t * 255.0F);
 
 	return (spel_color){(uint8_t)((a.r * (255 - ti) + b.r * ti) >> 8),
-				   (uint8_t)((a.g * (255 - ti) + b.g * ti) >> 8),
-				   (uint8_t)((a.b * (255 - ti) + b.b * ti) >> 8),
-				   (uint8_t)((a.a * (255 - ti) + b.a * ti) >> 8)};
+						(uint8_t)((a.g * (255 - ti) + b.g * ti) >> 8),
+						(uint8_t)((a.b * (255 - ti) + b.b * ti) >> 8),
+						(uint8_t)((a.a * (255 - ti) + b.a * ti) >> 8)};
 }
 
 sp_api spel_color spel_color_invert(spel_color value)
 {
 	return (spel_color){255 - value.r, 255 - value.g, 255 - value.b,
-				   value.a == 255 ? 255 : (255 - value.a)};
+						value.a == 255 ? 255 : (255 - value.a)};
 }
 
 typedef union
@@ -196,4 +196,15 @@ int spel_math_isfinite(double x)
 {
 	spel_math_double_bits bits = {.d = x};
 	return ((bits.u >> 52) & 0x7FF) != 0x7FF;
+}
+
+float* spel_color_array(spel_color color)
+{
+	static float data[4];
+	data[0] = (float)color.r / 255;
+	data[1] = (float)color.g / 255;
+	data[2] = (float)color.b / 255;
+	data[3] = (float)color.a / 255;
+
+	return data;
 }

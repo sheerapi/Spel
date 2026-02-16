@@ -1,13 +1,13 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
 #include "gfx/gfx_framebuffer.h"
+#include "gfx_buffer.h"
+#include "gfx_commands.h"
 #include "gfx_pipeline.h"
 #include "gfx_shader.h"
 #include "gfx_texture.h"
-#include "gfx_uniform.h"
-#include "gfx_buffer.h"
-#include "gfx_commands.h"
 #include "gfx_types.h"
+#include "gfx_uniform.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -210,6 +210,8 @@ typedef struct spel_gfx_context_t
 	spel_gfx_texture white_tex;
 	spel_gfx_texture checkerboard;
 
+	spel_gfx_render_pass default_pass;
+
 	void* data;
 } spel_gfx_context_t;
 
@@ -241,13 +243,15 @@ typedef struct spel_gfx_vtable_t
 	spel_gfx_texture (*texture_create)(spel_gfx_context, const spel_gfx_texture_desc*);
 	void (*texture_destroy)(spel_gfx_texture);
 
-	spel_gfx_sampler (*sampler_create)(spel_gfx_context,
-									   const spel_gfx_sampler_desc*);
+	spel_gfx_sampler (*sampler_create)(spel_gfx_context, const spel_gfx_sampler_desc*);
 	void (*sampler_destroy)(spel_gfx_sampler);
 
 	spel_gfx_framebuffer (*framebuffer_create)(spel_gfx_context,
 											   const spel_gfx_framebuffer_desc*);
 	void (*framebuffer_destroy)(spel_gfx_framebuffer);
+	void (*framebuffer_blit)(spel_gfx_framebuffer src, spel_rect srcRegion,
+							 spel_gfx_framebuffer dst, spel_rect dstRegion,
+							 uint8_t attachment, spel_gfx_sampler_filter filter);
 
 	spel_gfx_render_pass (*render_pass_create)(spel_gfx_context,
 											   const spel_gfx_render_pass_desc*);

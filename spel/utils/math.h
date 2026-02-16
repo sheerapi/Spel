@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SPEL_MATH
+#define SPEL_MATH
 #include "core/macros.h"
 #include <stdint.h>
 
@@ -141,3 +142,6 @@ int spel_math_isnan(double x);
 int spel_math_isinf(double x);
 int spel_math_isfinite(double x);
 
+float* spel_color_array(spel_color color);
+
+#endif

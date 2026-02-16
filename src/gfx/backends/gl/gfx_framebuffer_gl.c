@@ -1,4 +1,5 @@
 #include "core/log.h"
+#include "gfx/gfx_types.h"
 #include "gfx_vtable_gl.h"
 #include <string.h>
 
@@ -49,11 +50,15 @@ sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
 				 fbo_status_string(status));
 	}
 
+	sp_trace("created GL framebuffer %d (%dx%d, attachments=%d, depth=%d)", *gl_handle,
+			 desc->width, desc->height, desc->color_count, desc->depth.texture != NULL);
+
 	return fb;
 }
 
 sp_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb)
 {
+	sp_trace("destroyed GL framebuffer %d", *(GLuint*)fb->data);
 	glDeleteFramebuffers(1, fb->data);
 	spel_memory_free(fb->data);
 	spel_memory_free(fb);
@@ -118,4 +123,46 @@ sp_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass)
 {
 	spel_memory_free(pass->data);
 	spel_memory_free(pass);
+}
+
+sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect srcRegion,
+											spel_gfx_framebuffer dst, spel_rect dstRegion,
+											uint8_t attachment,
+											spel_gfx_sampler_filter filter)
+{
+	GLuint src_fb = src ? *(GLuint*)src->data : 0;
+	GLuint dst_fb = dst ? *(GLuint*)dst->data : 0;
+
+	GLbitfield mask = 0;
+	GLenum gl_filter = filter == SPEL_GFX_SAMPLER_FILTER_NEAREST ? GL_NEAREST : GL_LINEAR;
+
+	if (attachment & SPEL_GFX_ATTACHMENT_COLOR)
+	{
+		mask |= GL_COLOR_BUFFER_BIT;
+	}
+
+	if (attachment & SPEL_GFX_ATTACHMENT_DEPTH)
+	{
+		if (gl_filter != GL_NEAREST)
+		{
+			sp_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
+			gl_filter = GL_NEAREST;
+		}
+		mask |= GL_DEPTH_BUFFER_BIT;
+	}
+
+	if (attachment & SPEL_GFX_ATTACHMENT_DEPTH_STENCIL)
+	{
+		if (gl_filter != GL_NEAREST)
+		{
+			sp_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
+			gl_filter = GL_NEAREST;
+		}
+		mask |= GL_DEPTH_BUFFER_BIT;
+		mask |= GL_STENCIL_BUFFER_BIT;
+	}
+
+	glBlitNamedFramebuffer(src_fb, dst_fb, srcRegion.x, srcRegion.y, srcRegion.width,
+						   srcRegion.height, dstRegion.x, dstRegion.y, dstRegion.width,
+						   dstRegion.height, mask, gl_filter);
 }

@@ -73,7 +73,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
 	}
 
-	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
+	sp_trace("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
 }
 
 sp_hidden void spel_gfx_context_conf_gl()
@@ -140,7 +140,7 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_memory_free(gl);
 	ctx->data = NULL;
 
-	sp_debug("GL context destroyed");
+	sp_trace("GL context destroyed");
 }
 
 sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)

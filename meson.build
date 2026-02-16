@@ -37,6 +37,7 @@ sources = [
     'src/gfx/backends/gl/gfx_pipeline_gl.c',
     'src/gfx/backends/gl/gfx_texture_gl.c',
     'src/gfx/backends/gl/gfx_vtable_gl.c',
+    'src/gfx/backends/gl/gfx_framebuffer_gl.c',
 
     'src/utils/internal/xxh_x86dispatch.c',
     'src/utils/internal/xxhash.c',
@@ -45,7 +46,7 @@ sources = [
     'src/utils/internal/spirv_reflect.c',
 ]
 
-shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl']
+shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl', 'shaders/spel_internal_blit.glsl']
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')

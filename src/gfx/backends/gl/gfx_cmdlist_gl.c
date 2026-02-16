@@ -28,6 +28,8 @@ void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 								 spel_gfx_bind_shader_buffer_cmd* cmd);
 
 void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd);
+void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_cmd* cmd);
+void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd* cmd);
 
 typedef struct
 {
@@ -38,6 +40,8 @@ typedef struct
 	GLenum index_type;
 
 	spel_gfx_sampler sampler;
+
+	spel_gfx_render_pass current_pass;
 } spel_gfx_cmdlist_gl;
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
@@ -58,6 +62,8 @@ spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 
 	cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_malloc(
 		cl->dirty_buffer_cap * sizeof(*cl->dirty_buffers), SPEL_MEM_TAG_GFX);
+
+	data->current_pass = NULL;
 
 	return cl;
 }
@@ -154,6 +160,12 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 			break;
 		case SPEL_GFX_CMD_UNIFORM_UPDATE:
 			exec_cmd_uniform_update(cl, (spel_gfx_uniform_update_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_BEGIN_RENDER_PASS:
+			exec_cmd_begin_render_pass(cl, (spel_gfx_begin_render_pass_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_END_RENDER_PASS:
+			exec_cmd_end_render_pass(cl, (spel_gfx_end_render_pass_cmd*)ptr);
 			break;
 		}
 
@@ -437,4 +449,140 @@ void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* c
 	glBuf->dirty_min = (uint32_t)fmin(glBuf->dirty_min, cmd->handle.offset);
 	glBuf->dirty_max =
 		(uint32_t)fmax(glBuf->dirty_max, (double)(cmd->handle.offset + cmd->size));
+}
+
+void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_cmd* cmd)
+{
+	spel_gfx_render_pass pass = cmd->pass;
+	spel_gfx_gl_framebuffer* data = (spel_gfx_gl_framebuffer*)pass->data;
+	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
+
+	if (glCmd->current_pass != NULL)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE,
+				 "did you forget to end the current pass before starting another one?");
+		return;
+	}
+
+	glCmd->current_pass = pass;
+
+	GLuint fbo = pass->desc.framebuffer ? *(GLuint*)pass->desc.framebuffer->data
+										: 0; // 0 = default framebuffer
+
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glDrawBuffers((int)data->draw_buffer_count, data->draw_buffers);
+
+	for (uint32_t i = 0; i < data->draw_buffer_count; i++)
+	{
+		switch (pass->desc.color_load[i])
+		{
+		case SPEL_GFX_LOAD_CLEAR:
+		{
+			glClearColor(pass->desc.clear_colors[i].r, pass->desc.clear_colors[i].g,
+						 pass->desc.clear_colors[i].b, pass->desc.clear_colors[i].a);
+			glClear(GL_COLOR_BUFFER_BIT);
+			break;
+		}
+		case SPEL_GFX_LOAD_DONT_CARE:
+		{
+			if (fbo == 0)
+			{
+				GLenum att = GL_COLOR;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+			else
+			{
+				GLenum att = GL_COLOR_ATTACHMENT0 + i;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+			break;
+		}
+		case SPEL_GFX_LOAD_LOAD:
+			break;
+		}
+	}
+
+	if (pass->desc.framebuffer && pass->desc.framebuffer->desc.depth.texture)
+	{
+		switch (pass->desc.depth_load)
+		{
+		case SPEL_GFX_LOAD_CLEAR:
+			glClearNamedFramebufferfv(fbo, GL_DEPTH, 0, &pass->desc.clear_depth);
+			break;
+		case SPEL_GFX_LOAD_DONT_CARE:
+		{
+			if (fbo == 0)
+			{
+				GLenum att = GL_DEPTH;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+			else
+			{
+				GLenum att = GL_DEPTH_ATTACHMENT;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+			break;
+		}
+		case SPEL_GFX_LOAD_LOAD:
+			break;
+		}
+	}
+
+	if (pass->desc.name)
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, pass->desc.name);
+	}
+}
+
+void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd* cmd)
+{
+	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
+
+	if (glCmd->current_pass == NULL)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE, "there is NO pass to end!");
+		return;
+	}
+
+	spel_gfx_render_pass pass = glCmd->current_pass;
+	spel_gfx_gl_framebuffer* data = (spel_gfx_gl_framebuffer*)pass->data;
+
+	GLuint fbo = pass->desc.framebuffer ? *(GLuint*)pass->desc.framebuffer->data : 0;
+
+	for (uint32_t i = 0; i < data->draw_buffer_count; i++)
+	{
+		if (pass->desc.color_store[i] == SPEL_GFX_STORE_DONT_CARE)
+		{
+			if (fbo == 0)
+			{
+				GLenum att = GL_COLOR;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+			else
+			{
+				GLenum att = GL_COLOR_ATTACHMENT0 + i;
+				glInvalidateNamedFramebufferData(fbo, 1, &att);
+			}
+		}
+	}
+
+	if (pass->desc.depth_store == SPEL_GFX_STORE_DONT_CARE)
+	{
+		if (fbo == 0)
+		{
+			GLenum att = GL_DEPTH;
+			glInvalidateNamedFramebufferData(fbo, 1, &att);
+		}
+		else
+		{
+			GLenum att = GL_DEPTH_ATTACHMENT;
+			glInvalidateNamedFramebufferData(fbo, 1, &att);
+		}
+	}
+
+	glCmd->current_pass = NULL;
+	if (pass->desc.name)
+	{
+		glPopDebugGroup();
+	}
 }

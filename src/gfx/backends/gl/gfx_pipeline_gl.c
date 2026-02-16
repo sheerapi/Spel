@@ -182,18 +182,21 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 
 	if (desc->vertex_shader != NULL)
 	{
+		pipeline->vertex_shader = desc->vertex_shader;
 		glAttachShader(gl_pipeline->program,
 					   ((spel_gfx_shader_gl*)desc->vertex_shader->data)->shader);
 	}
 
 	if (desc->fragment_shader != NULL)
 	{
+		pipeline->fragment_shader = desc->fragment_shader;
 		glAttachShader(gl_pipeline->program,
 					   ((spel_gfx_shader_gl*)desc->fragment_shader->data)->shader);
 	}
 
 	if (desc->geometry_shader != NULL)
 	{
+		pipeline->geometry_shader = desc->geometry_shader;
 		glAttachShader(gl_pipeline->program,
 					   ((spel_gfx_shader_gl*)desc->geometry_shader->data)->shader);
 	}
@@ -246,6 +249,21 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 	if (glp->program)
 	{
 		glDeleteProgram(glp->program);
+	}
+
+	if (pipeline->vertex_shader && !pipeline->vertex_shader->internal)
+	{
+		spel_gfx_shader_destroy_gl(pipeline->vertex_shader);
+	}
+
+	if (pipeline->fragment_shader && !pipeline->fragment_shader->internal)
+	{
+		spel_gfx_shader_destroy_gl(pipeline->fragment_shader);
+	}
+
+	if (pipeline->geometry_shader && !pipeline->geometry_shader->internal)
+	{
+		spel_gfx_shader_destroy_gl(pipeline->geometry_shader);
 	}
 
 	spel_memory_free(pipeline->data);

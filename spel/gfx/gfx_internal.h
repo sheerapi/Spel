@@ -120,6 +120,10 @@ typedef struct spel_gfx_pipeline_t
 	spel_gfx_context ctx;
 	spel_gfx_pipeline_type type;
 
+	spel_gfx_shader vertex_shader;
+	spel_gfx_shader fragment_shader;
+	spel_gfx_shader geometry_shader;
+
 	spel_gfx_shader_reflection reflection;
 	uint64_t hash;
 
@@ -172,12 +176,14 @@ typedef struct
 typedef struct spel_gfx_framebuffer_t
 {
 	spel_gfx_context ctx;
+	spel_gfx_framebuffer_desc desc;
 	void* data;
 } spel_gfx_framebuffer_t;
 
 typedef struct spel_gfx_render_pass_t
 {
 	spel_gfx_context ctx;
+	spel_gfx_render_pass_desc desc;
 	void* data;
 } spel_gfx_render_pass_t;
 

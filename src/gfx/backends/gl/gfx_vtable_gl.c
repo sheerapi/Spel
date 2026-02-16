@@ -26,4 +26,9 @@ spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
 							   .texture_create = spel_gfx_texture_create_gl,
 							   .texture_destroy = spel_gfx_texture_destroy_gl,
 							   .sampler_create = spel_gfx_sampler_create_gl,
-							   .sampler_destroy = spel_gfx_sampler_destroy_gl};
+							   .sampler_destroy = spel_gfx_sampler_destroy_gl,
+
+							   .framebuffer_create = spel_gfx_framebuffer_create_gl,
+							   .framebuffer_destroy = spel_gfx_framebuffer_destroy_gl,
+							   .render_pass_create = spel_gfx_render_pass_create_gl,
+							   .render_pass_destroy = spel_gfx_render_pass_destroy_gl};

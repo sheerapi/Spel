@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_GL_TYPES
 #define SPEL_GFX_GL_TYPES
+#include "gfx/gfx_framebuffer.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
 
@@ -81,6 +82,12 @@ typedef struct
 	uint32_t dirty_min;
 	uint32_t dirty_max;
 } spel_gfx_gl_buffer;
+
+typedef struct
+{
+	GLenum draw_buffers[SPEL_GFX_MAX_COLOR_ATTACHMENTS];
+	uint32_t draw_buffer_count;
+} spel_gfx_gl_framebuffer;
 
 static const spel_gfx_gl_format_info GL_FORMATS[SPEL_GFX_TEXTURE_FORMAT_COUNT] = {
 	[SPEL_GFX_TEXTURE_FMT_R8_UNORM] = {GL_R8, GL_RED, GL_UNSIGNED_BYTE, 1, 0, 0, 0, 1},

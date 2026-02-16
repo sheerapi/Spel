@@ -20,6 +20,8 @@ typedef enum
 	SPEL_GFX_CMD_VIEWPORT,
 	SPEL_GFX_CMD_SCISSOR,
 	SPEL_GFX_CMD_UNIFORM_UPDATE,
+	SPEL_GFX_CMD_BEGIN_RENDER_PASS,
+	SPEL_GFX_CMD_END_RENDER_PASS
 } spel_gfx_cmd_type;
 
 typedef struct spel_gfx_cmd_header
@@ -126,5 +128,16 @@ typedef struct spel_gfx_uniform_update_cmd
 	const void* data;
 	size_t size;
 } spel_gfx_uniform_update_cmd;
+
+typedef struct spel_gfx_begin_render_pass_cmd
+{
+	spel_gfx_cmd_header hdr;
+	spel_gfx_render_pass pass;
+} spel_gfx_begin_render_pass_cmd;
+
+typedef struct spel_gfx_end_render_pass_cmd
+{
+	spel_gfx_cmd_header hdr;
+} spel_gfx_end_render_pass_cmd;
 
 #endif

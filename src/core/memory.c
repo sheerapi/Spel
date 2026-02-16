@@ -103,6 +103,8 @@ sp_api void spel_memory_free(void* ptr)
 	spel.memory.tags[tag].free_count++;
 
 	free(h);
+
+	ptr = NULL;
 }
 
 sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)

@@ -107,6 +107,7 @@ void spel_load()
 	offscreen_fb = spel_gfx_framebuffer_create(spel.gfx, &fb_desc);
 
 	spel_gfx_render_pass_desc offscreen_pass_desc = {
+		.name = "G-Buffer",
 		.framebuffer = offscreen_fb,
 		.color_load = {SPEL_GFX_LOAD_CLEAR},
 		.color_store = {SPEL_GFX_STORE_STORE},
@@ -117,6 +118,7 @@ void spel_load()
 	};
 
 	spel_gfx_render_pass_desc backbuffer_pass_desc = {
+		.name = "Back Buffer",
 		.framebuffer = NULL,
 		.color_load = {SPEL_GFX_LOAD_DONT_CARE},
 		.color_store = {SPEL_GFX_STORE_STORE},
@@ -142,7 +144,6 @@ void spel_draw()
 	spel_gfx_cmd_begin_pass(cl, offscreen_pass);
 
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
-	spel_gfx_cmd_clear(cl, spel_color_cyan());
 	position.y += spel.time.delta;
 
 	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position,
@@ -161,10 +162,10 @@ void spel_draw()
 	// second pass: offscreen -> backbuffer
 	spel_gfx_cmd_begin_pass(cl, backbuffer_pass);
 
-	spel_gfx_cmd_begin_pass(cl, backbuffer_pass);
 	spel_gfx_cmd_bind_pipeline(cl, fullscreen_pipeline);
 	spel_gfx_cmd_bind_texture(cl, 0, offscreen_color);
 	spel_gfx_cmd_draw(cl, 3, 0);
+
 	spel_gfx_cmd_end_pass(cl);
 
 	// submit it all
@@ -174,6 +175,7 @@ void spel_draw()
 void spel_quit()
 {
 	spel_gfx_pipeline_destroy(pipeline);
+	spel_gfx_pipeline_destroy(fullscreen_pipeline);
 	spel_gfx_uniform_buffer_destroy(ubuffer);
 	spel_gfx_buffer_destroy(vbuffer);
 	spel_gfx_buffer_destroy(ibuffer);

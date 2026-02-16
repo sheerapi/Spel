@@ -1214,10 +1214,25 @@ sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb)
 
 sp_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pass)
 {
+	uint64_t start_offset = cl->offset;
+	spel_gfx_begin_render_pass_cmd* cmd =
+		(spel_gfx_begin_render_pass_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), _Alignof(spel_gfx_begin_render_pass_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BEGIN_RENDER_PASS;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->pass = pass;
 }
 
 sp_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
 {
+	uint64_t start_offset = cl->offset;
+	spel_gfx_end_render_pass_cmd* cmd =
+		(spel_gfx_end_render_pass_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), _Alignof(spel_gfx_end_render_pass_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_END_RENDER_PASS;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 }
 
 sp_api spel_gfx_render_pass

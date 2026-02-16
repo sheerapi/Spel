@@ -60,6 +60,17 @@ sp_hidden spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 
 sp_hidden void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler);
 
+// framebuffers
+sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
+	spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc);
+
+sp_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb);
+
+sp_hidden spel_gfx_render_pass
+spel_gfx_render_pass_create_gl(spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc);
+
+sp_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass);
+
 extern spel_gfx_vtable_t GL_VTABLE;
 
 #endif

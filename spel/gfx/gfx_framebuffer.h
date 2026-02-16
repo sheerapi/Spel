@@ -24,6 +24,8 @@ typedef struct
 
 typedef struct
 {
+	const char* name;
+	
 	spel_gfx_framebuffer framebuffer;
 
 	spel_gfx_load_op color_load[SPEL_GFX_MAX_COLOR_ATTACHMENTS];

@@ -10,6 +10,7 @@
 #include "gfx/gfx_context.h"
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
+#include "gfx/gfx_uniform.h"
 #include "utils/internal/xxhash.h"
 #include "utils/path.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -150,6 +151,43 @@ sp_api void spel_gfx_shader_destroy(spel_gfx_shader shader)
 	shader->ctx->vt->shader_destroy(shader);
 }
 
+sp_hidden void spel_gfx_shader_reflection_free(spel_gfx_shader shader)
+{
+	spel_gfx_shader_reflection* refl = &shader->reflection;
+
+	for (uint32_t j = 0; j < refl->uniform_count; j++)
+	{
+		spel_gfx_shader_block* block = &refl->uniforms[j];
+		for (uint32_t m = 0; m < block->member_count; ++m)
+		{
+			spel_memory_free(block->members[m].name);
+		}
+		spel_memory_free(block->members);
+		spel_memory_free(block->name);
+	}
+
+	for (uint32_t j = 0; j < refl->storage_count; j++)
+	{
+		spel_gfx_shader_block* block = &refl->storage[j];
+		for (uint32_t m = 0; m < block->member_count; ++m)
+		{
+			spel_memory_free(block->members[m].name);
+		}
+		spel_memory_free(block->members);
+		spel_memory_free(block->name);
+	}
+
+	for (uint32_t j = 0; j < refl->sampler_count; j++)
+	{
+		spel_gfx_shader_uniform* sampler = &refl->samplers[j];
+		spel_memory_free(sampler->name);
+	}
+
+	spel_memory_free(refl->samplers);
+	spel_memory_free(refl->uniforms);
+	spel_memory_free(refl->storage);
+}
+
 sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path)
 {
 	if (!spel_path_exists(path))
@@ -276,8 +314,8 @@ sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
-sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache, uint64_t hash,
-										   spel_gfx_pipeline pipeline)
+sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
+											  uint64_t hash, spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0)
 	{
@@ -601,7 +639,7 @@ void spel_gfx_context_default_data(spel_gfx_context ctx)
 		.data_size = sizeof(WHITE_TEX_DATA)};
 	ctx->white_tex = spel_gfx_texture_create(ctx, &WHITE_TEX);
 
-	static uint8_t checker_pixels[128 * 128 * 4];
+	static uint8_t checker_pixels[256 * 256 * 4];
 	spel_checker_rgba8_make(checker_pixels, 128, 128, 16);
 
 	static const spel_gfx_texture_desc CHECKER_DATA = {
@@ -861,15 +899,304 @@ sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stag
 sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
 													  spel_color color)
 {
-	const spel_gfx_texture_desc COLOR_TEX = {
-		.type = SPEL_GFX_TEXTURE_2D,
-		.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
-		.usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
-		.width = 1,
-		.height = 1,
-		.depth = 1,
-		.mip_count = 1,
-		.data = &color,
-		.data_size = sizeof(color)};
+	const spel_gfx_texture_desc COLOR_TEX = {.type = SPEL_GFX_TEXTURE_2D,
+											 .format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
+											 .usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
+											 .width = 1,
+											 .height = 1,
+											 .depth = 1,
+											 .mip_count = 1,
+											 .data = &color,
+											 .data_size = sizeof(color)};
 	return spel_gfx_texture_create(ctx, &COLOR_TEX);
+}
+
+sp_api uint8_t spel_gfx_pipeline_texture_count(spel_gfx_pipeline pipeline)
+{
+	return pipeline->reflection.sampler_count;
+}
+
+sp_api spel_gfx_uniform* spel_gfx_uniform_list(spel_gfx_pipeline pipeline,
+											   uint32_t* count)
+{
+	uint32_t member_count = 0;
+
+	// first pass: get uniform count
+	for (uint32_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		member_count += block->member_count;
+	}
+
+	for (uint32_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		member_count += block->member_count;
+	}
+
+	spel_gfx_uniform* uniforms =
+		spel_memory_malloc(member_count * sizeof(*uniforms), SPEL_MEM_TAG_GFX);
+
+	// second pass: filling it up
+	uint32_t idx = 0;
+	for (uint32_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+
+		for (uint32_t j = 0; j < block->member_count; j++)
+		{
+			spel_gfx_shader_uniform* member = &block->members[j];
+			uniforms[idx].set = member->set;
+			uniforms[idx].binding = member->binding;
+			uniforms[idx].offset = member->offset;
+			uniforms[idx].size = member->size;
+			uniforms[idx].count = member->array_count;
+			idx++;
+		}
+	}
+
+	for (uint32_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+
+		for (uint32_t j = 0; j < block->member_count; j++)
+		{
+			spel_gfx_shader_uniform* member = &block->members[j];
+			uniforms[idx].set = member->set;
+			uniforms[idx].binding = member->binding;
+			uniforms[idx].offset = member->offset;
+			uniforms[idx].size = member->size;
+			uniforms[idx].count = member->array_count;
+			idx++;
+		}
+	}
+
+	*count = member_count;
+	return uniforms;
+}
+
+const sp_api char* spel_gfx_uniform_name(spel_gfx_pipeline pipeline,
+										 spel_gfx_uniform handle)
+{
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		if (block->location == handle.location)
+		{
+			for (uint32_t j = 0; j < block->member_count; j++)
+			{
+				spel_gfx_shader_uniform* member = &block->members[j];
+				if (member->offset == handle.offset)
+				{
+					return member->name;
+				}
+			}
+		}
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		if (block->location == handle.location)
+		{
+			for (uint32_t j = 0; j < block->member_count; j++)
+			{
+				spel_gfx_shader_uniform* member = &block->members[j];
+				if (member->offset == handle.offset)
+				{
+					return member->name;
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
+sp_api uint32_t spel_gfx_uniform_block_size(spel_gfx_pipeline pipeline,
+											spel_gfx_uniform handle)
+{
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		return block->size;
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		return block->size;
+	}
+
+	return 0;
+}
+
+sp_api spel_gfx_uniform spel_gfx_uniform_get(spel_gfx_pipeline pipeline, const char* name)
+{
+	spel_gfx_uniform uniform;
+
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		for (uint32_t j = 0; j < block->member_count; j++)
+		{
+			spel_gfx_shader_uniform* member = &block->members[j];
+			if (strcmp(name, member->name) == 0)
+			{
+				uniform.set = member->set;
+				uniform.binding = member->binding;
+				uniform.count = member->array_count;
+				uniform.offset = member->offset;
+				uniform.size = member->size;
+				return uniform;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		for (uint32_t j = 0; j < block->member_count; j++)
+		{
+			spel_gfx_shader_uniform* member = &block->members[j];
+			if (strcmp(name, member->name) == 0)
+			{
+				uniform.set = member->set;
+				uniform.binding = member->binding;
+				uniform.count = member->array_count;
+				uniform.offset = member->offset;
+				uniform.size = member->size;
+				return uniform;
+			}
+		}
+	}
+
+	sp_error(SPEL_ERR_INVALID_ARGUMENT, "uniform %s not found in pipeline %X", name,
+			 pipeline->hash);
+
+	uniform.location = 0;
+	uniform.count = 0;
+	uniform.offset = 0;
+	uniform.size = 0;
+	return uniform;
+}
+
+sp_api void spel_gfx_buffer_flush(spel_gfx_buffer buf, size_t offset, size_t size)
+{
+	buf->ctx->vt->buffer_flush(buf, offset, size);
+}
+
+sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
+											spel_gfx_uniform location,
+											spel_gfx_uniform_buffer buf)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_bind_shader_buffer_cmd* cmd =
+		(spel_gfx_bind_shader_buffer_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_shader_buffer_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BIND_SHADER_BUFFER;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->buf = buf.buffer;
+	cmd->location = location.location;
+}
+
+sp_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_t* count)
+{
+	uint32_t block_count =
+		pipeline->reflection.uniform_count + pipeline->reflection.storage_count;
+
+	char** arr =
+		(char**)spel_memory_malloc(block_count * sizeof(char*), SPEL_MEM_TAG_GFX);
+
+	uint32_t idx = 0;
+
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
+		arr[idx] = spel_memory_strdup(block->name, SPEL_MEM_TAG_GFX);
+		idx++;
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
+		arr[idx] = spel_memory_strdup(block->name, SPEL_MEM_TAG_GFX);
+		idx++;
+	}
+
+	return arr;
+}
+
+sp_api spel_gfx_uniform_buffer spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline,
+															  const char* blockName)
+{
+	spel_gfx_shader_block* block = NULL;
+
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		if (strcmp(pipeline->reflection.uniforms[i].name, blockName) == 0)
+		{
+			block = &pipeline->reflection.uniforms[i];
+		}
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		if (strcmp(pipeline->reflection.storage[i].name, blockName) == 0)
+		{
+			block = &pipeline->reflection.storage[i];
+		}
+	}
+
+	spel_gfx_buffer_desc buffer_desc;
+	buffer_desc.type = SPEL_GFX_BUFFER_UNIFORM;
+	buffer_desc.usage = SPEL_GFX_USAGE_DYNAMIC;
+	buffer_desc.access = SPEL_GFX_BUFFER_DRAW;
+	buffer_desc.data = NULL;
+	buffer_desc.size = block->size;
+
+	return (spel_gfx_uniform_buffer){
+		.buffer = spel_gfx_buffer_create(pipeline->ctx, &buffer_desc),
+		.size = block->size};
+}
+
+sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_buffer buf,
+										spel_gfx_uniform handle, const void* data,
+										size_t size)
+{
+	uint64_t start_offset = cl->offset;
+	spel_gfx_uniform_update_cmd* cmd =
+		(spel_gfx_uniform_update_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, sizeof(*cmd), _Alignof(spel_gfx_uniform_update_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->buffer = buf;
+	cmd->handle = handle;
+	cmd->data = data;
+	cmd->size = size;
+
+	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
+	{
+		if (cl->dirty_buffers[i] == cmd->buffer.buffer)
+		{
+			return;
+		}
+	}
+
+	if (cl->dirty_buffer_count + 1 > cl->dirty_buffer_cap)
+	{
+		cl->dirty_buffer_cap *= 2;
+		cl->dirty_buffers = spel_memory_realloc(
+			cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
+			SPEL_MEM_TAG_GFX);
+	}
+
+	cl->dirty_buffers[cl->dirty_buffer_count++] = cmd->buffer.buffer;
+}
+
+sp_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
+{
+	spel_gfx_buffer_destroy(buf.buffer);
 }

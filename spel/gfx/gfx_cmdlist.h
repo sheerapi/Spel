@@ -2,6 +2,7 @@
 #define SPEL_GFX_CMDLIST
 #include "core/macros.h"
 #include "gfx/gfx_types.h"
+#include "gfx/gfx_uniform.h"
 #include "utils/math.h"
 
 sp_api spel_gfx_cmdlist spel_gfx_cmdlist_create(spel_gfx_context ctx);
@@ -22,7 +23,7 @@ sp_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width,
 								  int height);
 
 sp_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width,
-								  int height);
+								 int height);
 
 sp_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline);
 
@@ -40,5 +41,13 @@ sp_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
 
 sp_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
 									spel_gfx_texture texture, spel_gfx_sampler sampler);
+
+sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_buffer buf,
+										spel_gfx_uniform handle, const void* data,
+										size_t size);
+
+sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
+											spel_gfx_uniform location,
+											spel_gfx_uniform_buffer buf);
 
 #endif

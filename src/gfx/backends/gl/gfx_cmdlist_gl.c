@@ -6,6 +6,7 @@
 #include "gl.h"
 #include "gl_types.h"
 #include <assert.h>
+#include <math.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -22,6 +23,11 @@ void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd);
 
 void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd);
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd);
+
+void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
+								 spel_gfx_bind_shader_buffer_cmd* cmd);
+
+void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd);
 
 typedef struct
 {
@@ -46,11 +52,18 @@ spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 		(spel_gfx_cmdlist_gl*)sp_malloc(sizeof(spel_gfx_cmdlist_gl), SPEL_MEM_TAG_GFX);
 	cl->data = data;
 
+	cl->dirty_buffer_cap = 8;
+	cl->dirty_buffer_count = 0;
+
+	cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_malloc(
+		cl->dirty_buffer_cap * sizeof(*cl->dirty_buffers), SPEL_MEM_TAG_GFX);
+
 	return cl;
 }
 
 void spel_gfx_cmdlist_destroy_gl(spel_gfx_cmdlist cl)
 {
+	sp_free(cl->dirty_buffers);
 	sp_free(cl->data);
 	sp_free(cl->buffer);
 	sp_free(cl);
@@ -88,7 +101,12 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		cl->offset = 0;
 		return;
 	}
-	
+
+	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
+	{
+		spel_gfx_buffer_flush_gl(cl->dirty_buffers[i], 0, 0);
+	}
+
 	uint8_t* ptr = cl->buffer;
 	while (ptr < cl->buffer + cl->offset)
 	{
@@ -129,12 +147,21 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		case SPEL_GFX_CMD_SCISSOR:
 			exec_cmd_scissor(cl, (spel_gfx_scissor_cmd*)ptr);
 			break;
+		case SPEL_GFX_CMD_BIND_SHADER_BUFFER:
+			exec_cmd_bind_shader_buffer(cl, (spel_gfx_bind_shader_buffer_cmd*)ptr);
+			break;
+		case SPEL_GFX_CMD_UNIFORM_UPDATE:
+			exec_cmd_uniform_update(cl, (spel_gfx_uniform_update_cmd*)ptr);
+			break;
 		}
 
 		ptr += hdr->size;
 	}
 
 	cl->offset = 0;
+	cl->dirty_buffer_count = 0;
+
+	memset(cl->dirty_buffers, 0, cl->dirty_buffer_count * sizeof(*cl->dirty_buffers));
 }
 
 void exec_cmd_clear(spel_gfx_cmdlist cl, spel_gfx_clear_cmd* cmd)
@@ -362,4 +389,50 @@ void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
 	glScissor(cmd->x, cl->ctx->fb_height - (cmd->y + cmd->height), cmd->width,
 			  cmd->height);
+}
+
+void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
+								 spel_gfx_bind_shader_buffer_cmd* cmd)
+{
+	uint32_t binding = -1;
+
+	spel_gfx_pipeline pipeline = ((spel_gfx_cmdlist_gl*)cl->data)->pipeline;
+
+	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
+	{
+		if (cmd->location == pipeline->reflection.uniforms[i].location)
+		{
+			binding = pipeline->reflection.uniforms[i].internal;
+		}
+	}
+
+	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	{
+		if (cmd->location == pipeline->reflection.storage[i].location)
+		{
+			binding = pipeline->reflection.storage[i].internal;
+		}
+	}
+
+	if (binding == -1)
+	{
+		sp_warn("location %d not found within reflection data", cmd->location);
+	}
+
+	glBindBufferBase(cmd->buf->type == SPEL_GFX_BUFFER_UNIFORM ? GL_UNIFORM_BUFFER
+															   : GL_SHADER_STORAGE_BUFFER,
+					 binding, ((spel_gfx_gl_buffer*)cmd->buf->data)->buffer);
+}
+
+void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd)
+{
+	sp_assert(cmd->size <= (size_t)(cmd->handle.size * cmd->handle.count),
+			  "data exceeds uniform handle size, expected %d got %d",
+			  (size_t)(cmd->handle.size * cmd->handle.count), cmd->size);
+
+	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)cmd->buffer.buffer->data;
+	memcpy((uint8_t*)glBuf->mirror + cmd->handle.offset, cmd->data, cmd->size);
+	glBuf->dirty_min = (uint32_t)fmin(glBuf->dirty_min, cmd->handle.offset);
+	glBuf->dirty_max =
+		(uint32_t)fmax(glBuf->dirty_max, (double)(cmd->handle.offset + cmd->size));
 }

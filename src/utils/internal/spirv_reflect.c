@@ -2963,7 +2963,6 @@ static SpvReflectResult ParseDescriptorBindings(SpvReflectPrvParser* p_parser,
 
 		p_descriptor->word_offset.binding = p_node->decorations.binding.word_offset;
 		p_descriptor->word_offset.set = p_node->decorations.set.word_offset;
-
 		++descriptor_index;
 	}
 

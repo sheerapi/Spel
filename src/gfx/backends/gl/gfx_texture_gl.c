@@ -192,7 +192,7 @@ spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 	sampler->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	GLuint* gl_handle = (GLuint*)sampler->data;
 
-	glGenSamplers(1, gl_handle);
+	glCreateSamplers(1, gl_handle);
 
 	glSamplerParameteri(*gl_handle, GL_TEXTURE_MIN_FILTER,
 						(int)spel_gl_min_filter(desc->min, desc->mip));

@@ -3,6 +3,8 @@
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
+#include "gl_types.h"
+#include <string.h>
 
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access);
 
@@ -17,7 +19,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	}
 
 	buf->ctx = ctx;
-	buf->data = sp_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
+	buf->data = sp_malloc(sizeof(spel_gfx_gl_buffer), SPEL_MEM_TAG_GFX);
 	if (!buf->data)
 	{
 		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
@@ -27,9 +29,22 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 
 	buf->persistent = false;
 	buf->type = desc->type;
+	((spel_gfx_gl_buffer*)buf->data)->size = desc->size;
 
-	glCreateBuffers(1, (GLuint*)buf->data);
-	if (*(GLuint*)buf->data == 0)
+	// TODO: Change into persistent mapping later (fences and all that)
+	if (desc->type == SPEL_GFX_BUFFER_UNIFORM || desc->type == SPEL_GFX_BUFFER_STORAGE)
+	{
+		((spel_gfx_gl_buffer*)buf->data)->mirror =
+			spel_memory_malloc(desc->size, SPEL_MEM_TAG_GFX);
+
+		if (desc->data != NULL)
+		{
+			memcpy(((spel_gfx_gl_buffer*)buf->data)->mirror, desc->data, desc->size);
+		}
+	}
+
+	glCreateBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
+	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
 		sp_free(buf->data);
@@ -41,25 +56,32 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 							   GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
 							   GL_MAP_COHERENT_BIT;
 
-	glNamedBufferStorage(*(GLuint*)buf->data, desc->size, desc->data, storage_flags);
+	glNamedBufferStorage(((spel_gfx_gl_buffer*)buf->data)->buffer, desc->size, desc->data,
+						 storage_flags);
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
 		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
-		glDeleteBuffers(1, (GLuint*)buf->data);
+		glDeleteBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
 		sp_free(buf->data);
 		sp_free(buf);
 		return NULL;
 	}
 
-	sp_debug("created GL buffer %u size=%zu", *(GLuint*)buf->data, desc->size);
+	sp_debug("created GL buffer %u size=%zu", ((spel_gfx_gl_buffer*)buf->data)->buffer,
+			 desc->size);
 
 	return buf;
 }
 
 void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 {
-	GLuint handle = *(GLuint*)buf->data;
+	if (buf->type == SPEL_GFX_BUFFER_UNIFORM || buf->type == SPEL_GFX_BUFFER_STORAGE)
+	{
+		spel_memory_free(((spel_gfx_gl_buffer*)buf->data)->mirror);
+	}
+
+	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
 	glDeleteBuffers(1, &handle);
 	sp_debug("destroyed GL buffer %u", handle);
 	sp_free(buf->data);
@@ -69,7 +91,8 @@ void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 void spel_gfx_buffer_update_gl(spel_gfx_buffer buf, const void* data, size_t size,
 							   size_t offset)
 {
-	glNamedBufferSubData(*(GLuint*)buf->data, (GLintptr)offset, (GLsizeiptr)size, data);
+	glNamedBufferSubData(((spel_gfx_gl_buffer*)buf->data)->buffer, (GLintptr)offset,
+						 (GLsizeiptr)size, data);
 }
 
 void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_t size,
@@ -77,7 +100,8 @@ void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_t size,
 {
 	GLbitfield flags = spel_gfx_gl_map_access(access);
 	buf->persistent = (access & sp_gfx_access_persistent) != 0;
-	return glMapNamedBufferRange(*(GLuint*)buf->data, offset, size, flags);
+	return glMapNamedBufferRange(((spel_gfx_gl_buffer*)buf->data)->buffer, offset, size,
+								 flags);
 }
 
 void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf)
@@ -87,12 +111,29 @@ void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf)
 		return;
 	}
 
-	glUnmapNamedBuffer(*(GLuint*)buf->data);
+	glUnmapNamedBuffer(((spel_gfx_gl_buffer*)buf->data)->buffer);
 }
 
 void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 {
-	glFlushMappedNamedBufferRange(*(GLuint*)buf->data, offset, size);
+	if (buf->type == SPEL_GFX_BUFFER_UNIFORM || buf->type == SPEL_GFX_BUFFER_STORAGE)
+	{
+		spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)buf->data;
+
+		if (glBuf->dirty_min == glBuf->dirty_max)
+		{
+			return;
+		}
+		
+		uint32_t range = glBuf->dirty_max - glBuf->dirty_min;
+		glNamedBufferSubData(glBuf->buffer, glBuf->dirty_min, range,
+							 (uint8_t*)glBuf->mirror + glBuf->dirty_min);
+		glBuf->dirty_min = glBuf->dirty_max = 0;
+
+		return;
+	}
+
+	glFlushMappedNamedBufferRange(((spel_gfx_gl_buffer*)buf->data)->buffer, offset, size);
 }
 
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)

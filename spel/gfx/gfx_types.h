@@ -10,7 +10,6 @@ typedef struct spel_gfx_pipeline_t* spel_gfx_pipeline;
 typedef struct spel_gfx_shader_t* spel_gfx_shader;
 typedef struct spel_gfx_texture_t* spel_gfx_texture;
 typedef struct spel_gfx_sampler_t* spel_gfx_sampler;
-typedef struct spel_gfx_uniform_t* spel_gfx_uniform;
 
 typedef enum
 {
@@ -243,6 +242,15 @@ typedef enum
 	SPEL_GFX_UNIFORM_SAMPLER3D,
 	SPEL_GFX_UNIFORM_SAMPLER_CUBE,
 } spel_gfx_uniform_type;
+
+typedef enum
+{
+	// the shader code is immutable (e.g: internal shaders)
+	SPEL_GFX_SHADER_STATIC,
+
+	// the shader code is loaded at runtime (e.g: from a file)
+	SPEL_GFX_SHADER_DYNAMIC
+} spel_gfx_shader_source;
 
 typedef struct
 {

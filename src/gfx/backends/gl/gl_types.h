@@ -73,6 +73,15 @@ typedef struct
 	uint8_t storage;
 } spel_gfx_gl_format_info;
 
+typedef struct
+{
+	GLuint buffer;
+	void* mirror;
+	uint32_t size;
+	uint32_t dirty_min;
+	uint32_t dirty_max;
+} spel_gfx_gl_buffer;
+
 static const spel_gfx_gl_format_info GL_FORMATS[SPEL_GFX_TEXTURE_FORMAT_COUNT] = {
 	[SPEL_GFX_TEXTURE_FMT_R8_UNORM] = {GL_R8, GL_RED, GL_UNSIGNED_BYTE, 1, 0, 0, 0, 1},
 

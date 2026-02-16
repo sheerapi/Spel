@@ -1,8 +1,9 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
-#include "gfx/gfx_pipeline.h"
-#include "gfx/gfx_shader.h"
-#include "gfx/gfx_texture.h"
+#include "gfx_pipeline.h"
+#include "gfx_shader.h"
+#include "gfx_texture.h"
+#include "gfx_uniform.h"
 #include "gfx_buffer.h"
 #include "gfx_commands.h"
 #include "gfx_types.h"
@@ -18,6 +19,10 @@ typedef struct spel_gfx_cmdlist_t
 
 	spel_gfx_context ctx;
 	void* data;
+
+	spel_gfx_buffer* dirty_buffers;
+	uint32_t dirty_buffer_count;
+	uint32_t dirty_buffer_cap;
 } spel_gfx_cmdlist_t;
 
 #define sp_cmdlist_default_size (4 * 1024) // 4 KB
@@ -39,17 +44,38 @@ typedef struct spel_gfx_shader_uniform
 	bool used;
 	spel_gfx_uniform_type type;
 
-	uint32_t binding;
-	uint32_t location;
+	union
+	{
+		uint32_t location;
+		struct
+		{
+			uint16_t set;
+			uint16_t binding;
+		};
+	};
+
 	uint32_t offset;
 	uint32_t size;
 	uint32_t array_count;
+
+	uint32_t internal;
 } spel_gfx_shader_uniform;
 
 typedef struct spel_gfx_shader_block
 {
 	char* name;
-	uint32_t binding;
+	union
+	{
+		uint32_t location;
+		struct
+		{
+			uint16_t set;
+			uint16_t binding;
+		};
+	};
+
+	uint32_t internal;
+
 	uint32_t size;
 	spel_gfx_buffer_type type;
 	bool accessed;
@@ -111,26 +137,6 @@ typedef struct
 	uint32_t capacity;
 	uint32_t count;
 } spel_gfx_pipeline_cache;
-
-// uniforms
-typedef struct spel_gfx_uniform_t
-{
-	char* name;
-	union
-	{
-		struct
-		{
-			uint32_t binding;
-			uint32_t offset;
-			uint32_t size;
-		} uniform;
-
-		struct
-		{
-			uint32_t binding;
-		} sampler;
-	};
-} spel_gfx_uniform_t;
 
 // textures & samplers
 typedef struct spel_gfx_texture_t
@@ -236,6 +242,8 @@ sp_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
 sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipeline,
 														  spel_gfx_shader* shaders,
 														  uint32_t shaderCount);
+
+sp_hidden extern void spel_gfx_shader_reflection_free(spel_gfx_shader shader);
 
 #ifdef DEBUG
 sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);

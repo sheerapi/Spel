@@ -161,7 +161,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 			sampler->name = spel_memory_strdup(binding->name, SPEL_MEM_TAG_GFX);
 			sampler->binding = binding->binding;
 			sampler->array_count = binding->count;
-			sampler->location = binding->location;
+			sampler->set = binding->set;
 			sampler->stage_mask = shader->type;
 			sampler->type = (spel_gfx_uniform_type)(binding->image.dim + 1);
 			break;
@@ -185,6 +185,7 @@ sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 		spel_memory_strdup(binding->type_description->type_name, SPEL_MEM_TAG_GFX);
 	block->binding = binding->binding;
 	block->size = binding->block.size;
+	block->set = binding->set;
 	block->type = type;
 
 	uint32_t total_members = spel_gfx_count_block_members(&binding->block, desc);
@@ -195,6 +196,12 @@ sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 
 	spel_gfx_flatten_block_members(&binding->block, "", block->members,
 								   &block->member_count, shader);
+
+	for (size_t i = 0; i < block->member_count; i++)
+	{
+		block->members[i].set = block->set;
+		block->members[i].binding = block->binding;
+	}
 }
 
 sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
@@ -208,12 +215,6 @@ sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 	uint32_t count = 0;
 	for (uint32_t i = 0; i < block->member_count; i++)
 	{
-		if (block->members[i].flags == SPV_REFLECT_VARIABLE_FLAGS_UNUSED)
-		{
-			sp_warn("shader block member %s%s%s is never accessed (%s)", block->name,
-					strlen(block->name) != 0 ? "." : "", block->members[i].name,
-					desc->debug_name);
-		}
 		count += spel_gfx_count_block_members(&block->members[i], desc);
 	}
 
@@ -245,8 +246,16 @@ sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 		spel_gfx_shader_uniform* uniform = &uniforms[(*index)++];
 		uniform->name = spel_memory_strdup(full_name, SPEL_MEM_TAG_GFX);
 		uniform->offset = var->offset;
-		uniform->size = var->size;
+		if (var->array.dims_count > 0)
+		{
+			uniform->size = var->array.stride;
+			uniform->array_count = var->array.dims[0];
+		}
+		else
+		{
+			uniform->size = var->size;
+			uniform->array_count = 1;
+		}
 		uniform->stage_mask = shader->type;
-		uniform->array_count = var->array.dims_count > 0 ? var->array.dims[0] : 1;
 	}
 }

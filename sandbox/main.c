@@ -3,14 +3,19 @@
 #include "core/memory.h"
 #include "core/panic.h"
 #include "gfx/gfx.h"
+#include "gfx/gfx_uniform.h"
 #include "utils/display.h"
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
+spel_gfx_uniform_buffer ubuffer;
 spel_gfx_pipeline pipeline;
-spel_gfx_texture red;
+
+spel_gfx_uniform position_handle;
+spel_gfx_uniform color_handle;
 
 void spel_conf()
 {
@@ -55,22 +60,36 @@ void spel_load()
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
 
-	red = spel_gfx_texture_color_create(spel.gfx, spel_color_red());
+	position_handle = spel_gfx_uniform_get(pipeline, "position");
+	color_handle = spel_gfx_uniform_get(pipeline, "color");
 
-	spel_memory_dump_terminal();
+	ubuffer = spel_gfx_uniform_buffer_create(pipeline, "FrameData");
 }
+
+float color_data[8] = {
+	1, 0, 0, 1,
+	0, 1, 0, 1
+};
+
+spel_vec2 position;
 
 void spel_draw()
 {
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 
-	spel_gfx_cmd_clear(cl, spel_color_black());
+	spel_gfx_cmd_clear(cl, spel_color_cyan());
+
+	position.y += spel.time.delta;
+
+	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position, sizeof(position));
+	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, &color_data, sizeof(color_data));
+
+	spel_gfx_cmd_bind_shader_buffer(cl, position_handle, ubuffer);
 
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
-	spel_gfx_cmd_bind_texture(cl, 1, red);
 
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 
@@ -79,8 +98,8 @@ void spel_draw()
 
 void spel_quit()
 {
-	spel_gfx_texture_destroy(red);
 	spel_gfx_pipeline_destroy(pipeline);
+	spel_gfx_uniform_buffer_destroy(ubuffer);
 	spel_gfx_buffer_destroy(vbuffer);
 	spel_gfx_buffer_destroy(ibuffer);
 }

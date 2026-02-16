@@ -169,6 +169,15 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
 	}
 
+	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
+		&ctx->pipeline_cache, pipeline->hash, pipeline);
+
+	if (cached != pipeline)
+	{
+		spel_gfx_pipeline_destroy(pipeline);
+		return cached;
+	}
+
 	gl_pipeline->program = glCreateProgram();
 
 	if (desc->vertex_shader != NULL)
@@ -199,32 +208,22 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		char info_log[512];
 		GLsizei info_log_size = 0;
 		glGetProgramInfoLog(gl_pipeline->program, sizeof(info_log), &info_log_size,
-						   (GLchar*)info_log);
+							(GLchar*)info_log);
 
 		char str[24];
 		snprintf(str, sizeof(str), "%lx", pipeline->hash);
-		
+
 		spel_gfx_shader_log log = {.name = str,
 								   .name_size = strlen(str),
 								   .log = info_log,
 								   .log_size = info_log_size};
 
-			sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
-				   sizeof(log), "failed to compile pipeline %s: %s", str,
-				   info_log);
+		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
+			   sizeof(log), "failed to compile pipeline %s: %s", str, info_log);
 
-			glDeleteProgram(gl_pipeline->program);
-			spel_gfx_pipeline_destroy(pipeline);
-			return NULL;
-		}
-
-	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
-		&ctx->pipeline_cache, pipeline->hash, pipeline);
-
-	if (cached != pipeline)
-	{
+		glDeleteProgram(gl_pipeline->program);
 		spel_gfx_pipeline_destroy(pipeline);
-		return cached;
+		return NULL;
 	}
 
 	return pipeline;

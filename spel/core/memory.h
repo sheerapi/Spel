@@ -18,6 +18,8 @@ typedef struct spel_memory_tag_stats
 	size_t bytes_current;
 	size_t bytes_peak;
 	uint64_t alloc_count;
+	uint64_t free_count;
+	uint64_t largest_block;
 } spel_memory_tag_stats;
 
 typedef struct spel_memory
@@ -26,6 +28,9 @@ typedef struct spel_memory
 	size_t peak;
 	size_t total_allocated;
 	size_t total_freed;
+
+	size_t header_allocated;
+	size_t header_freed;
 
 	uint64_t alloc_count;
 	uint64_t free_count;
@@ -37,7 +42,6 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag);
 sp_api void spel_memory_free(void* ptr);
 sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag);
 const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors);
-sp_api bool spel_memory_owns(void* ptr);
 
 // not really memory-related, but i don't feel like writing string.h again
 sp_api char* spel_memory_strdup(const char* src, spel_memory_tag tag);

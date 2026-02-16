@@ -45,6 +45,7 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 
 	spel.memory.current += size;
 	spel.memory.total_allocated += size;
+	spel.memory.header_allocated += sizeof(spel_alloc_header);
 	spel.memory.alloc_count++;
 
 	if (spel.memory.current > spel.memory.peak)
@@ -55,6 +56,11 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 	spel_memory_tag_stats* ts = &spel.memory.tags[tag];
 	ts->bytes_current += size;
 	ts->alloc_count++;
+
+	if (size > ts->largest_block)
+	{
+		ts->largest_block = size;
+	}
 
 	if (ts->bytes_current > ts->bytes_peak)
 	{
@@ -91,27 +97,12 @@ sp_api void spel_memory_free(void* ptr)
 	spel.memory.current -= size;
 	spel.memory.total_freed += size;
 	spel.memory.free_count++;
+	spel.memory.header_freed += sizeof(spel_alloc_header);
 
 	spel.memory.tags[tag].bytes_current -= size;
+	spel.memory.tags[tag].free_count++;
 
 	free(h);
-}
-
-sp_api bool spel_memory_owns(void* ptr)
-{
-	if (!ptr)
-	{
-		return false;
-	}
-
-	spel_alloc_header* h = ((spel_alloc_header*)ptr) - 1;
-
-	if (h->magic != 0x5350454C)
-	{
-		return false;
-	}
-
-	return true;
 }
 
 sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
@@ -193,6 +184,11 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 		spel.memory.tags[use_tag].bytes_current -= delta;
 	}
 
+	if (newSize > spel.memory.tags[use_tag].largest_block)
+	{
+		spel.memory.tags[use_tag].largest_block = newSize;
+	}
+
 	new_h->size = newSize;
 	new_h->tag = use_tag;
 
@@ -242,8 +238,9 @@ sp_api void spel_memory_dump_terminal()
 		   sp_terminal_bold, sp_terminal_reset);
 
 	printf("global:\n");
-	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
-		   spel_memory_fmt_size(spel.memory.current, cur, true));
+	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue,
+		   sp_terminal_reset, spel_memory_fmt_size(spel.memory.current, cur, true));
+	
 	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
 		   spel_memory_fmt_size(spel.memory.peak, peak, true));
 	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
@@ -273,13 +270,18 @@ sp_api void spel_memory_dump_terminal()
 
 		char tag_cur[32];
 		char tag_peak[32];
-		printf("    %s%-8s%s  %-10s %s%s(peak %10s%s%s)%s	 %s%sallocs: %s%zu%s\n",
+		printf("    %s%-8s%s  %-10s %s%s(peak %10s%s%s)%s	 %s%sallocs: %s%zu%s	"
+			   "%s%sfrees: %s%zu%s %s%s(%zu still alive, largest block = %s)%s\n",
 			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
 			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), sp_terminal_italic,
 			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
 			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset,
 			   sp_terminal_bright_blue, sp_terminal_italic, sp_terminal_bright_green,
-			   ts->alloc_count, sp_terminal_reset);
+			   ts->alloc_count, sp_terminal_reset, sp_terminal_bright_blue,
+			   sp_terminal_italic, sp_terminal_bright_green, ts->free_count,
+			   sp_terminal_reset, sp_terminal_italic, sp_terminal_gray,
+			   ts->alloc_count - ts->free_count,
+			   spel_memory_fmt_size(ts->largest_block, tag_peak, true), sp_terminal_reset);
 	}
 
 	printf("%s%s===========================%s\n", sp_terminal_bright_green,

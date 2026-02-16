@@ -6,6 +6,8 @@
 
 typedef struct spel_gfx_shader_desc
 {
+	spel_gfx_shader_source shader_source;
+
 	void* source;
 	size_t source_size;
 

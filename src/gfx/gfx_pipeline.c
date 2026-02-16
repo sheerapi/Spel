@@ -7,10 +7,10 @@
 #include "gfx_internal_shaders.h"
 #include <string.h>
 
-sp_hidden int32_t spel_gfx_find_block_by_binding(spel_gfx_shader_block* blocks,
-												 uint32_t count, uint32_t binding);
-sp_hidden int32_t spel_gfx_find_sampler_by_binding(spel_gfx_shader_uniform* samplers,
-												   uint32_t count, uint32_t binding);
+sp_hidden int32_t spel_gfx_find_block_by_set_binding(spel_gfx_shader_block* blocks,
+												 uint32_t count, uint32_t binding, uint32_t set);
+sp_hidden int32_t spel_gfx_find_sampler_by_set_binding(spel_gfx_shader_uniform* samplers,
+												   uint32_t count, uint32_t binding, uint32_t set);
 sp_hidden void spel_gfx_copy_block(spel_gfx_shader_block* dest,
 								   const spel_gfx_shader_block* src);
 sp_hidden void spel_gfx_copy_sampler(spel_gfx_shader_uniform* dest,
@@ -149,6 +149,7 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 	if (ctx->shaders[2] == NULL)
 	{
 		spel_gfx_shader_desc vertex_desc;
+		vertex_desc.shader_source = SPEL_GFX_SHADER_STATIC;
 		vertex_desc.debug_name = "spel_internal_fullscreen_vertex";
 		vertex_desc.source = spel_internal_fullscreen_vert_spv;
 		vertex_desc.source_size = spel_internal_fullscreen_vert_spv_len;
@@ -176,6 +177,7 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 	if (ctx->shaders[0] == NULL)
 	{
 		spel_gfx_shader_desc vertex_desc;
+		vertex_desc.shader_source = SPEL_GFX_SHADER_STATIC;
 		vertex_desc.debug_name = "spel_internal_2d_vertex";
 		vertex_desc.source = spel_internal_2d_vert_spv;
 		vertex_desc.source_size = spel_internal_2d_vert_spv_len;
@@ -186,12 +188,13 @@ sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx)
 
 	if (ctx->shaders[1] == NULL)
 	{
-		spel_gfx_shader_desc vertex_desc;
-		vertex_desc.debug_name = "spel_internal_2d_fragment";
-		vertex_desc.source = spel_internal_2d_frag_spv;
-		vertex_desc.source_size = spel_internal_2d_frag_spv_len;
+		spel_gfx_shader_desc fragment_desc;
+		fragment_desc.shader_source = SPEL_GFX_SHADER_STATIC;
+		fragment_desc.debug_name = "spel_internal_2d_fragment";
+		fragment_desc.source = spel_internal_2d_frag_spv;
+		fragment_desc.source_size = spel_internal_2d_frag_spv_len;
 
-		ctx->shaders[1] = spel_gfx_shader_create(ctx, &vertex_desc);
+		ctx->shaders[1] = spel_gfx_shader_create(ctx, &fragment_desc);
 		ctx->shaders[1]->internal = true;
 	}
 
@@ -281,7 +284,7 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 			spel_gfx_shader_block* block = &refl->uniforms[j];
 
 			int32_t existing =
-				spel_gfx_find_block_by_binding(all_ubos, ubo_idx, block->binding);
+				spel_gfx_find_block_by_set_binding(all_ubos, ubo_idx, block->binding, block->set);
 
 			if (existing >= 0)
 			{
@@ -297,7 +300,7 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 		{
 			spel_gfx_shader_block* block = &refl->storage[j];
 			int32_t existing =
-				spel_gfx_find_block_by_binding(all_ssbos, ssbo_idx, block->binding);
+				spel_gfx_find_block_by_set_binding(all_ssbos, ssbo_idx, block->binding, block->set);
 
 			if (existing >= 0)
 			{
@@ -312,8 +315,8 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 		for (uint32_t j = 0; j < refl->sampler_count; j++)
 		{
 			spel_gfx_shader_uniform* sampler = &refl->samplers[j];
-			int32_t existing = spel_gfx_find_sampler_by_binding(all_samplers, sampler_idx,
-																sampler->binding);
+			int32_t existing = spel_gfx_find_sampler_by_set_binding(all_samplers, sampler_idx,
+																sampler->binding, sampler->set);
 
 			if (existing >= 0)
 			{
@@ -334,12 +337,12 @@ sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipe
 	pipeline->reflection.sampler_count = sampler_idx;
 }
 
-sp_hidden int32_t spel_gfx_find_block_by_binding(spel_gfx_shader_block* blocks,
-												 uint32_t count, uint32_t binding)
+sp_hidden int32_t spel_gfx_find_block_by_set_binding(spel_gfx_shader_block* blocks,
+												 uint32_t count, uint32_t binding, uint32_t set)
 {
 	for (uint32_t i = 0; i < count; i++)
 	{
-		if (blocks[i].binding == binding)
+		if (blocks[i].set == set && blocks[i].binding == binding)
 		{
 			return (int32_t)i;
 		}
@@ -347,12 +350,12 @@ sp_hidden int32_t spel_gfx_find_block_by_binding(spel_gfx_shader_block* blocks,
 	return -1;
 }
 
-sp_hidden int32_t spel_gfx_find_sampler_by_binding(spel_gfx_shader_uniform* samplers,
-												   uint32_t count, uint32_t binding)
+sp_hidden int32_t spel_gfx_find_sampler_by_set_binding(spel_gfx_shader_uniform* samplers,
+												   uint32_t count, uint32_t binding, uint32_t set)
 {
 	for (uint32_t i = 0; i < count; i++)
 	{
-		if (samplers[i].binding == binding)
+		if (samplers[i].set == set && samplers[i].binding == binding)
 		{
 			return (int32_t)i;
 		}

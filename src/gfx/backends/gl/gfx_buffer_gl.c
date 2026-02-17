@@ -30,7 +30,8 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 
 	buf->persistent = false;
 	buf->type = desc->type;
-	((spel_gfx_gl_buffer*)buf->data)->size = desc->size;
+	buf->access = desc->access;
+	buf->size = desc->size;
 
 	// TODO: Change into persistent mapping later (fences and all that)
 	if (desc->type == SPEL_GFX_BUFFER_UNIFORM || desc->type == SPEL_GFX_BUFFER_STORAGE)
@@ -196,4 +197,54 @@ GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)
 	}
 
 	return flags;
+}
+
+sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
+										 bool preserveData)
+{
+	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
+
+	glCreateBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
+	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
+	{
+		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
+		buf->data = &handle;
+		return;
+	}
+
+	GLbitfield storage_flags = GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT |
+							   GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
+							   GL_MAP_COHERENT_BIT;
+
+	glNamedBufferStorage(((spel_gfx_gl_buffer*)buf->data)->buffer, newSize, NULL,
+						 storage_flags);
+	GLenum err = glGetError();
+	if (err != GL_NO_ERROR)
+	{
+		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
+		glDeleteBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
+		buf->data = &handle;
+		return;
+	}
+
+	if (preserveData)
+	{
+		glCopyNamedBufferSubData(handle, *(GLuint*)buf->data, 0, 0, buf->size);
+	}
+
+	sp_trace("buffer resized to %d bytes (%fx more)", newSize, newSize / buf->size);
+	
+	buf->size = newSize;
+	glDeleteBuffers(1, &handle);
+	if (buf->type == SPEL_GFX_BUFFER_UNIFORM || buf->type == SPEL_GFX_BUFFER_STORAGE)
+	{
+		spel_memory_free(((spel_gfx_gl_buffer*)buf->data)->mirror);
+	}
+
+	// TODO: Change into persistent mapping later (fences and all that)
+	if (buf->type == SPEL_GFX_BUFFER_UNIFORM || buf->type == SPEL_GFX_BUFFER_STORAGE)
+	{
+		((spel_gfx_gl_buffer*)buf->data)->mirror =
+			spel_memory_malloc(buf->size, SPEL_MEM_TAG_GFX);
+	}
 }

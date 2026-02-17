@@ -78,7 +78,6 @@ typedef struct
 {
 	GLuint buffer;
 	void* mirror;
-	uint32_t size;
 	uint32_t dirty_min;
 	uint32_t dirty_max;
 } spel_gfx_gl_buffer;

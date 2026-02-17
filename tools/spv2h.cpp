@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 		auto data = read_file(path);
 		auto sym = symbol_name(name, stage);
 
-		out << "unsigned char " << sym << "[] = {\n    ";
+		out << "static unsigned char " << sym << "[] = {\n    ";
 
 		for (size_t i = 0; i < data.size(); ++i)
 		{
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 		}
 
 		out << "\n};\n";
-		out << "unsigned int " << sym << "_len = " << data.size() << ";\n\n";
+		out << "static unsigned int " << sym << "_len = " << data.size() << ";\n\n";
 	}
 
 	out << "#endif // SPEL_GFX_INTERNAL_SHADERS\n";

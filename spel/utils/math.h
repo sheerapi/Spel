@@ -26,6 +26,14 @@ typedef struct
 
 typedef struct
 {
+	float x;
+	float y;
+	float z;
+	float w;
+} spel_vec4;
+
+typedef struct
+{
 	int x;
 	int y;
 	int width;

@@ -43,7 +43,8 @@ typedef struct
 	spel_gfx_sampler sampler;
 
 	spel_gfx_render_pass current_pass;
-	int target_height; // height of the current render target for Y-flip in viewport/scissor
+	int target_height; // height of the current render target for Y-flip in
+					   // viewport/scissor
 } spel_gfx_cmdlist_gl;
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)

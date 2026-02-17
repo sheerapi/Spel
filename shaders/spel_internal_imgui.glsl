@@ -10,15 +10,14 @@ layout(location = 1) out vec4 v_color;
 
 layout(set = 0, binding = 0) uniform ProjData
 {
-	vec2 scale;
-	vec2 translate;
+	mat4 ProjMtx;
 };
 
 void main()
 {
 	v_uv = a_uv;
 	v_color = a_color;
-	gl_Position = vec4(a_pos * scale + translate, 0.0, 1.0);
+	gl_Position = ProjMtx * vec4(a_pos.xy, 0, 1);
 }
 
 #pragma shader_stage(fragment)

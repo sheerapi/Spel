@@ -29,6 +29,7 @@ sources = [
     'src/core/env_info.c',
     'src/utils/display.c',
     'src/gfx/gfx_shader_reflect.c',
+    'src/extras/spel_imgui.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',

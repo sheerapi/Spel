@@ -74,7 +74,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
 	}
 
-	sp_trace("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
+	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
 }
 
 sp_hidden void spel_gfx_context_conf_gl()
@@ -136,6 +136,7 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
+	spel_gfx_render_pass_destroy_gl(ctx->default_pass);
 	spel_memory_free((void*)ctx->tracked_fbos);
 	spel_memory_free(ctx->pipeline_cache.entries);
 	spel_memory_free(ctx->sampler_cache.entries);

@@ -62,6 +62,9 @@ sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
 sp_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
 									uint32_t height);
 
+sp_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
+									spel_rect region, void* data, size_t dataSize);
+
 sp_api spel_gfx_sampler_desc spel_gfx_sampler_default();
 sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 											 const spel_gfx_sampler_desc* desc);

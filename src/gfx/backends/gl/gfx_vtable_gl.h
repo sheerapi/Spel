@@ -36,6 +36,8 @@ sp_hidden void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_
 									   spel_gfx_buffer_access access);
 sp_hidden void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf);
 sp_hidden void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size);
+sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
+									  bool preserveData);
 
 // shaders
 sp_hidden spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
@@ -61,7 +63,10 @@ sp_hidden spel_gfx_sampler spel_gfx_sampler_create_gl(spel_gfx_context ctx,
 sp_hidden void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler);
 
 sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture texture, uint32_t width,
-									uint32_t height);
+										  uint32_t height);
+
+sp_hidden void spel_gfx_texture_update_gl(spel_gfx_texture texture, uint32_t mip,
+									spel_rect region, void* data, size_t dataSize);
 
 // framebuffers
 sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
@@ -69,8 +74,8 @@ sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
 
 sp_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb);
 
-sp_hidden spel_gfx_render_pass
-spel_gfx_render_pass_create_gl(spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc);
+sp_hidden spel_gfx_render_pass spel_gfx_render_pass_create_gl(
+	spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc);
 
 sp_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass);
 
@@ -80,7 +85,7 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 											spel_gfx_sampler_filter filter);
 
 sp_hidden void spel_gfx_framebuffer_resize_gl(spel_gfx_framebuffer fb, uint32_t width,
-										uint32_t height);
+											  uint32_t height);
 
 extern spel_gfx_vtable_t GL_VTABLE;
 

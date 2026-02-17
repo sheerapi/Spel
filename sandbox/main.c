@@ -2,6 +2,8 @@
 #include "core/log.h"
 #include "core/memory.h"
 #include "core/panic.h"
+#include "dcimgui.h"
+#include "extras/spel_imgui.h"
 #include "gfx/gfx.h"
 #include "utils/display.h"
 #include <math.h>
@@ -17,17 +19,13 @@ spel_gfx_pipeline pipeline;
 spel_gfx_uniform position_handle;
 spel_gfx_uniform color_handle;
 
-spel_gfx_texture offscreen_color;
-spel_gfx_texture offscreen_depth;
-spel_gfx_framebuffer offscreen_fb;
-spel_gfx_render_pass offscreen_pass;
+spel_imgui_context imgui_ctx;
 
 spel_color color_data = {.r = 0, .g = 0, .b = 0, .a = 255};
 
 void spel_conf()
 {
-	spel.window.resizable = false;
-	spel.log.severity = SPEL_SEV_DEBUG;
+	spel.window.resizable = true;
 }
 
 void spel_load()
@@ -73,50 +71,9 @@ void spel_load()
 
 	ubuffer = spel_gfx_uniform_buffer_create(pipeline, "FrameData");
 
-	spel_gfx_texture_desc color_desc = {
-		.type = SPEL_GFX_TEXTURE_2D,
-		.depth = 1,
-		.mip_count = 1,
-		.width = spel.window.width,
-		.height = spel.window.height,
-		.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
-		.usage = SPEL_GFX_TEXTURE_USAGE_RENDER | SPEL_GFX_TEXTURE_USAGE_SAMPLED,
-	};
-	spel_gfx_texture_desc depth_desc = {
-		.type = SPEL_GFX_TEXTURE_2D,
-		.depth = 1,
-		.mip_count = 1,
-		.width = spel.window.width,
-		.height = spel.window.height,
-		.format = SPEL_GFX_TEXTURE_FMT_D16,
-		.usage = SPEL_GFX_TEXTURE_USAGE_RENDER,
-	};
+	spel_memory_dump_terminal();
 
-	offscreen_color = spel_gfx_texture_create(spel.gfx, &color_desc);
-	offscreen_depth = spel_gfx_texture_create(spel.gfx, &depth_desc);
-
-	spel_gfx_framebuffer_desc fb_desc = {
-		.color[0] = {.texture = offscreen_color, .type = SPEL_GFX_ATTACHMENT_COLOR},
-		.depth = {.texture = offscreen_depth, .type = SPEL_GFX_ATTACHMENT_DEPTH},
-		.color_count = 1,
-		.width = spel.window.width,
-		.height = spel.window.height,
-		.auto_resize = true
-	};
-	offscreen_fb = spel_gfx_framebuffer_create(spel.gfx, &fb_desc);
-
-	spel_gfx_render_pass_desc offscreen_pass_desc = {
-		.name = "G-Buffer",
-		.framebuffer = offscreen_fb,
-		.color_load = {SPEL_GFX_LOAD_CLEAR},
-		.color_store = {SPEL_GFX_STORE_STORE},
-		.clear_colors = {spel_color_cyan()},
-		.depth_load = SPEL_GFX_LOAD_CLEAR,
-		.depth_store = SPEL_GFX_STORE_DONT_CARE,
-		.clear_depth = 1.0F,
-	};
-
-	offscreen_pass = spel_gfx_render_pass_create(spel.gfx, &offscreen_pass_desc);
+	imgui_ctx = spel_imgui_context_create(spel.gfx);
 }
 
 spel_vec2 position;
@@ -131,6 +88,7 @@ void spel_draw()
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
+	spel_gfx_cmd_clear(cl, spel_color_cyan());
 
 	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
 								sizeof(float) * 4);
@@ -141,17 +99,18 @@ void spel_draw()
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 
+	// imgui
+	spel_imgui_frame_begin(imgui_ctx);
+	ImGui_ShowDemoWindow(NULL);
+	spel_imgui_render(imgui_ctx, cl);
+
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
 }
 
 void spel_quit()
 {
-	spel_gfx_framebuffer_destroy(offscreen_fb);
-	spel_gfx_texture_destroy(offscreen_color);
-	spel_gfx_texture_destroy(offscreen_depth);
-	spel_gfx_render_pass_destroy(offscreen_pass);
-
+	spel_imgui_context_destroy(imgui_ctx);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_uniform_buffer_destroy(ubuffer);
 	spel_gfx_buffer_destroy(vbuffer);

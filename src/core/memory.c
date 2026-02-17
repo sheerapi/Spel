@@ -240,9 +240,9 @@ sp_api void spel_memory_dump_terminal()
 		   sp_terminal_bold, sp_terminal_reset);
 
 	printf("global:\n");
-	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue,
-		   sp_terminal_reset, spel_memory_fmt_size(spel.memory.current, cur, true));
-	
+	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
+		   spel_memory_fmt_size(spel.memory.current, cur, true));
+
 	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
 		   spel_memory_fmt_size(spel.memory.peak, peak, true));
 	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
@@ -273,7 +273,7 @@ sp_api void spel_memory_dump_terminal()
 		char tag_cur[32];
 		char tag_peak[32];
 		printf("    %s%-8s%s  %-10s %s%s(peak %10s%s%s)%s	 %s%sallocs: %s%zu%s	"
-			   "%s%sfrees: %s%zu%s %s%s(%zu still alive, largest block = %s)%s\n",
+			   "%s%sfrees: %s%zu%s	%s%s(%zu still alive, largest block = %s%s%s)%s\n",
 			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
 			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), sp_terminal_italic,
 			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
@@ -283,7 +283,8 @@ sp_api void spel_memory_dump_terminal()
 			   sp_terminal_italic, sp_terminal_bright_green, ts->free_count,
 			   sp_terminal_reset, sp_terminal_italic, sp_terminal_gray,
 			   ts->alloc_count - ts->free_count,
-			   spel_memory_fmt_size(ts->largest_block, tag_peak, true), sp_terminal_reset);
+			   spel_memory_fmt_size(ts->largest_block, tag_peak, true),
+			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset);
 	}
 
 	printf("%s%s===========================%s\n", sp_terminal_bright_green,

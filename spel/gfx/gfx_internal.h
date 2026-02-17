@@ -1,5 +1,6 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
+#include "dcimgui.h"
 #include "gfx/gfx_framebuffer.h"
 #include "gfx_buffer.h"
 #include "gfx_commands.h"
@@ -35,6 +36,9 @@ typedef struct spel_gfx_buffer_t
 	void* data;
 	bool persistent;
 	spel_gfx_buffer_type type;
+	spel_gfx_buffer_usage usage;
+	spel_gfx_buffer_access access;
+	size_t size;
 } spel_gfx_buffer_t;
 
 // shaders
@@ -204,7 +208,8 @@ typedef struct spel_gfx_context_t
 
 	int fb_width;
 	int fb_height;
-	// Resize debounce tracking to avoid reallocating render targets every live-resize tick.
+	// Resize debounce tracking to avoid reallocating render targets every live-resize
+	// tick.
 	int fb_resized_width;
 	int fb_resized_height;
 	uint32_t fb_resize_request_ms;
@@ -246,6 +251,7 @@ typedef struct spel_gfx_vtable_t
 	void* (*buffer_map)(spel_gfx_buffer, size_t, size_t, spel_gfx_access);
 	void (*buffer_unmap)(spel_gfx_buffer);
 	void (*buffer_flush)(spel_gfx_buffer, size_t, size_t);
+	void (*buffer_resize)(spel_gfx_buffer, size_t, bool);
 
 	spel_gfx_shader (*shader_create)(spel_gfx_context, spel_gfx_shader_desc*);
 	void (*shader_destroy)(spel_gfx_shader);
@@ -256,6 +262,7 @@ typedef struct spel_gfx_vtable_t
 	spel_gfx_texture (*texture_create)(spel_gfx_context, const spel_gfx_texture_desc*);
 	void (*texture_destroy)(spel_gfx_texture);
 	void (*texture_resize)(spel_gfx_texture, uint32_t, uint32_t);
+	void (*texture_update)(spel_gfx_texture, uint32_t, spel_rect, void*, size_t);
 
 	spel_gfx_sampler (*sampler_create)(spel_gfx_context, const spel_gfx_sampler_desc*);
 	void (*sampler_destroy)(spel_gfx_sampler);

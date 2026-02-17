@@ -151,6 +151,9 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 
 	if (desc->data)
 	{
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, texture->width);
+
 		switch (desc->type)
 		{
 		case SPEL_GFX_TEXTURE_2D:
@@ -299,4 +302,17 @@ sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture tex, uint32_t width,
 	// keep dimensions in sync for future resizes
 	tex->width = width;
 	tex->height = height;
+}
+
+sp_hidden void spel_gfx_texture_update_gl(spel_gfx_texture texture, uint32_t mip,
+										  spel_rect region, void* data, size_t dataSize)
+{
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, texture->width);
+	
+	GLuint* gl_handle = (GLuint*)texture->data;
+	const spel_gfx_gl_format_info* fmt = &GL_FORMATS[texture->format];
+
+	glTextureSubImage2D(*gl_handle, mip, region.x, region.y, region.width, region.height,
+						fmt->external_format, fmt->type, data);
 }

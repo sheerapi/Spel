@@ -4,6 +4,7 @@
 #include "core/macros.h"
 #include "core/types.h"
 #include "core/window.h"
+#include "dcimgui.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_commands.h"
@@ -15,7 +16,6 @@
 #include "utils/path.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz) spel_memory_malloc(sz, SPEL_MEM_TAG_GFX)
-// stb expects realloc(ptr, new_size); previous macro had parameters flipped.
 #define STBI_REALLOC(p, sz) spel_memory_realloc(p, sz, SPEL_MEM_TAG_GFX)
 #define STBI_FREE(p) spel_memory_free(p)
 #include "utils/internal/stb_image.h"
@@ -1383,4 +1383,25 @@ sp_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
 	{
 		spel_gfx_framebuffer_resize(ctx->tracked_fbos[i], ctx->fb_width, ctx->fb_height);
 	}
+}
+
+sp_api void spel_gfx_buffer_resize(spel_gfx_buffer buf, size_t newSize, bool preserveData)
+{
+	if (newSize < buf->size)
+	{
+		return;
+	}
+
+	buf->ctx->vt->buffer_resize(buf, newSize, preserveData);
+}
+
+sp_api size_t spel_gfx_buffer_size(spel_gfx_buffer buf)
+{
+	return buf->size;
+}
+
+sp_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
+									spel_rect region, void* data, size_t dataSize)
+{
+	texture->ctx->vt->texture_update(texture, mip, region, data, dataSize);
 }

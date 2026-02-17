@@ -46,7 +46,7 @@ sources = [
     'src/utils/internal/spirv_reflect.c',
 ]
 
-shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl', 'shaders/spel_internal_blit.glsl']
+shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl', 'shaders/spel_internal_imgui.glsl']
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
@@ -231,7 +231,7 @@ executable(
 )
 
 # Spël
-dependencies = [dependency('sdl3'), m_dep]
+dependencies = [dependency('sdl3'), m_dep, dependency('imgui')]
 
 spel_lib = library(
     'spel',

@@ -130,9 +130,6 @@ void spel_draw()
 {
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 
-	spel_gfx_cmd_end_pass(cl);
-
-	spel_gfx_cmd_begin_pass(cl, offscreen_pass);
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 
 	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
@@ -143,12 +140,6 @@ void spel_draw()
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
-
-	spel_gfx_cmd_end_pass(cl);
-
-	spel_gfx_cmd_begin_pass(cl, spel_gfx_render_pass_default(spel.gfx));
-	spel_gfx_framebuffer_blit_simple(offscreen_fb, NULL);
-	spel_gfx_cmd_end_pass(cl);
 
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);

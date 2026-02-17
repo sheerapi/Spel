@@ -1,5 +1,6 @@
 #include "core/event.h"
 #include "SDL3/SDL_events.h"
+#include "SDL3/SDL_timer.h"
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/macros.h"
@@ -219,6 +220,13 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_WINDOW_RESIZED:
 		spel.window.width = ev->window.data1;
 		spel.window.height = ev->window.data2;
+		// Some platforms only fire RESIZED; record desired drawable size (debounced in frame_begin).
+		if (spel.gfx)
+		{
+			spel.gfx->fb_width = ev->window.data1;
+			spel.gfx->fb_height = ev->window.data2;
+			spel.gfx->fb_resize_request_ms = SDL_GetTicks();
+		}
 		break;
 
 	case SDL_EVENT_WINDOW_MOVED:
@@ -233,6 +241,7 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 		spel.gfx->fb_width = ev->window.data1;
 		spel.gfx->fb_height = ev->window.data2;
+		spel.gfx->fb_resize_request_ms = SDL_GetTicks();
 		break;
 
 	case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:

@@ -105,9 +105,19 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
+	if (desc->usage & SPEL_GFX_TEXTURE_USAGE_RENDER)
+	{
+		mip_count = 1;
+	}
+
 	texture->ctx = ctx;
 	texture->type = desc->type;
 	texture->internal = false;
+	texture->width = desc->width;
+	texture->height = desc->height;
+	texture->format = desc->format;
+	texture->mip_count = mip_count;
+	texture->depth = desc->depth == 0 ? 1 : desc->depth;
 
 	texture->data = spel_memory_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	if (!texture->data)
@@ -164,7 +174,12 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	}
 
 	glTextureParameteri(*gl_handle, GL_TEXTURE_BASE_LEVEL, 0);
-	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, (int)mip_count);
+	int max_level = (int)mip_count - 1;
+	if (max_level < 0)
+	{
+		max_level = 0;
+	}
+	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, max_level);
 
 	sp_trace("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
 			 desc->height, desc->depth, desc->mip_count, desc->format);
@@ -238,4 +253,50 @@ void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler)
 
 	spel_memory_free(sampler->data);
 	spel_memory_free(sampler);
+}
+
+sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture tex, uint32_t width,
+										  uint32_t height)
+{
+	width = width == 0 ? 1 : width;
+	height = height == 0 ? 1 : height;
+
+	if (tex->width == width && tex->height == height)
+	{
+		return;
+	}
+
+	GLuint* gl_handle = (GLuint*)tex->data;
+	glDeleteTextures(1, gl_handle);
+	GLenum target = spel_gl_texture_target(tex->type);
+	glCreateTextures(target, 1, gl_handle);
+
+	tex->width = width;
+	tex->height = height;
+
+	const spel_gfx_gl_format_info* fmt = &GL_FORMATS[tex->format];
+
+	if (tex->type == SPEL_GFX_TEXTURE_2D)
+	{
+		glTextureStorage2D(*gl_handle, (int)tex->mip_count, fmt->internal_format,
+						   (int)width, (int)height);
+	}
+	else
+	{
+		glTextureStorage3D(*gl_handle, (int)tex->mip_count, fmt->internal_format,
+						   (int)width, (int)height, (int)tex->depth);
+	}
+
+	// match creation-time parameters so sampling stays valid
+	glTextureParameteri(*gl_handle, GL_TEXTURE_BASE_LEVEL, 0);
+	int max_level = (int)tex->mip_count - 1;
+	if (max_level < 0)
+	{
+		max_level = 0;
+	}
+	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, max_level);
+
+	// keep dimensions in sync for future resizes
+	tex->width = width;
+	tex->height = height;
 }

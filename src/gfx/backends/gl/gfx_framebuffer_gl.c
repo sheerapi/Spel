@@ -64,29 +64,6 @@ sp_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb)
 	spel_memory_free(fb);
 }
 
-const char* fbo_status_string(GLenum status)
-{
-	switch (status)
-	{
-	case GL_FRAMEBUFFER_UNDEFINED:
-		return "undefined";
-	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-		return "incomplete attachment";
-	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-		return "missing attachment";
-	case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-		return "incomplete draw buffer";
-	case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-		return "incomplete read buffer";
-	case GL_FRAMEBUFFER_UNSUPPORTED:
-		return "unsupported";
-	case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-		return "incomplete multisample";
-	default:
-		return "unknown";
-	}
-}
-
 sp_hidden spel_gfx_render_pass spel_gfx_render_pass_create_gl(
 	spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc)
 {
@@ -165,4 +142,73 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 	glBlitNamedFramebuffer(src_fb, dst_fb, srcRegion.x, srcRegion.y, srcRegion.width,
 						   srcRegion.height, dstRegion.x, dstRegion.y, dstRegion.width,
 						   dstRegion.height, mask, gl_filter);
+}
+
+sp_hidden void spel_gfx_framebuffer_resize_gl(spel_gfx_framebuffer fb, uint32_t width,
+											  uint32_t height)
+{
+	// Avoid zero-sized attachments which make FBO incomplete during live resize.
+	width = width == 0 ? 1 : width;
+	height = height == 0 ? 1 : height;
+
+	if (fb->desc.width == width && fb->desc.height == height)
+	{
+		return;
+	}
+
+	GLuint* gl_handle = (GLuint*)fb->data;
+	glDeleteFramebuffers(1, gl_handle);
+
+	for (uint32_t i = 0; i < fb->desc.color_count; i++)
+	{
+		spel_gfx_texture_resize(fb->desc.color[i].texture, width, height);
+	}
+
+	if (fb->desc.depth.texture)
+	{
+		spel_gfx_texture_resize(fb->desc.depth.texture, width, height);
+	}
+
+	glCreateFramebuffers(1, gl_handle);
+	for (uint32_t i = 0; i < fb->desc.color_count; i++)
+	{
+		glNamedFramebufferTexture(*gl_handle, GL_COLOR_ATTACHMENT0 + i,
+								  *(GLuint*)fb->desc.color[i].texture->data,
+								  fb->desc.color[i].mip);
+	}
+
+	if (fb->desc.depth.texture)
+	{
+		GLenum att = fb->desc.depth.type == SPEL_GFX_ATTACHMENT_DEPTH_STENCIL
+						 ? GL_DEPTH_STENCIL_ATTACHMENT
+						 : GL_DEPTH_ATTACHMENT;
+		glNamedFramebufferTexture(*gl_handle, att, *(GLuint*)fb->desc.depth.texture->data,
+								  fb->desc.depth.mip);
+	}
+
+	fb->desc.width = width;
+	fb->desc.height = height;
+}
+
+const char* fbo_status_string(GLenum status)
+{
+	switch (status)
+	{
+	case GL_FRAMEBUFFER_UNDEFINED:
+		return "undefined";
+	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+		return "incomplete attachment";
+	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+		return "missing attachment";
+	case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+		return "incomplete draw buffer";
+	case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+		return "incomplete read buffer";
+	case GL_FRAMEBUFFER_UNSUPPORTED:
+		return "unsupported";
+	case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+		return "incomplete multisample";
+	default:
+		return "unknown";
+	}
 }

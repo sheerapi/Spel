@@ -1,4 +1,5 @@
 #include "SDL3/SDL_video.h"
+#include "SDL3/SDL_timer.h"
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/types.h"
@@ -135,6 +136,7 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_gfx_context_gl* gl = (spel_gfx_context_gl*)ctx->data;
 	gladLoaderUnloadGL();
 	SDL_GL_DestroyContext(gl->ctx);
+	spel_memory_free((void*)ctx->tracked_fbos);
 	spel_memory_free(ctx->pipeline_cache.entries);
 	spel_memory_free(ctx->sampler_cache.entries);
 	spel_memory_free(gl);
@@ -145,9 +147,29 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 
 sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
-	if (spel.window.occluded)
+	// Keep drawable size in sync in case window-pixel events lag (e.g., Wayland live resize),
+	// but debounce heavy reallocations while the user is dragging.
+	const uint32_t RESIZE_DEBOUNCE_MS = 40; // tune for smoothness vs responsiveness
+	int drawable_w = ctx->fb_width;
+	int drawable_h = ctx->fb_height;
+	SDL_GetWindowSizeInPixels(spel.window.handle, &drawable_w, &drawable_h);
+	if (drawable_w != ctx->fb_width || drawable_h != ctx->fb_height)
 	{
-		return;
+		ctx->fb_width = drawable_w;
+		ctx->fb_height = drawable_h;
+		ctx->fb_resize_request_ms = SDL_GetTicks();
+	}
+
+	// Apply pending resize if stable long enough and not already applied.
+	if ((ctx->fb_width != ctx->fb_resized_width || ctx->fb_height != ctx->fb_resized_height))
+	{
+		uint32_t now = SDL_GetTicks();
+		if (now - ctx->fb_resize_request_ms >= RESIZE_DEBOUNCE_MS)
+		{
+			spel_gfx_context_framebuffers_resize(ctx);
+			ctx->fb_resized_width = ctx->fb_width;
+			ctx->fb_resized_height = ctx->fb_height;
+		}
 	}
 
 	glViewport(0, 0, ctx->fb_width, ctx->fb_height);
@@ -159,11 +181,6 @@ sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 
 sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
-	if (spel.window.occluded)
-	{
-		return;
-	}
-
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	SDL_GL_SwapWindow(spel.window.handle);

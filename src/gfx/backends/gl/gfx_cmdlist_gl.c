@@ -43,6 +43,7 @@ typedef struct
 	spel_gfx_sampler sampler;
 
 	spel_gfx_render_pass current_pass;
+	int target_height; // height of the current render target for Y-flip in viewport/scissor
 } spel_gfx_cmdlist_gl;
 
 spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
@@ -65,6 +66,7 @@ spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 		cl->dirty_buffer_cap * sizeof(*cl->dirty_buffers), SPEL_MEM_TAG_GFX);
 
 	data->current_pass = NULL;
+	data->target_height = ctx->fb_height;
 
 	return cl;
 }
@@ -401,14 +403,16 @@ void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 
 void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
 {
-	glViewport(cmd->x, cl->ctx->fb_height - (cmd->y + cmd->height), cmd->width,
-			   cmd->height);
+	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
+	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
+	glViewport(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
 }
 
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
-	glScissor(cmd->x, cl->ctx->fb_height - (cmd->y + cmd->height), cmd->width,
-			  cmd->height);
+	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
+	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
+	glScissor(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
 }
 
 void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
@@ -477,6 +481,15 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glDrawBuffers((int)data->draw_buffer_count, data->draw_buffers);
+
+	// Set viewport/scissor to the target size by default; user commands can override.
+	int target_w = pass->desc.framebuffer ? (int)pass->desc.framebuffer->desc.width
+										  : cl->ctx->fb_width;
+	int target_h = pass->desc.framebuffer ? (int)pass->desc.framebuffer->desc.height
+										  : cl->ctx->fb_height;
+	glCmd->target_height = target_h;
+	glViewport(0, 0, target_w, target_h);
+	glScissor(0, 0, target_w, target_h);
 
 	for (uint32_t i = 0; i < data->draw_buffer_count; i++)
 	{
@@ -591,4 +604,7 @@ void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd*
 	{
 		glPopDebugGroup();
 	}
+
+	// Reset target height to default framebuffer dimensions.
+	glCmd->target_height = cl->ctx->fb_height;
 }

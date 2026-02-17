@@ -148,7 +148,12 @@ typedef struct spel_gfx_texture_t
 {
 	spel_gfx_context ctx;
 	spel_gfx_texture_type type;
+	spel_gfx_texture_format format;
 	bool internal;
+	uint16_t width;
+	uint16_t height;
+	uint16_t depth;
+	uint32_t mip_count;
 
 	void* data;
 } spel_gfx_texture_t;
@@ -199,6 +204,14 @@ typedef struct spel_gfx_context_t
 
 	int fb_width;
 	int fb_height;
+	// Resize debounce tracking to avoid reallocating render targets every live-resize tick.
+	int fb_resized_width;
+	int fb_resized_height;
+	uint32_t fb_resize_request_ms;
+
+	spel_gfx_framebuffer* tracked_fbos;
+	uint16_t tracked_fbo_count;
+	uint16_t tracked_fbo_cap;
 
 	// default data
 	spel_gfx_cmdlist cmdlist;
@@ -242,6 +255,7 @@ typedef struct spel_gfx_vtable_t
 
 	spel_gfx_texture (*texture_create)(spel_gfx_context, const spel_gfx_texture_desc*);
 	void (*texture_destroy)(spel_gfx_texture);
+	void (*texture_resize)(spel_gfx_texture, uint32_t, uint32_t);
 
 	spel_gfx_sampler (*sampler_create)(spel_gfx_context, const spel_gfx_sampler_desc*);
 	void (*sampler_destroy)(spel_gfx_sampler);
@@ -249,16 +263,17 @@ typedef struct spel_gfx_vtable_t
 	spel_gfx_framebuffer (*framebuffer_create)(spel_gfx_context,
 											   const spel_gfx_framebuffer_desc*);
 	void (*framebuffer_destroy)(spel_gfx_framebuffer);
-	void (*framebuffer_blit)(spel_gfx_framebuffer src, spel_rect srcRegion,
-							 spel_gfx_framebuffer dst, spel_rect dstRegion,
-							 uint8_t attachment, spel_gfx_sampler_filter filter);
+	void (*framebuffer_blit)(spel_gfx_framebuffer, spel_rect, spel_gfx_framebuffer,
+							 spel_rect, uint8_t, spel_gfx_sampler_filter);
+	void (*framebuffer_resize)(spel_gfx_framebuffer, uint32_t, uint32_t);
 
 	spel_gfx_render_pass (*render_pass_create)(spel_gfx_context,
 											   const spel_gfx_render_pass_desc*);
-	void (*render_pass_destroy)(spel_gfx_render_pass pass);
+	void (*render_pass_destroy)(spel_gfx_render_pass);
 } spel_gfx_vtable_t;
 
 sp_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
+sp_hidden extern void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx);
 
 sp_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);

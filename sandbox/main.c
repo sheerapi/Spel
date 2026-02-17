@@ -13,7 +13,6 @@ spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
 spel_gfx_uniform_buffer ubuffer;
 spel_gfx_pipeline pipeline;
-spel_gfx_pipeline fullscreen_pipeline;
 
 spel_gfx_uniform position_handle;
 spel_gfx_uniform color_handle;
@@ -35,10 +34,6 @@ void spel_load()
 {
 	spel_gfx_pipeline_desc pipeline_desc = spel_gfx_pipeline_default_2d(spel.gfx);
 	pipeline = spel_gfx_pipeline_create(spel.gfx, &pipeline_desc);
-
-	spel_gfx_pipeline_desc fullscreen_pipeline_desc = spel_gfx_pipeline_fullscreen(
-		spel.gfx, spel_gfx_shader_load(spel.gfx, "spel_internal_blit.frag.spv"));
-	fullscreen_pipeline = spel_gfx_pipeline_create(spel.gfx, &fullscreen_pipeline_desc);
 
 	typedef struct
 	{
@@ -106,6 +101,7 @@ void spel_load()
 		.color_count = 1,
 		.width = spel.window.width,
 		.height = spel.window.height,
+		.auto_resize = true
 	};
 	offscreen_fb = spel_gfx_framebuffer_create(spel.gfx, &fb_desc);
 
@@ -127,26 +123,32 @@ spel_vec2 position;
 
 void spel_update(double delta)
 {
-	color_data.g = ((sin(spel.time.time) / 2.0F) + 0.5F) * 255;
+	color_data.g = 10 + (((sin(spel.time.time) / 2.0F) + 0.5F) * (255 - 10));
 }
 
 void spel_draw()
 {
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 
-	spel_gfx_cmd_bind_pipeline(cl, pipeline);
-	position.y += spel.time.delta * 0.025F;
+	spel_gfx_cmd_end_pass(cl);
 
-	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position,
-								sizeof(position));
+	spel_gfx_cmd_begin_pass(cl, offscreen_pass);
+	spel_gfx_cmd_bind_pipeline(cl, pipeline);
+
 	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
 								sizeof(float) * 4);
 
 	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer);
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
-	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_white_get(spel.gfx));
+	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
+
+	spel_gfx_cmd_end_pass(cl);
+
+	spel_gfx_cmd_begin_pass(cl, spel_gfx_render_pass_default(spel.gfx));
+	spel_gfx_framebuffer_blit_simple(offscreen_fb, NULL);
+	spel_gfx_cmd_end_pass(cl);
 
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
@@ -160,7 +162,6 @@ void spel_quit()
 	spel_gfx_render_pass_destroy(offscreen_pass);
 
 	spel_gfx_pipeline_destroy(pipeline);
-	spel_gfx_pipeline_destroy(fullscreen_pipeline);
 	spel_gfx_uniform_buffer_destroy(ubuffer);
 	spel_gfx_buffer_destroy(vbuffer);
 	spel_gfx_buffer_destroy(ibuffer);

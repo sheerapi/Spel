@@ -9,8 +9,8 @@ typedef struct
 {
 	spel_gfx_texture texture;
 	spel_gfx_attachment_type type;
-	uint32_t mip;
-	uint32_t layer;
+	uint16_t mip;
+	uint16_t layer;
 } spel_gfx_attachment;
 
 typedef struct
@@ -20,6 +20,7 @@ typedef struct
 	uint32_t color_count;
 	uint32_t width;
 	uint32_t height;
+	bool auto_resize;
 } spel_gfx_framebuffer_desc;
 
 typedef struct
@@ -49,12 +50,15 @@ sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcReg
 									  spel_gfx_framebuffer dst, spel_rect dstRegion);
 
 sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
-										spel_gfx_framebuffer dst);
+											 spel_gfx_framebuffer dst);
 
 sp_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect srcRegion,
 										   spel_gfx_framebuffer dst, spel_rect dstRegion,
 										   uint8_t attachment,
 										   spel_gfx_sampler_filter filter);
+
+sp_api void spel_gfx_framebuffer_resize(spel_gfx_framebuffer fb, uint32_t width,
+										   uint32_t height);
 
 sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb);
 

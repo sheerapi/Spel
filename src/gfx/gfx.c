@@ -47,6 +47,9 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	spel_vec2 fb = spel_window_framebuffer_size();
 	ctx->fb_width = (int)fb.x;
 	ctx->fb_height = (int)fb.y;
+	ctx->fb_resized_width = ctx->fb_width;
+	ctx->fb_resized_height = ctx->fb_height;
+	ctx->fb_resize_request_ms = 0;
 
 	// Init caches before any allocations performed inside backend creation.
 	ctx->pipeline_cache.entries = NULL;
@@ -75,6 +78,12 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 		spel_memory_free(ctx);
 		return NULL;
 	}
+
+	ctx->tracked_fbo_cap = 2;
+	ctx->tracked_fbo_count = 0;
+
+	ctx->tracked_fbos = (spel_gfx_framebuffer*)spel_memory_malloc(
+		ctx->tracked_fbo_cap * sizeof(*ctx->tracked_fbos), SPEL_MEM_TAG_GFX);
 
 	spel_gfx_context_default_data(ctx);
 
@@ -1201,8 +1210,8 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 	if (cl->dirty_buffer_count + 1 > cl->dirty_buffer_cap)
 	{
 		cl->dirty_buffer_cap *= 2;
-		cl->dirty_buffers = spel_memory_realloc(
-			cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
+		cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_realloc(
+			(void*)cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
 			SPEL_MEM_TAG_GFX);
 	}
 
@@ -1217,7 +1226,22 @@ sp_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
 sp_api spel_gfx_framebuffer
 spel_gfx_framebuffer_create(spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc)
 {
-	return ctx->vt->framebuffer_create(ctx, desc);
+	spel_gfx_framebuffer fb = ctx->vt->framebuffer_create(ctx, desc);
+
+	if (desc->auto_resize)
+	{
+		if (ctx->tracked_fbo_count + 1 > ctx->tracked_fbo_cap)
+		{
+			ctx->tracked_fbo_cap *= 2;
+			ctx->tracked_fbos = (spel_gfx_framebuffer*)spel_memory_realloc(
+				(void*)ctx->tracked_fbos,
+				ctx->tracked_fbo_cap * sizeof(*ctx->tracked_fbos), SPEL_MEM_TAG_GFX);
+		}
+
+		ctx->tracked_fbos[ctx->tracked_fbo_count++] = fb;
+	}
+
+	return fb;
 }
 
 sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb)
@@ -1293,7 +1317,7 @@ sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcReg
 }
 
 sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
-										spel_gfx_framebuffer dst)
+											 spel_gfx_framebuffer dst)
 {
 	spel_rect src_region;
 	spel_rect dst_region;
@@ -1301,7 +1325,8 @@ sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
 	if (dst == NULL && src)
 	{
 		spel_vec2 size = spel_gfx_framebuffer_size(src);
-		src_region = (spel_rect){.width = size.x, .height = size.y, .x = 0, .y = 0};
+		src_region =
+			(spel_rect){.width = (int)size.x, .height = (int)size.y, .x = 0, .y = 0};
 
 		dst_region = (spel_rect){
 			.width = src->ctx->fb_width, .height = src->ctx->fb_height, .x = 0, .y = 0};
@@ -1309,7 +1334,8 @@ sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
 	else
 	{
 		spel_vec2 size = spel_gfx_framebuffer_size(src);
-		dst_region = (spel_rect){.width = size.x, .height = size.y, .x = 0, .y = 0};
+		dst_region =
+			(spel_rect){.width = (int)size.x, .height = (int)size.y, .x = 0, .y = 0};
 
 		src_region = (spel_rect){
 			.width = src->ctx->fb_width, .height = src->ctx->fb_height, .x = 0, .y = 0};
@@ -1320,7 +1346,7 @@ sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
 
 sp_api spel_vec2 spel_gfx_framebuffer_size(spel_gfx_framebuffer fb)
 {
-	return (spel_vec2){.x = fb->desc.width, .y = fb->desc.height};
+	return (spel_vec2){.x = (float)fb->desc.width, .y = (float)fb->desc.height};
 }
 
 sp_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb,
@@ -1337,4 +1363,24 @@ sp_api spel_gfx_texture spel_gfx_framebuffer_depth(spel_gfx_framebuffer fb)
 sp_api spel_gfx_render_pass spel_gfx_render_pass_default(spel_gfx_context ctx)
 {
 	return ctx->default_pass;
+}
+
+sp_api void spel_gfx_framebuffer_resize(spel_gfx_framebuffer fb, uint32_t width,
+										uint32_t height)
+{
+	fb->ctx->vt->framebuffer_resize(fb, width, height);
+}
+
+sp_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
+									uint32_t height)
+{
+	texture->ctx->vt->texture_resize(texture, width, height);
+}
+
+sp_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
+{
+	for (size_t i = 0; i < ctx->tracked_fbo_count; i++)
+	{
+		spel_gfx_framebuffer_resize(ctx->tracked_fbos[i], ctx->fb_width, ctx->fb_height);
+	}
 }

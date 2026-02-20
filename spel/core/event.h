@@ -47,6 +47,60 @@ enum
 	/// @event window:safe_area.changed
 	SPEL_EVENT_WINDOW_SAFEAREA_CHANGED = 0xccc598323accfc4,
 
+	/// @event mouse:move
+	SPEL_EVENT_MOUSE_MOVE = 0x9a6d5598b9a80931,
+
+	/// @event mouse:button.down
+	SPEL_EVENT_MOUSE_BUTTON_DOWN = 0xd56f381d491ae442,
+
+	/// @event mouse:button.up
+	SPEL_EVENT_MOUSE_BUTTON_UP = 0x61e8f97cb888dce7,
+
+	/// @event mouse:scroll
+	SPEL_EVENT_MOUSE_SCROLL = 0xfc0b10d8848c660d,
+
+	/// @event key:down
+	SPEL_EVENT_KEY_DOWN = 0xf93607b99926ed2c,
+
+	/// @event text:input.start
+	SPEL_EVENT_TEXT_INPUT_START = 0x610143e43a96937c,
+
+	/// @event text:input.stop
+	SPEL_EVENT_TEXT_INPUT_STOP = 0xc36e9d69475e3f58,
+
+	/// @event text:input.truncated
+	SPEL_EVENT_TEXT_INPUT_TRUNCATED = 0xc36e9d69475e3f58,
+
+	/// @event text:input
+	SPEL_EVENT_TEXT_INPUT = 0xdc9c934a5fa460ee,
+
+	/// @event key:up
+	SPEL_EVENT_KEY_UP = 0xceb08b77f07012ed,
+
+	/// @event gamepad:added
+	SPEL_EVENT_GAMEPAD_ADDED = 0x528fb53dbccb209e,
+
+	/// @event gamepad:removed
+	SPEL_EVENT_GAMEPAD_REMOVED = 0x3994cbbc720e9390,
+
+	/// @event gamepad:axis.motion
+	SPEL_EVENT_GAMEPAD_AXIS_MOTION = 0x1c6b0a76957a271b,
+
+	/// @event gamepad:button.down
+	SPEL_EVENT_GAMEPAD_BUTTON_DOWN = 0xc5c29c025d4b9ea2,
+
+	/// @event gamepad:button.up
+	SPEL_EVENT_GAMEPAD_BUTTON_UP = 0xe5c7996a48955e47,
+
+	/// @event gamepad:touchpad.down
+	SPEL_EVENT_GAMEPAD_TOUCHPAD_DOWN = 0xacd7eda598cbc8fe,
+
+	/// @event gamepad:touchpad.up
+	SPEL_EVENT_GAMEPAD_TOUCHPAD_UP = 0xc81c806fd683eccb,
+
+	/// @event gamepad:touchpad.motion
+	SPEL_EVENT_GAMEPAD_TOUCHPAD_MOTION = 0xbc7a3dfd6dc7faf4,
+
 	/// @event quit
 	SPEL_EVENT_QUIT = 0xff151b3e27410fec,
 

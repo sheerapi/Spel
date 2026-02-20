@@ -1,4 +1,5 @@
 #include "core/entry.h"
+#include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
 #include "core/event.h"
 #include "core/log.h"
@@ -7,6 +8,8 @@
 #include "core/window.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_types.h"
+#include "input/input.h"
+#include "input/input_internal.h"
 #include "utils/terminal.h"
 #include "utils/time.h"
 #include <stdlib.h>
@@ -56,6 +59,7 @@ sp_api void spel_run()
 sp_hidden void spel_run_frame()
 {
 	spel_time_frame_begin(&spel.time);
+	spel_input_update();
 	spel_event_poll();
 
 	if (spel.app.update)
@@ -104,6 +108,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 	spel_build_info_init();
 	spel_log_stderr_install();
 	spel_terminal_detect_ansi();
+	spel_input_init();
 
 #ifdef DEBUG
 	spel.env.debug = true;
@@ -115,6 +120,8 @@ sp_api int spel_app_run(spel_app_desc* app)
 	}
 
 	sp_callback(spel.app.conf);
+
+	SDL_SetHint(SDL_HINT_JOYSTICK_LINUX_DEADZONES, "1");
 
 	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
@@ -141,6 +148,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 	sp_callback(spel.app.run);
 	sp_callback(spel.app.quit);
 
+	spel_input_shutdown();
 	spel_gfx_context_destroy(spel.gfx);
 	spel_window_cleanup();
 	spel_event_terminate();

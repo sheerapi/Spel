@@ -2,9 +2,12 @@
 #include "core/log.h"
 #include "core/memory.h"
 #include "core/panic.h"
+#include "core/window.h"
 #include "dcimgui.h"
 #include "extras/spel_imgui.h"
 #include "gfx/gfx.h"
+#include "input/input.h"
+#include "input/input_gamepad.h"
 #include "utils/display.h"
 #include <math.h>
 #include <stdio.h>
@@ -20,12 +23,15 @@ spel_gfx_uniform position_handle;
 spel_gfx_uniform color_handle;
 
 spel_imgui_context imgui_ctx;
+spel_action jump_action;
+spel_action move_action;
 
 spel_color color_data = {.r = 0, .g = 0, .b = 0, .a = 255};
 
 void spel_conf()
 {
-	spel.window.resizable = true;
+	spel.window.resizable = false;
+	spel.log.severity = SPEL_SEV_DEBUG;
 }
 
 void spel_load()
@@ -74,6 +80,21 @@ void spel_load()
 	spel_memory_dump_terminal();
 
 	imgui_ctx = spel_imgui_context_create(spel.gfx);
+
+	jump_action = spel_input_action_create("jump", SPEL_ACTION_DIGITAL);
+	spel_input_action_bind_key(jump_action, SPEL_KEY_SPACE);
+	spel_input_action_bind_key(jump_action, SPEL_KEY_UP);
+	spel_input_action_bind_key(jump_action, SPEL_KEY_W);
+	spel_input_action_bind_mouse_button(jump_action, SPEL_MOUSE_LEFT);
+	spel_input_action_bind_gamepad_button(jump_action, 0, SPEL_GAMEPAD_BUTTON_SOUTH);
+	spel_input_action_bind_gamepad_button(jump_action, 0, SPEL_GAMEPAD_BUTTON_TOUCHPAD);
+	spel_input_action_bind_gamepad_button(jump_action, 0, SPEL_GAMEPAD_BUTTON_DPAD_RIGHT);
+	spel_input_action_bind_gamepad_button(jump_action, 0,
+										  SPEL_GAMEPAD_BUTTON_RIGHT_PADDLE1);
+
+	move_action = spel_input_action_create("horizontal", SPEL_ACTION_ANALOG);
+	spel_input_action_bind_axis(move_action, SPEL_KEY_A, SPEL_KEY_D);
+	spel_input_action_bind_gamepad_axis(move_action, 0, SPEL_GAMEPAD_AXIS_LEFT_X);
 }
 
 spel_vec2 position;
@@ -81,6 +102,18 @@ spel_vec2 position;
 void spel_update(double delta)
 {
 	color_data.g = 10 + (((sin(spel.time.time) / 2.0F) + 0.5F) * (255 - 10));
+
+	if (spel_input_key_pressed(SPEL_KEY_Q))
+	{
+		spel_window_close();
+	}
+
+	if (spel_input_action_pressed(jump_action))
+	{
+		sp_info("jump");
+	}
+
+	position.x = spel_input_action_value(move_action);
 }
 
 void spel_draw()
@@ -90,6 +123,8 @@ void spel_draw()
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 	spel_gfx_cmd_clear(cl, spel_color_cyan());
 
+	spel_gfx_cmd_uniform_update(cl, ubuffer, position_handle, &position,
+								sizeof(position));
 	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
 								sizeof(float) * 4);
 

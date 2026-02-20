@@ -7,6 +7,7 @@
 #include "core/types.h"
 #include "core/window.h"
 #include "gfx/gfx_internal.h"
+#include "input/input_internal.h"
 #include <assert.h>
 #include <string.h>
 
@@ -26,8 +27,8 @@ static uint64_t hash_str(const char* s)
 static void intern_grow(struct spel_event_intern_table* interns)
 {
 	size_t new_cap = interns->capacity ? interns->capacity * 2 : 16;
-	struct spel_event_intern_entry* new_entries =
-		spel_memory_malloc(new_cap * sizeof(struct spel_event_intern_entry), SPEL_MEM_TAG_CORE);
+	struct spel_event_intern_entry* new_entries = spel_memory_malloc(
+		new_cap * sizeof(struct spel_event_intern_entry), SPEL_MEM_TAG_CORE);
 
 	for (size_t i = 0; i < interns->capacity; ++i)
 	{
@@ -155,8 +156,8 @@ sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* 
 	if (b->count >= b->cap)
 	{
 		size_t new_cap = b->cap ? b->cap * 2 : 4;
-		b->entries = spel_memory_realloc(b->entries, new_cap * sizeof(struct spel_event_entry),
-										 SPEL_MEM_TAG_CORE);
+		b->entries = spel_memory_realloc(
+			b->entries, new_cap * sizeof(struct spel_event_entry), SPEL_MEM_TAG_CORE);
 		b->cap = new_cap;
 	}
 
@@ -210,28 +211,35 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_TERMINATING:
 	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 	case SDL_EVENT_WINDOW_DESTROYED:
+		spel_event_emit(SPEL_EVENT_QUIT, NULL);
 		spel_window_close();
 		break;
 
 	case SDL_EVENT_LOW_MEMORY:
+		spel_event_emit(SPEL_EVENT_MEMORY_LOW, NULL);
 		sp_callback(spel.app.low_memory);
 		break;
 
 	case SDL_EVENT_WINDOW_RESIZED:
 		spel.window.width = ev->window.data1;
 		spel.window.height = ev->window.data2;
-		// Some platforms only fire RESIZED; record desired drawable size (debounced in frame_begin).
+		// Some platforms only fire RESIZED; record desired drawable size (debounced in
+		// frame_begin).
 		if (spel.gfx)
 		{
 			spel.gfx->fb_width = ev->window.data1;
 			spel.gfx->fb_height = ev->window.data2;
 			spel.gfx->fb_resize_request_ms = SDL_GetTicks();
 		}
+		spel_event_emit(SPEL_EVENT_WINDOW_RESIZE,
+						&(spel_vec2){.x = spel.window.width, .y = spel.window.height});
 		break;
 
 	case SDL_EVENT_WINDOW_MOVED:
 		spel.window.x = ev->window.data1;
 		spel.window.y = ev->window.data2;
+		spel_event_emit(SPEL_EVENT_WINDOW_MOVE,
+						&(spel_vec2){.x = spel.window.x, .y = spel.window.y});
 		break;
 
 	case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
@@ -246,28 +254,54 @@ sp_hidden void spel_event_handle(void* event)
 
 	case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
 		spel.window.fullscreen = true;
+		spel_event_emit(SPEL_EVENT_WINDOW_FULLSCREEN_ENTER, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
 		spel.window.fullscreen = false;
+		spel_event_emit(SPEL_EVENT_WINDOW_FULLSCREEN_LEAVE, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_OCCLUDED:
 	case SDL_EVENT_WINDOW_HIDDEN:
 		spel.window.occluded = true;
+		spel_event_emit(SPEL_EVENT_WINDOW_HIDDEN, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_SHOWN:
 	case SDL_EVENT_WINDOW_EXPOSED:
 		spel.window.occluded = false;
+		spel_event_emit(SPEL_EVENT_WINDOW_SHOWN, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_FOCUS_GAINED:
 		spel.window.focused = true;
+		spel_event_emit(SPEL_EVENT_WINDOW_FOCUS_GAIN, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_FOCUS_LOST:
 		spel.window.focused = false;
+		spel_event_emit(SPEL_EVENT_WINDOW_FOCUS_LOST, NULL);
+		break;
+
+	case SDL_EVENT_WINDOW_MINIMIZED:
+		spel_event_emit(SPEL_EVENT_WINDOW_MAXIMIZED, NULL);
+		break;
+
+	case SDL_EVENT_WINDOW_MAXIMIZED:
+		spel_event_emit(SPEL_EVENT_WINDOW_MINIMIZED, NULL);
+		break;
+
+	case SDL_EVENT_WINDOW_MOUSE_ENTER:
+		spel_event_emit(SPEL_EVENT_WINDOW_MOUSE_ENTER, NULL);
+		break;
+
+	case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+		spel_event_emit(SPEL_EVENT_WINDOW_MOUSE_LEAVE, NULL);
+		break;
+
+	case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
+		spel_event_emit(SPEL_EVENT_WINDOW_SAFEAREA_CHANGED, NULL);
 		break;
 
 	case SDL_EVENT_WILL_ENTER_BACKGROUND:
@@ -278,51 +312,11 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_SYSTEM_THEME_CHANGED:
 	case SDL_EVENT_DISPLAY_ORIENTATION:
 	case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:
-	case SDL_EVENT_WINDOW_MINIMIZED:
-	case SDL_EVENT_WINDOW_MAXIMIZED:
 	case SDL_EVENT_WINDOW_RESTORED:
-	case SDL_EVENT_WINDOW_MOUSE_ENTER:
-	case SDL_EVENT_WINDOW_MOUSE_LEAVE:
 	case SDL_EVENT_WINDOW_HIT_TEST:
 	case SDL_EVENT_WINDOW_ICCPROF_CHANGED:
 	case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-	case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
 	case SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
-	case SDL_EVENT_KEY_DOWN:
-	case SDL_EVENT_KEY_UP:
-	case SDL_EVENT_TEXT_EDITING:
-	case SDL_EVENT_TEXT_INPUT:
-	case SDL_EVENT_KEYMAP_CHANGED:
-	case SDL_EVENT_KEYBOARD_ADDED:
-	case SDL_EVENT_KEYBOARD_REMOVED:
-	case SDL_EVENT_TEXT_EDITING_CANDIDATES:
-	case SDL_EVENT_MOUSE_MOTION:
-	case SDL_EVENT_MOUSE_BUTTON_DOWN:
-	case SDL_EVENT_MOUSE_BUTTON_UP:
-	case SDL_EVENT_MOUSE_WHEEL:
-	case SDL_EVENT_MOUSE_ADDED:
-	case SDL_EVENT_MOUSE_REMOVED:
-	case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-	case SDL_EVENT_JOYSTICK_BALL_MOTION:
-	case SDL_EVENT_JOYSTICK_HAT_MOTION:
-	case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-	case SDL_EVENT_JOYSTICK_BUTTON_UP:
-	case SDL_EVENT_JOYSTICK_ADDED:
-	case SDL_EVENT_JOYSTICK_REMOVED:
-	case SDL_EVENT_JOYSTICK_BATTERY_UPDATED:
-	case SDL_EVENT_JOYSTICK_UPDATE_COMPLETE:
-	case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-	case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-	case SDL_EVENT_GAMEPAD_BUTTON_UP:
-	case SDL_EVENT_GAMEPAD_ADDED:
-	case SDL_EVENT_GAMEPAD_REMOVED:
-	case SDL_EVENT_GAMEPAD_REMAPPED:
-	case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-	case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-	case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-	case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-	case SDL_EVENT_GAMEPAD_UPDATE_COMPLETE:
-	case SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED:
 	case SDL_EVENT_FINGER_DOWN:
 	case SDL_EVENT_FINGER_UP:
 	case SDL_EVENT_FINGER_MOTION:
@@ -350,6 +344,7 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_CAMERA_DEVICE_APPROVED:
 	case SDL_EVENT_CAMERA_DEVICE_DENIED:
 	default:
+		spel_input_process_event(ev);
 		break;
 	}
 }

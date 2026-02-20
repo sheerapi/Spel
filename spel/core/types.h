@@ -130,12 +130,15 @@ typedef struct spel_app_desc
 	void (*low_memory)();
 } spel_app_desc;
 
+typedef struct spel_input_t* spel_input;
+
 typedef struct spel_context
 {
 	bool terminal_color;
 	spel_panic_mode panic_mode;
 
 	spel_app app;
+	spel_input input;
 
 	spel_window window;
 	spel_events events;

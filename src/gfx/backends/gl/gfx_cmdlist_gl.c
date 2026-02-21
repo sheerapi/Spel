@@ -438,6 +438,7 @@ void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 	if (binding == -1)
 	{
 		sp_warn("location %d not found within reflection data", cmd->location);
+		return;
 	}
 
 	glBindBufferBase(cmd->buf->type == SPEL_GFX_BUFFER_UNIFORM ? GL_UNIFORM_BUFFER

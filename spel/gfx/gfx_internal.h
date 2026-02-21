@@ -196,6 +196,84 @@ typedef struct spel_gfx_render_pass_t
 	void* data;
 } spel_gfx_render_pass_t;
 
+// render graphs
+#define SPEL_RG_MAX_RESOURCES 64
+#define SPEL_RG_MAX_PASSES 32
+#define SPEL_RG_MAX_READS 8
+#define SPEL_RG_MAX_WRITES 4
+
+typedef struct
+{
+	char name[64];
+	spel_gfx_rg_resource_type type;
+	bool imported;
+
+	union
+	{
+		spel_gfx_texture_desc texture;
+		spel_gfx_buffer_desc buffer;
+	} desc;
+
+	union
+	{
+		spel_gfx_texture texture;
+		spel_gfx_buffer buffer;
+	};
+
+	int first_used_pass;
+	int last_used_pass;
+} spel_gfx_rg_resource_t;
+
+typedef struct
+{
+	spel_gfx_rg_resource resource;
+	spel_gfx_rg_access access;
+	spel_gfx_load_op load_op; // only for writes
+} spel_gfx_rg_resource_access;
+
+// callbacks for pass execution
+typedef void (*spel_gfx_rg_setup_fn)(spel_gfx_rg_pass pass, void* user_data);
+typedef void (*spel_gfx_rg_execute_fn)(spel_gfx_cmdlist cl, spel_gfx_rg_pass pass,
+									   void* user_data);
+
+typedef struct
+{
+	char name[64];
+
+	// declared resource accesses
+	spel_gfx_rg_resource_access reads[SPEL_RG_MAX_READS];
+	uint32_t read_count;
+	spel_gfx_rg_resource_access writes[SPEL_RG_MAX_WRITES];
+	uint32_t write_count;
+
+	// execution
+	spel_gfx_rg_setup_fn setup;
+	spel_gfx_rg_execute_fn execute;
+	void* user_data;
+
+	// computed during compile
+	bool culled;
+	int execution_order; // topological sort result
+} spel_gfx_rg_pass_t;
+
+typedef struct
+{
+	spel_gfx_context ctx;
+
+	spel_gfx_rg_resource resources;
+	uint8_t resource_cap;
+	uint8_t resource_count;
+
+	spel_gfx_rg_pass passes;
+	uint8_t pass_cap;
+	uint8_t pass_count;
+
+	bool compiled;
+	spel_gfx_rg_pass sorted_passes;
+	uint8_t sorted_pass_cap;
+	uint8_t sorted_pass_count;
+} spel_gfx_rg_t;
+
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
 

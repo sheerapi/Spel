@@ -1188,16 +1188,20 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 										size_t size)
 {
 	uint64_t start_offset = cl->offset;
+	// Allocate inline storage for the payload to avoid dangling host pointers.
+	size_t payload_size = size;
+	size_t cmd_size = sizeof(spel_gfx_uniform_update_cmd) + payload_size;
 	spel_gfx_uniform_update_cmd* cmd =
 		(spel_gfx_uniform_update_cmd*)cl->ctx->vt->cmdlist_alloc(
-			cl, sizeof(*cmd), _Alignof(spel_gfx_uniform_update_cmd));
+			cl, cmd_size, _Alignof(spel_gfx_uniform_update_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->buffer = buf;
 	cmd->handle = handle;
-	cmd->data = data;
-	cmd->size = size;
+	cmd->data = cmd + 1; // payload is packed immediately after the command
+	cmd->size = payload_size;
+	memcpy((void*)cmd->data, data, payload_size);
 
 	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
 	{

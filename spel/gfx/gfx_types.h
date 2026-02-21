@@ -12,6 +12,9 @@ typedef struct spel_gfx_texture_t* spel_gfx_texture;
 typedef struct spel_gfx_sampler_t* spel_gfx_sampler;
 typedef struct spel_gfx_framebuffer_t* spel_gfx_framebuffer;
 typedef struct spel_gfx_render_pass_t* spel_gfx_render_pass;
+typedef struct spel_gfx_rg_t* spel_gfx_rg;
+typedef struct spel_gfx_rg_pass_t* spel_gfx_rg_pass;
+typedef struct spel_gfx_rg_resource_t* spel_gfx_rg_resource;
 
 typedef enum
 {
@@ -273,6 +276,19 @@ typedef enum
 	SPEL_GFX_STORE_STORE,
 	SPEL_GFX_STORE_DONT_CARE,
 } spel_gfx_store_op;
+
+typedef enum
+{
+	SPEL_RG_RESOURCE_TEXTURE,
+	SPEL_RG_RESOURCE_BUFFER,
+} spel_gfx_rg_resource_type;
+
+typedef enum
+{
+	SPEL_RG_ACCESS_READ,
+	SPEL_RG_ACCESS_WRITE,
+	SPEL_RG_ACCESS_READ_WRITE,
+} spel_gfx_rg_access;
 
 typedef struct
 {

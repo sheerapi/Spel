@@ -236,6 +236,7 @@ typedef struct spel_gfx_context_t
 typedef struct spel_gfx_vtable_t
 {
 	void (*ctx_destroy)(spel_gfx_context);
+	void* (*ctx_handle)(spel_gfx_context);
 
 	void (*frame_begin)(spel_gfx_context);
 	void (*frame_end)(spel_gfx_context);

@@ -20,6 +20,8 @@ sources = [
     'src/imgui_widgets.cpp',
     'src/imgui_demo.cpp',
     'src/imgui.cpp',
+    'src/dcimgui_impl_sdl3.cpp',
+    'src/imgui_impl_sdl3.cpp'
 ]
 
 imgui_lib = library(

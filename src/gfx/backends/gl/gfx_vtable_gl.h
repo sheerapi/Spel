@@ -13,6 +13,8 @@ sp_hidden void spel_gfx_context_conf_gl();
 sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx);
 sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx);
 
+sp_hidden void* spel_gfx_context_internal_handle_gl(spel_gfx_context ctx);
+
 sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
 									   unsigned int id, unsigned int severity, int length,
 									   const char* message, const void* userParam);
@@ -37,7 +39,7 @@ sp_hidden void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_
 sp_hidden void spel_gfx_buffer_unmap_gl(spel_gfx_buffer buf);
 sp_hidden void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size);
 sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
-									  bool preserveData);
+										 bool preserveData);
 
 // shaders
 sp_hidden spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
@@ -66,7 +68,7 @@ sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture texture, uint32_t wid
 										  uint32_t height);
 
 sp_hidden void spel_gfx_texture_update_gl(spel_gfx_texture texture, uint32_t mip,
-									spel_rect region, void* data, size_t dataSize);
+										  spel_rect region, void* data, size_t dataSize);
 
 // framebuffers
 sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(

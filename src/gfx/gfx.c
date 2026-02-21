@@ -1405,3 +1405,13 @@ sp_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
 {
 	texture->ctx->vt->texture_update(texture, mip, region, data, dataSize);
 }
+
+sp_api spel_gfx_backend spel_gfx_context_backend(spel_gfx_context ctx)
+{
+	return ctx->backend;
+}
+
+sp_api void* spel_gfx_context_internal_handle(spel_gfx_context ctx)
+{
+	return ctx->vt->ctx_handle(ctx);
+}

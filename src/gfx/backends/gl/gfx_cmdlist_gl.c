@@ -406,14 +406,14 @@ void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
 {
 	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
 	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
-	glViewport(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
+	glViewport(cmd->x, target_h - cmd->y, cmd->width, cmd->height);
 }
 
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
 	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
 	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
-	glScissor(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
+	glScissor(cmd->x, target_h - cmd->y, cmd->width, cmd->height);
 }
 
 void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,

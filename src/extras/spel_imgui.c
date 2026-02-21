@@ -1,9 +1,12 @@
 #include "extras/spel_imgui.h"
-
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_gamepad.h"
+#include "SDL3/SDL_mouse.h"
 #include "core/log.h"
 #include "core/memory.h"
 #include "core/window.h"
 #include "dcimgui.h"
+#include "dcimgui_impl_sdl3.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_pipeline.h"
@@ -37,6 +40,8 @@ sp_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* draw
 sp_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
 									   ImDrawData* drawData);
 
+sp_hidden bool spel_imgui_event_callback(void* event, void* ctx);
+
 sp_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
 {
 	spel_imgui_context ctx = spel_memory_malloc(sizeof(*ctx), SPEL_MEM_TAG_MISC);
@@ -50,7 +55,6 @@ sp_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
 
 	ImFontAtlas_AddFontDefaultVector(ctx->io->Fonts, NULL);
 
-	ctx->io->BackendPlatformName = "spel";
 	ctx->io->BackendRendererName = "spel_gfx";
 
 	ctx->io->DisplaySize = (ImVec2){(float)spel.window.width, (float)spel.window.height};
@@ -65,6 +69,11 @@ sp_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
 	ctx->pipeline = NULL;
 	ctx->vbuffer = NULL;
 	ctx->ibuffer = NULL;
+
+	cImGui_ImplSDL3_InitForOther(spel.window.handle);
+
+	spel_event_register(SPEL_EVENT_INTERNAL_INPUT_SDL_EVENT, spel_imgui_event_callback,
+						ctx);
 
 	sp_debug("initialized imgui");
 
@@ -86,6 +95,8 @@ sp_api void spel_imgui_frame_begin(spel_imgui_context ctx)
 		spel_imgui_resources_create(ctx);
 	}
 
+	cImGui_ImplSDL3_NewFrame();
+
 	ImGui_NewFrame();
 }
 
@@ -101,8 +112,8 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 		return;
 	}
 
-	uint32_t vtx_offset = 0;
-	uint32_t idx_offset = 0;
+	uint32_t vtx_offset_elements = 0;
+	uint32_t idx_offset_elements = 0;
 
 	if (draw_data->Textures != NULL)
 	{
@@ -132,15 +143,13 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 		const ImDrawList* list = draw_data->CmdLists.Data[i];
 
 		spel_gfx_buffer_update(ctx->vbuffer, list->VtxBuffer.Data,
-							   list->VtxBuffer.Size * sizeof(ImDrawVert), vtx_offset);
+							   list->VtxBuffer.Size * sizeof(ImDrawVert), vtx_offset_elements * sizeof(ImDrawVert));
 
 		spel_gfx_buffer_update(ctx->ibuffer, list->IdxBuffer.Data,
-							   list->IdxBuffer.Size * sizeof(ImDrawIdx), idx_offset);
+							   list->IdxBuffer.Size * sizeof(ImDrawIdx),
+							   idx_offset_elements * sizeof(ImDrawIdx));
 
 		spel_gfx_cmd_bind_shader_buffer(cl, ctx->ubuffer);
-
-		vtx_offset += list->VtxBuffer.Size * sizeof(ImDrawVert);
-		idx_offset += list->IdxBuffer.Size * sizeof(ImDrawIdx);
 
 		for (int cmd_i = 0; cmd_i < list->CmdBuffer.Size; cmd_i++)
 		{
@@ -163,8 +172,13 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 					(spel_vec2){.x = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x,
 								.y = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y};
 
-				spel_gfx_cmd_scissor(cl, clip_min.x, fb_size.y - clip_max.y,
-									 clip_max.x - clip_min.x, clip_max.y - clip_min.y);
+				if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
+				{
+					continue;
+				}
+
+				spel_gfx_cmd_scissor(cl, clip_min.x, clip_max.y, clip_max.x - clip_min.x,
+									 clip_max.y - clip_min.y);
 
 				spel_gfx_cmd_bind_texture(
 					cl, 0, (spel_gfx_texture)((uintptr_t)ImDrawCmd_GetTexID(pcmd)));
@@ -175,11 +189,17 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 
 				spel_gfx_cmd_bind_vertex(cl, 0, ctx->vbuffer, 0);
 
-				spel_gfx_cmd_draw_indexed(cl, pcmd->ElemCount, pcmd->IdxOffset,
-										  pcmd->VtxOffset);
+				spel_gfx_cmd_draw_indexed(cl, pcmd->ElemCount,
+										  idx_offset_elements + pcmd->IdxOffset,
+										  vtx_offset_elements + pcmd->VtxOffset);
 			}
 		}
+
+		vtx_offset_elements += list->VtxBuffer.Size;
+		idx_offset_elements += list->IdxBuffer.Size;
 	}
+
+	spel_gfx_cmd_scissor(cl, 0, 0, fb_size.x, fb_size.y);
 }
 
 sp_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
@@ -239,6 +259,9 @@ sp_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
 
 sp_api void spel_imgui_context_destroy(spel_imgui_context ctx)
 {
+	ImGui_SetCurrentContext(ctx->context);
+
+	cImGui_ImplSDL3_Shutdown();
 	ImGui_DestroyContext(ctx->context);
 
 	if (ctx->vbuffer)
@@ -372,4 +395,11 @@ sp_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist 
 	spel_vec4* mat = ortho_proj(L, R, T, B);
 
 	spel_gfx_cmd_uniform_update(cl, ctx->ubuffer, ctx->matrix_handle, mat, 64);
+}
+
+sp_hidden bool spel_imgui_event_callback(void* event, void* ctx)
+{
+	cImGui_ImplSDL3_ProcessEvent(event);
+	spel_imgui_context context = (spel_imgui_context)ctx;
+	return !(context->io->WantCaptureMouse || context->io->WantCaptureKeyboard);
 }

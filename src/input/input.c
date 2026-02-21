@@ -78,9 +78,22 @@ void spel_input_update()
 
 void spel_input_process_event(SDL_Event* event)
 {
+	// someone else wants our input, controller detection should still work
+	// but no input should be forwarded
+
+	bool captured = false;
+	if (!spel_event_emit(SPEL_EVENT_INTERNAL_INPUT_SDL_EVENT, event))
+	{
+		captured = true;
+	}
+
 	switch ((SDL_EventType)event->type)
 	{
 	case SDL_EVENT_MOUSE_MOTION:
+		if (captured)
+		{
+			break;
+		}
 		spel.input->mouse_pos = (spel_vec2){.x = event->motion.x, .y = event->motion.y};
 		spel.input->mouse_delta =
 			(spel_vec2){.x = event->motion.xrel, .y = event->motion.yrel};
@@ -89,6 +102,10 @@ void spel_input_process_event(SDL_Event* event)
 
 	case SDL_EVENT_MOUSE_BUTTON_DOWN:
 	{
+		if (captured)
+		{
+			break;
+		}
 		spel.input->mouse_buttons[(spel_mouse_button)(event->button.button - 1)] = true;
 		spel_mouse_button btn = (spel_mouse_button)(event->button.button - 1);
 		spel_event_emit(SPEL_EVENT_MOUSE_BUTTON_DOWN, &btn);
@@ -97,6 +114,10 @@ void spel_input_process_event(SDL_Event* event)
 
 	case SDL_EVENT_MOUSE_BUTTON_UP:
 	{
+		if (captured)
+		{
+			break;
+		}
 		spel.input->mouse_buttons[(spel_mouse_button)(event->button.button - 1)] = false;
 		spel_mouse_button btn = (spel_mouse_button)(event->button.button - 1);
 		spel_event_emit(SPEL_EVENT_MOUSE_BUTTON_UP, &btn);
@@ -104,23 +125,39 @@ void spel_input_process_event(SDL_Event* event)
 	}
 
 	case SDL_EVENT_MOUSE_WHEEL:
+		if (captured)
+		{
+			break;
+		}
 		spel.input->mouse_wheel = (spel_vec2){.x = event->wheel.x, .y = event->wheel.y};
 		spel_event_emit(SPEL_EVENT_MOUSE_SCROLL, &spel.input->mouse_wheel);
 		break;
 
 	case SDL_EVENT_KEY_DOWN:
+		if (captured)
+		{
+			break;
+		}
 		spel.input->keys[SPEL_KEY_WORD(event->key.scancode)] |=
 			SPEL_KEY_MASK(event->key.scancode);
 		spel_event_emit(SPEL_EVENT_KEY_DOWN, &event->key.scancode);
 		break;
 
 	case SDL_EVENT_KEY_UP:
+		if (captured)
+		{
+			break;
+		}
 		spel.input->keys[SPEL_KEY_WORD(event->key.scancode)] &=
 			~SPEL_KEY_MASK(event->key.scancode);
 		spel_event_emit(SPEL_EVENT_KEY_UP, &event->key.scancode);
 		break;
 
 	case SDL_EVENT_TEXT_INPUT:
+		if (captured)
+		{
+			break;
+		}
 		if (spel.input->text_input_enabled)
 		{
 			size_t event_len = strlen(event->text.text);
@@ -142,12 +179,21 @@ void spel_input_process_event(SDL_Event* event)
 		break;
 
 	case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+		if (captured)
+		{
+			break;
+		}
 		spel_event_emit(SPEL_EVENT_GAMEPAD_AXIS_MOTION, &event->gaxis.axis);
 		break;
 
 	case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
 	case SDL_EVENT_GAMEPAD_BUTTON_UP:
 	{
+		if (captured)
+		{
+			break;
+		}
+
 		int pad_id = -1;
 		for (int i = 0; i < SPEL_MAX_CONTROLLERS; i++)
 		{
@@ -220,6 +266,11 @@ void spel_input_process_event(SDL_Event* event)
 	case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
 	case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
 	{
+		if (captured)
+		{
+			break;
+		}
+		
 		uint8_t pad_id = spel_find_gamepad_by_id(event->gtouchpad.which);
 		if (pad_id == 255 || event->gtouchpad.finger >= SPEL_MAX_CONTROLLER_FINGERS)
 		{

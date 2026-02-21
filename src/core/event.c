@@ -164,18 +164,23 @@ sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* 
 	b->entries[b->count++] = (struct spel_event_entry){.callback = cb, .user = user};
 }
 
-sp_api void spel_event_emit(spel_event_id id, void* data)
+sp_api bool spel_event_emit(spel_event_id id, void* data)
 {
 	struct spel_event_bucket* b = get_bucket(&spel.events, id, 0);
 	if (!b)
 	{
-		return;
+		return true;
 	}
 
 	for (size_t i = 0; i < b->count; ++i)
 	{
-		b->entries[i].callback(b->entries[i].user, data);
+		if (!b->entries[i].callback(data, b->entries[i].user))
+		{
+			return false;
+		}
 	}
+
+	return true;
 }
 
 sp_hidden void spel_event_terminate()
@@ -205,16 +210,21 @@ sp_hidden void spel_event_handle(void* event)
 {
 	SDL_Event* ev = (SDL_Event*)event;
 
-	switch ((SDL_EventType)ev->type)
+	if (ev->type == SDL_EVENT_QUIT || ev->type == SDL_EVENT_TERMINATING ||
+		ev->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED ||
+		ev->type == SDL_EVENT_WINDOW_DESTROYED)
 	{
-	case SDL_EVENT_QUIT:
-	case SDL_EVENT_TERMINATING:
-	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-	case SDL_EVENT_WINDOW_DESTROYED:
 		spel_event_emit(SPEL_EVENT_QUIT, NULL);
 		spel_window_close();
-		break;
+	}
 
+	if (!spel_event_emit(SPEL_EVENT_INTERNAL_SDL_EVENT, ev))
+	{
+		return;
+	}
+
+	switch ((SDL_EventType)ev->type)
+	{
 	case SDL_EVENT_LOW_MEMORY:
 		spel_event_emit(SPEL_EVENT_MEMORY_LOW, NULL);
 		sp_callback(spel.app.low_memory);
@@ -223,8 +233,8 @@ sp_hidden void spel_event_handle(void* event)
 	case SDL_EVENT_WINDOW_RESIZED:
 		spel.window.width = ev->window.data1;
 		spel.window.height = ev->window.data2;
-		// Some platforms only fire RESIZED; record desired drawable size (debounced in
-		// frame_begin).
+		// Some platforms only fire RESIZED; record desired drawable size (debounced
+		// in frame_begin).
 		if (spel.gfx)
 		{
 			spel.gfx->fb_width = ev->window.data1;

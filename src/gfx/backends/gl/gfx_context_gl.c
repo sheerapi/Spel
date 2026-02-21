@@ -1,5 +1,5 @@
-#include "SDL3/SDL_video.h"
 #include "SDL3/SDL_timer.h"
+#include "SDL3/SDL_video.h"
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/types.h"
@@ -71,7 +71,8 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(spel_gfx_debug_callback, ctx);
 
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
+							  0, NULL, GL_FALSE);
 	}
 
 	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
@@ -146,10 +147,15 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	sp_trace("GL context destroyed");
 }
 
+sp_hidden void* spel_gfx_context_internal_handle_gl(spel_gfx_context ctx)
+{
+	return ((spel_gfx_context_gl*)ctx->data)->ctx;
+}
+
 sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
-	// Keep drawable size in sync in case window-pixel events lag (e.g., Wayland live resize),
-	// but debounce heavy reallocations while the user is dragging.
+	// Keep drawable size in sync in case window-pixel events lag (e.g., Wayland live
+	// resize), but debounce heavy reallocations while the user is dragging.
 	const uint32_t RESIZE_DEBOUNCE_MS = 40; // tune for smoothness vs responsiveness
 	int drawable_w = ctx->fb_width;
 	int drawable_h = ctx->fb_height;
@@ -162,7 +168,8 @@ sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 	}
 
 	// Apply pending resize if stable long enough and not already applied.
-	if ((ctx->fb_width != ctx->fb_resized_width || ctx->fb_height != ctx->fb_resized_height))
+	if ((ctx->fb_width != ctx->fb_resized_width ||
+		 ctx->fb_height != ctx->fb_resized_height))
 	{
 		uint32_t now = SDL_GetTicks();
 		if (now - ctx->fb_resize_request_ms >= RESIZE_DEBOUNCE_MS)

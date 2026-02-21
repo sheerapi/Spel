@@ -3,7 +3,7 @@
 #include "core/macros.h"
 
 typedef uint64_t spel_event_id;
-typedef void (*spel_event_callback)(void* data, void* user);
+typedef bool (*spel_event_callback)(void* data, void* user);
 
 /// event names -> FNV hash (using spel-str2fnv)
 enum
@@ -101,6 +101,13 @@ enum
 	/// @event gamepad:touchpad.motion
 	SPEL_EVENT_GAMEPAD_TOUCHPAD_MOTION = 0xbc7a3dfd6dc7faf4,
 
+	/// @event internal:sdl_event
+	SPEL_EVENT_INTERNAL_SDL_EVENT = 0x65c48b40829bd3ee,
+
+	/// same as the other one, but only for input
+	/// @event internal:input.sdl_event
+	SPEL_EVENT_INTERNAL_INPUT_SDL_EVENT = 0x65c48b40829bd3ee,
+
 	/// @event quit
 	SPEL_EVENT_QUIT = 0xff151b3e27410fec,
 
@@ -138,7 +145,10 @@ struct spel_event_bucket
 
 sp_api spel_event_id spel_event_intern(const char* name);
 sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* user);
-sp_api void spel_event_emit(spel_event_id id, void* data);
+
+/// @returns true when every callback was called, execution should continue normally
+/// @returns false when a callback requested halting callback execution
+sp_api bool spel_event_emit(spel_event_id id, void* data);
 
 sp_api void spel_event_poll();
 

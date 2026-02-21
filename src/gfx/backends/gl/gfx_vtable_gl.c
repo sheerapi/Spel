@@ -1,6 +1,7 @@
 #include "gfx_vtable_gl.h"
 
 spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
+							   .ctx_handle = spel_gfx_context_internal_handle_gl,
 
 							   .frame_begin = spel_gfx_frame_begin_gl,
 							   .frame_end = spel_gfx_frame_end_gl,
@@ -16,6 +17,7 @@ spel_gfx_vtable_t GL_VTABLE = {.ctx_destroy = spel_gfx_context_destroy_gl,
 							   .buffer_map = spel_gfx_buffer_map_gl,
 							   .buffer_unmap = spel_gfx_buffer_unmap_gl,
 							   .buffer_flush = spel_gfx_buffer_flush_gl,
+							   .buffer_resize = spel_gfx_buffer_resize_gl,
 
 							   .shader_create = spel_gfx_shader_create_gl,
 							   .shader_destroy = spel_gfx_shader_destroy_gl,

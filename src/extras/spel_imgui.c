@@ -105,6 +105,11 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 	ImGui_Render();
 	ImDrawData* draw_data = ImGui_GetDrawData();
 
+	if (draw_data == NULL || draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F)
+	{
+		return;
+	}
+
 	spel_imgui_buffers_check(ctx, draw_data);
 
 	if (ctx->vbuffer == NULL || ctx->ibuffer == NULL)
@@ -177,8 +182,8 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 					continue;
 				}
 
-				spel_gfx_cmd_scissor(cl, clip_min.x, clip_max.y, clip_max.x - clip_min.x,
-									 clip_max.y - clip_min.y);
+				spel_gfx_cmd_scissor(cl, clip_min.x, clip_min.y,
+									 clip_max.x - clip_min.x, clip_max.y - clip_min.y);
 
 				spel_gfx_cmd_bind_texture(
 					cl, 0, (spel_gfx_texture)((uintptr_t)ImDrawCmd_GetTexID(pcmd)));
@@ -323,7 +328,7 @@ sp_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* draw
 
 sp_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture)
 {
-	sp_assert(!(texture->TexID == 0 && texture->BackendUserData == NULL),
+	sp_assert(texture->TexID != 0,
 			  "tried to update empty texture %p", texture->TexID);
 	sp_assert(texture->Format == ImTextureFormat_RGBA32, "invalid texture format %d",
 			  texture->Format);

@@ -173,7 +173,6 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 	uint32_t ubo_idx = 0;
 	uint32_t ssbo_idx = 0;
 	uint32_t sampler_idx = 0;
-	uint32_t block_idx = 0;
 
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
@@ -190,24 +189,23 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 		{
 			spel_gfx_shader_block* block = &shader->reflection.uniforms[ubo_idx++];
-			spvReflectChangeDescriptorBindingNumbers(&module, binding, block_idx, 0);
-			block->internal = block_idx;
+			spvReflectChangeDescriptorBindingNumbers(&module, binding, ubo_idx - 1, 0);
+			block->internal = ubo_idx - 1;
 			break;
 		}
 		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 		{
-			spel_gfx_shader_block* block = &shader->reflection.uniforms[ssbo_idx++];
-			spvReflectChangeDescriptorBindingNumbers(&module, binding, block_idx, 0);
-			block->internal = block_idx;
+			spel_gfx_shader_block* block = &shader->reflection.storage[ssbo_idx++];
+			spvReflectChangeDescriptorBindingNumbers(&module, binding, ssbo_idx - 1, 0);
+			block->internal = ssbo_idx - 1;
 			break;
 		}
 		case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 		{
 			spel_gfx_shader_uniform* sampler =
 				&shader->reflection.samplers[sampler_idx++];
-			spvReflectChangeDescriptorBindingNumbers(&module, binding, sampler_idx - 1,
-													 0);
-			sampler->internal = sampler_idx;
+			spvReflectChangeDescriptorBindingNumbers(&module, binding, sampler_idx - 1, 0);
+			sampler->internal = sampler_idx - 1;
 			break;
 		}
 		default:

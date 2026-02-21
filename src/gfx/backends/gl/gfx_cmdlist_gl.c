@@ -111,6 +111,7 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 	if (spel.window.occluded)
 	{
 		cl->offset = 0;
+		cl->dirty_buffer_count = 0;
 		return;
 	}
 
@@ -373,13 +374,8 @@ void exec_cmd_bind_image(spel_gfx_cmdlist cl, spel_gfx_bind_image_cmd* cmd)
 {
 	GLuint handle = *(GLuint*)cmd->texture->data;
 
-	GLint internal_format = 0;
-	glGetTextureLevelParameteriv(handle, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
-	if (internal_format == 0)
-	{
-		// Fallback to a sane default to avoid GL errors; this should not happen.
-		internal_format = GL_RGBA8;
-	}
+	const spel_gfx_gl_format_info* fmt = &GL_FORMATS[cmd->texture->format];
+	GLint internal_format = (GLint)fmt->internal_format;
 
 	GLboolean layered = GL_FALSE;
 	switch (cmd->texture->type)
@@ -406,14 +402,14 @@ void exec_cmd_viewport(spel_gfx_cmdlist cl, spel_gfx_viewport_cmd* cmd)
 {
 	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
 	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
-	glViewport(cmd->x, target_h - cmd->y, cmd->width, cmd->height);
+	glViewport(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
 }
 
 void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd)
 {
 	spel_gfx_cmdlist_gl* glCmd = (spel_gfx_cmdlist_gl*)cl->data;
 	int target_h = glCmd->target_height ? glCmd->target_height : cl->ctx->fb_height;
-	glScissor(cmd->x, target_h - cmd->y, cmd->width, cmd->height);
+	glScissor(cmd->x, target_h - (cmd->y + cmd->height), cmd->width, cmd->height);
 }
 
 void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
@@ -498,17 +494,20 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 		{
 		case SPEL_GFX_LOAD_CLEAR:
 		{
-			glClearColor(pass->desc.clear_colors[i].r, pass->desc.clear_colors[i].g,
-						 pass->desc.clear_colors[i].b, pass->desc.clear_colors[i].a);
-			glClear(GL_COLOR_BUFFER_BIT);
+			float clr[4] = {pass->desc.clear_colors[i].r / 255.0F,
+							pass->desc.clear_colors[i].g / 255.0F,
+							pass->desc.clear_colors[i].b / 255.0F,
+							pass->desc.clear_colors[i].a / 255.0F};
+
+			glClearBufferfv(GL_COLOR, (int)i, clr);
 			break;
 		}
 		case SPEL_GFX_LOAD_DONT_CARE:
 		{
 			if (fbo == 0)
 			{
-				GLenum att = GL_COLOR;
-				glInvalidateNamedFramebufferData(fbo, 1, &att);
+				const GLenum att = GL_COLOR;
+				glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &att);
 			}
 			else
 			{
@@ -522,23 +521,41 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 		}
 	}
 
-	if (pass->desc.framebuffer && pass->desc.framebuffer->desc.depth.texture)
+	bool has_depth = pass->desc.framebuffer
+						 ? pass->desc.framebuffer->desc.depth.texture != NULL
+						 : (spel.window.swapchain.depth > 0 || spel.window.swapchain.stencil > 0);
+	bool has_stencil = pass->desc.framebuffer
+						   ? pass->desc.framebuffer->desc.depth.type ==
+								 SPEL_GFX_ATTACHMENT_DEPTH_STENCIL
+						   : (spel.window.swapchain.stencil > 0);
+	if (has_depth)
 	{
 		switch (pass->desc.depth_load)
 		{
 		case SPEL_GFX_LOAD_CLEAR:
-			glClearNamedFramebufferfv(fbo, GL_DEPTH, 0, &pass->desc.clear_depth);
+		{
+			float depth = pass->desc.clear_depth;
+			if (has_stencil)
+			{
+				glClearBufferfi(GL_DEPTH_STENCIL, 0, depth, 0);
+			}
+			else
+			{
+				glClearBufferfv(GL_DEPTH, 0, &depth);
+			}
 			break;
+		}
 		case SPEL_GFX_LOAD_DONT_CARE:
 		{
 			if (fbo == 0)
 			{
-				GLenum att = GL_DEPTH;
-				glInvalidateNamedFramebufferData(fbo, 1, &att);
+				const GLenum att = has_stencil ? GL_DEPTH_STENCIL : GL_DEPTH;
+				glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &att);
 			}
 			else
 			{
-				GLenum att = GL_DEPTH_ATTACHMENT;
+				const GLenum att =
+					has_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
 				glInvalidateNamedFramebufferData(fbo, 1, &att);
 			}
 			break;
@@ -575,8 +592,8 @@ void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd*
 		{
 			if (fbo == 0)
 			{
-				GLenum att = GL_COLOR;
-				glInvalidateNamedFramebufferData(fbo, 1, &att);
+				const GLenum att = GL_COLOR;
+				glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &att);
 			}
 			else
 			{
@@ -590,12 +607,21 @@ void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd*
 	{
 		if (fbo == 0)
 		{
-			GLenum att = GL_DEPTH;
-			glInvalidateNamedFramebufferData(fbo, 1, &att);
+			const GLenum att = (pass->desc.framebuffer &&
+								pass->desc.framebuffer->desc.depth.type ==
+									SPEL_GFX_ATTACHMENT_DEPTH_STENCIL) ||
+									   spel.window.swapchain.stencil > 0
+								   ? GL_DEPTH_STENCIL
+								   : GL_DEPTH;
+			glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &att);
 		}
 		else
 		{
-			GLenum att = GL_DEPTH_ATTACHMENT;
+			const GLenum att =
+				(pass->desc.framebuffer && pass->desc.framebuffer->desc.depth.type ==
+												SPEL_GFX_ATTACHMENT_DEPTH_STENCIL)
+					? GL_DEPTH_STENCIL_ATTACHMENT
+					: GL_DEPTH_ATTACHMENT;
 			glInvalidateNamedFramebufferData(fbo, 1, &att);
 		}
 	}

@@ -139,9 +139,10 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 		mask |= GL_STENCIL_BUFFER_BIT;
 	}
 
-	glBlitNamedFramebuffer(src_fb, dst_fb, srcRegion.x, srcRegion.y, srcRegion.width,
-						   srcRegion.height, dstRegion.x, dstRegion.y, dstRegion.width,
-						   dstRegion.height, mask, gl_filter);
+	glBlitNamedFramebuffer(src_fb, dst_fb, srcRegion.x, srcRegion.y,
+						   srcRegion.x + srcRegion.width, srcRegion.y + srcRegion.height,
+						   dstRegion.x, dstRegion.y, dstRegion.x + dstRegion.width,
+						   dstRegion.y + dstRegion.height, mask, gl_filter);
 }
 
 sp_hidden void spel_gfx_framebuffer_resize_gl(spel_gfx_framebuffer fb, uint32_t width,

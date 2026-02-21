@@ -4,6 +4,7 @@
 #include "gfx/gfx_types.h"
 #include "gl.h"
 #include "gl_types.h"
+#include <stdint.h>
 #include <string.h>
 
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access);
@@ -33,20 +34,24 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	buf->access = desc->access;
 	buf->size = desc->size;
 
+	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)buf->data;
+	glBuf->mirror = NULL;
+	glBuf->dirty_min = UINT32_MAX;
+	glBuf->dirty_max = 0;
+
 	// TODO: Change into persistent mapping later (fences and all that)
 	if (desc->type == SPEL_GFX_BUFFER_UNIFORM || desc->type == SPEL_GFX_BUFFER_STORAGE)
 	{
-		((spel_gfx_gl_buffer*)buf->data)->mirror =
-			spel_memory_malloc(desc->size, SPEL_MEM_TAG_GFX);
+		glBuf->mirror = spel_memory_malloc(desc->size, SPEL_MEM_TAG_GFX);
 
 		if (desc->data != NULL)
 		{
-			memcpy(((spel_gfx_gl_buffer*)buf->data)->mirror, desc->data, desc->size);
+			memcpy(glBuf->mirror, desc->data, desc->size);
 		}
 	}
 
-	glCreateBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
-	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
+	glCreateBuffers(1, &glBuf->buffer);
+	if (glBuf->buffer == 0)
 	{
 		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
 		spel_memory_free(buf->data);
@@ -58,8 +63,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 							   GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
 							   GL_MAP_COHERENT_BIT;
 
-	glNamedBufferStorage(((spel_gfx_gl_buffer*)buf->data)->buffer, desc->size, desc->data,
-						 storage_flags);
+	glNamedBufferStorage(glBuf->buffer, desc->size, desc->data, storage_flags);
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
@@ -70,8 +74,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
-	sp_trace("created GL buffer %u size=%zu", ((spel_gfx_gl_buffer*)buf->data)->buffer,
-			 desc->size);
+	sp_trace("created GL buffer %u size=%zu", glBuf->buffer, desc->size);
 
 	return buf;
 }
@@ -122,7 +125,7 @@ void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 	{
 		spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)buf->data;
 
-		if (glBuf->dirty_min == glBuf->dirty_max)
+		if (glBuf->dirty_min == UINT32_MAX || glBuf->dirty_min == glBuf->dirty_max)
 		{
 			return;
 		}
@@ -130,7 +133,8 @@ void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 		uint32_t range = glBuf->dirty_max - glBuf->dirty_min;
 		glNamedBufferSubData(glBuf->buffer, glBuf->dirty_min, range,
 							 (uint8_t*)glBuf->mirror + glBuf->dirty_min);
-		glBuf->dirty_min = glBuf->dirty_max = 0;
+		glBuf->dirty_min = UINT32_MAX;
+		glBuf->dirty_max = 0;
 
 		return;
 	}
@@ -203,6 +207,8 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 										 bool preserveData)
 {
 	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
+	void* old_mirror = ((spel_gfx_gl_buffer*)buf->data)->mirror;
+	size_t old_size = buf->size;
 
 	glCreateBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
 	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
@@ -229,16 +235,18 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 
 	if (preserveData)
 	{
-		glCopyNamedBufferSubData(handle, *(GLuint*)buf->data, 0, 0, buf->size);
+		size_t copy_size = old_size < newSize ? old_size : newSize;
+		glCopyNamedBufferSubData(handle, *(GLuint*)buf->data, 0, 0, copy_size);
 	}
 
-	sp_trace("buffer resized to %d bytes (%fx more)", newSize, newSize / buf->size);
-	
+	sp_trace("buffer resized to %zu bytes (%.2fx more)", newSize,
+			 old_size ? (double)newSize / (double)old_size : 0.0);
+
 	buf->size = newSize;
 	glDeleteBuffers(1, &handle);
 	if (buf->type == SPEL_GFX_BUFFER_UNIFORM || buf->type == SPEL_GFX_BUFFER_STORAGE)
 	{
-		spel_memory_free(((spel_gfx_gl_buffer*)buf->data)->mirror);
+		spel_memory_free(old_mirror);
 	}
 
 	// TODO: Change into persistent mapping later (fences and all that)
@@ -246,5 +254,14 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 	{
 		((spel_gfx_gl_buffer*)buf->data)->mirror =
 			spel_memory_malloc(buf->size, SPEL_MEM_TAG_GFX);
+
+		if (preserveData && old_mirror)
+		{
+			memcpy(((spel_gfx_gl_buffer*)buf->data)->mirror, old_mirror,
+				   old_size < buf->size ? old_size : buf->size);
+		}
 	}
+
+	((spel_gfx_gl_buffer*)buf->data)->dirty_min = UINT32_MAX;
+	((spel_gfx_gl_buffer*)buf->data)->dirty_max = 0;
 }

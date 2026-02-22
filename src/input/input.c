@@ -315,7 +315,7 @@ void spel_input_init()
 
 	spel.input->action_capacity = 4;
 	spel.input->actions = spel_memory_malloc(
-		sizeof(spel_action_t) * spel.input->action_capacity, SPEL_MEM_TAG_INPUT);
+		sizeof(spel_action_t) * spel.input->action_capacity, SPEL_MEM_TAG_CORE);
 
 	for (size_t i = 0; i < SPEL_MAX_CONTROLLERS; i++)
 	{
@@ -663,7 +663,7 @@ spel_action spel_input_action_create(const char* name, spel_action_type type)
 		spel.input->action_capacity *= 2;
 		spel.input->actions = spel_memory_realloc(
 			spel.input->actions, sizeof(spel_action_t) * spel.input->action_capacity,
-			SPEL_MEM_TAG_INPUT);
+			SPEL_MEM_TAG_CORE);
 	}
 
 	spel_action action = &spel.input->actions[spel.input->action_count++];

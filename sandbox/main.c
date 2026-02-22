@@ -1,28 +1,17 @@
 #include "core/entry.h"
 #include "core/log.h"
 #include "core/memory.h"
-#include "core/panic.h"
 #include "core/window.h"
-#include "dcimgui.h"
-#include "extras/spel_imgui.h"
 #include "gfx/gfx.h"
 #include "input/input.h"
-#include "input/input_gamepad.h"
-#include "utils/display.h"
 #include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
 
+spel_gfx_uniform color_handle;
+
+spel_gfx_pipeline pipeline;
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
 spel_gfx_uniform_buffer ubuffer;
-spel_gfx_pipeline pipeline;
-
-spel_gfx_uniform position_handle;
-spel_gfx_uniform color_handle;
-
-spel_imgui_context imgui_ctx;
 
 spel_color color_data = {.r = 0, .g = 0, .b = 0, .a = 255};
 
@@ -70,17 +59,12 @@ void spel_load()
 	vbuffer = spel_gfx_buffer_create(spel.gfx, &vbuffer_desc);
 	ibuffer = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
 
-	position_handle = spel_gfx_uniform_get(pipeline, "position");
 	color_handle = spel_gfx_uniform_get(pipeline, "color");
 
 	ubuffer = spel_gfx_uniform_buffer_create(pipeline, "FrameData");
 
 	spel_memory_dump_terminal();
-
-	imgui_ctx = spel_imgui_context_create(spel.gfx);
 }
-
-spel_vec2 position;
 
 void spel_update(double delta)
 {
@@ -99,8 +83,8 @@ void spel_draw()
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 	spel_gfx_cmd_clear(cl, spel_color_cyan());
 
-	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle, spel_color_array(color_data),
-								sizeof(float) * 4);
+	spel_gfx_cmd_uniform_update(cl, ubuffer, color_handle,
+								spel_color_array(color_data), sizeof(float) * 4);
 
 	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer);
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
@@ -108,18 +92,12 @@ void spel_draw()
 	spel_gfx_cmd_bind_texture(cl, 0, spel_gfx_texture_checker_get(spel.gfx));
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 
-	// imgui
-	spel_imgui_frame_begin(imgui_ctx);
-	ImGui_ShowDemoWindow(NULL);
-	spel_imgui_render(imgui_ctx, cl);
-
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
 }
 
 void spel_quit()
 {
-	spel_imgui_context_destroy(imgui_ctx);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_uniform_buffer_destroy(ubuffer);
 	spel_gfx_buffer_destroy(vbuffer);

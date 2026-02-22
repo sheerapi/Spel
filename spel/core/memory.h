@@ -7,7 +7,6 @@
 typedef enum
 {
 	SPEL_MEM_TAG_CORE,
-	SPEL_MEM_TAG_INPUT,
 	SPEL_MEM_TAG_GFX,
 	SPEL_MEM_TAG_MISC,
 	SPEL_MEM_TAG_TEMP, // temporal / ephemeral

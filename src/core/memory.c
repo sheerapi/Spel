@@ -223,8 +223,9 @@ const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 }
 
 char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
-	[SPEL_MEM_TAG_CORE] = "core", [SPEL_MEM_TAG_INPUT] = "input",
-	[SPEL_MEM_TAG_GFX] = "gfx",	  [SPEL_MEM_TAG_MISC] = "misc",
+	[SPEL_MEM_TAG_CORE] = "core",
+	[SPEL_MEM_TAG_GFX] = "gfx",
+	[SPEL_MEM_TAG_MISC] = "misc",
 	[SPEL_MEM_TAG_TEMP] = "temp",
 };
 

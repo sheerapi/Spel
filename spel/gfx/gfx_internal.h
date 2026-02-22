@@ -202,7 +202,7 @@ typedef struct spel_gfx_render_pass_t
 #define SPEL_RG_MAX_READS 8
 #define SPEL_RG_MAX_WRITES 4
 
-typedef struct
+typedef struct spel_gfx_rg_resource_t
 {
 	char name[64];
 	spel_gfx_rg_resource_type type;
@@ -224,7 +224,7 @@ typedef struct
 	int last_used_pass;
 } spel_gfx_rg_resource_t;
 
-typedef struct
+typedef struct spel_gfx_rg_resource_access
 {
 	spel_gfx_rg_resource resource;
 	spel_gfx_rg_access access;
@@ -232,11 +232,10 @@ typedef struct
 } spel_gfx_rg_resource_access;
 
 // callbacks for pass execution
-typedef void (*spel_gfx_rg_setup_fn)(spel_gfx_rg_pass pass, void* user_data);
-typedef void (*spel_gfx_rg_execute_fn)(spel_gfx_cmdlist cl, spel_gfx_rg_pass pass,
-									   void* user_data);
+typedef void (*spel_gfx_rg_setup_fn)(spel_gfx_rg_pass, void*);
+typedef void (*spel_gfx_rg_execute_fn)(spel_gfx_cmdlist, spel_gfx_rg_pass, void*);
 
-typedef struct
+typedef struct spel_gfx_rg_pass_t
 {
 	char name[64];
 
@@ -256,7 +255,7 @@ typedef struct
 	int execution_order; // topological sort result
 } spel_gfx_rg_pass_t;
 
-typedef struct
+typedef struct spel_gfx_rg_t
 {
 	spel_gfx_context ctx;
 

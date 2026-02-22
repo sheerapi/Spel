@@ -2,7 +2,7 @@
 #include "core/memory.h"
 #include "gfx/gfx_internal.h"
 
-sp_api spel_gfx_rg spel_gfx_rg_create(spel_gfx_context gfx)
+spel_api spel_gfx_rg spel_gfx_rg_create(spel_gfx_context gfx)
 {
 	spel_gfx_rg rg = spel_memory_malloc(sizeof(*rg), SPEL_MEM_TAG_GFX);
 
@@ -23,7 +23,7 @@ sp_api spel_gfx_rg spel_gfx_rg_create(spel_gfx_context gfx)
 	return rg;
 }
 
-sp_api void spel_gfx_rg_destroy(spel_gfx_rg rg)
+spel_api void spel_gfx_rg_destroy(spel_gfx_rg rg)
 {
 	spel_memory_free(rg->resources);
 	spel_memory_free(rg->sorted_passes);
@@ -31,14 +31,14 @@ sp_api void spel_gfx_rg_destroy(spel_gfx_rg rg)
 	spel_memory_free(rg);
 }
 
-sp_api void spel_gfx_rg_reset(spel_gfx_rg rg)
+spel_api void spel_gfx_rg_reset(spel_gfx_rg rg)
 {
 }
 
-sp_api void spel_gfx_rg_compile(spel_gfx_rg rg)
+spel_api void spel_gfx_rg_compile(spel_gfx_rg rg)
 {
 }
 
-sp_api void spel_gfx_rg_execute(spel_gfx_rg rg, spel_gfx_cmdlist cl)
+spel_api void spel_gfx_rg_execute(spel_gfx_rg rg, spel_gfx_cmdlist cl)
 {
 }

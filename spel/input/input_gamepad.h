@@ -62,34 +62,35 @@ typedef enum
 	SPEL_GAMEPAD_AXIS_COUNT
 } spel_gamepad_axis;
 
-bool spel_input_gamepad_connected(spel_gamepad_id id);
-bool spel_input_gamepad_button(spel_gamepad_id id, spel_gamepad_button btn);
-bool spel_input_gamepad_button_pressed(spel_gamepad_id id, spel_gamepad_button btn);
-float spel_input_gamepad_axis(spel_gamepad_id id, spel_gamepad_axis axis);
+spel_api bool spel_input_gamepad_connected(spel_gamepad_id id);
+spel_api bool spel_input_gamepad_button(spel_gamepad_id id, spel_gamepad_button btn);
+spel_api bool spel_input_gamepad_button_pressed(spel_gamepad_id id, spel_gamepad_button btn);
+spel_api float spel_input_gamepad_axis(spel_gamepad_id id, spel_gamepad_axis axis);
 
-spel_vec2 spel_input_gamepad_left_stick(spel_gamepad_id id);
-spel_vec2 spel_input_gamepad_right_stick(spel_gamepad_id id);
+spel_api spel_vec2 spel_input_gamepad_left_stick(spel_gamepad_id id);
+spel_api spel_vec2 spel_input_gamepad_right_stick(spel_gamepad_id id);
 
-float spel_input_gamepad_axis_deadzone(spel_gamepad_id id, spel_gamepad_axis axis,
-									   float deadzone);
+spel_api float spel_input_gamepad_axis_deadzone(spel_gamepad_id id, spel_gamepad_axis axis,
+											   float deadzone);
 
-spel_vec2 spel_input_gamepad_left_stick_deadzone(spel_gamepad_id id, float deadzone);
-spel_vec2 spel_input_gamepad_right_stick_deadzone(spel_gamepad_id id, float deadzone);
+spel_api spel_vec2 spel_input_gamepad_left_stick_deadzone(spel_gamepad_id id, float deadzone);
+spel_api spel_vec2 spel_input_gamepad_right_stick_deadzone(spel_gamepad_id id,
+														  float deadzone);
 
-void spel_input_gamepad_rumble(spel_gamepad_id id, float lowFreq, float highFreq,
-							   uint32_t durationMs);
-void spel_input_gamepad_rumble_triggers(spel_gamepad_id id, float left, float right,
-										uint32_t durationMs);
-void spel_input_gamepad_led(spel_gamepad_id id, spel_color color);
+spel_api void spel_input_gamepad_rumble(spel_gamepad_id id, float lowFreq, float highFreq,
+									   uint32_t durationMs);
+spel_api void spel_input_gamepad_rumble_triggers(spel_gamepad_id id, float left,
+												float right, uint32_t durationMs);
+spel_api void spel_input_gamepad_led(spel_gamepad_id id, spel_color color);
 
-bool spel_input_gamepad_has_gyro(spel_gamepad_id id);
-bool spel_input_gamepad_has_accel(spel_gamepad_id id);
-spel_vec3 spel_input_gamepad_gyro(spel_gamepad_id id);	// rad/s
-spel_vec3 spel_input_gamepad_accel(spel_gamepad_id id); // m/s²
+spel_api bool spel_input_gamepad_has_gyro(spel_gamepad_id id);
+spel_api bool spel_input_gamepad_has_accel(spel_gamepad_id id);
+spel_api spel_vec3 spel_input_gamepad_gyro(spel_gamepad_id id); // rad/s
+spel_api spel_vec3 spel_input_gamepad_accel(spel_gamepad_id id); // m/s²
 
-bool spel_input_gamepad_has_touchpad(spel_gamepad_id id);
-spel_vec2 spel_input_gamepad_touchpad(spel_gamepad_id id, uint8_t finger);
-float spel_input_gamepad_touchpad_pressure(spel_gamepad_id id, uint8_t finger);
-bool spel_input_gamepad_touchpad_active(spel_gamepad_id id, uint8_t finger);
+spel_api bool spel_input_gamepad_has_touchpad(spel_gamepad_id id);
+spel_api spel_vec2 spel_input_gamepad_touchpad(spel_gamepad_id id, uint8_t finger);
+spel_api float spel_input_gamepad_touchpad_pressure(spel_gamepad_id id, uint8_t finger);
+spel_api bool spel_input_gamepad_touchpad_active(spel_gamepad_id id, uint8_t finger);
 
 #endif

@@ -53,9 +53,9 @@ static void intern_grow(struct spel_event_intern_table* interns)
 	interns->capacity = new_cap;
 }
 
-sp_api spel_event_id spel_event_intern(const char* name)
+spel_api spel_event_id spel_event_intern(const char* name)
 {
-	sp_assert(name, "expected an event name");
+	spel_assert(name, "expected an event name");
 
 	if (spel.events.interns.count * 2 >= spel.events.interns.capacity)
 	{
@@ -147,9 +147,9 @@ static struct spel_event_bucket* get_bucket(spel_events* events, spel_event_id i
 	}
 }
 
-sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* user)
+spel_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* user)
 {
-	sp_assert(cb, "expected a valid function");
+	spel_assert(cb, "expected a valid function");
 
 	struct spel_event_bucket* b = get_bucket(&spel.events, id, 1);
 
@@ -164,7 +164,7 @@ sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* 
 	b->entries[b->count++] = (struct spel_event_entry){.callback = cb, .user = user};
 }
 
-sp_api bool spel_event_emit(spel_event_id id, void* data)
+spel_api bool spel_event_emit(spel_event_id id, void* data)
 {
 	struct spel_event_bucket* b = get_bucket(&spel.events, id, 0);
 	if (!b)
@@ -183,7 +183,7 @@ sp_api bool spel_event_emit(spel_event_id id, void* data)
 	return true;
 }
 
-sp_hidden void spel_event_terminate()
+spel_hidden void spel_event_terminate()
 {
 	for (size_t i = 0; i < spel.events.interns.capacity; ++i)
 	{
@@ -198,7 +198,7 @@ sp_hidden void spel_event_terminate()
 	spel_memory_free(spel.events.buckets);
 }
 
-sp_api void spel_event_poll()
+spel_api void spel_event_poll()
 {
 	while ((int)SDL_PollEvent(&event) == 1)
 	{
@@ -206,7 +206,7 @@ sp_api void spel_event_poll()
 	}
 }
 
-sp_hidden void spel_event_handle(void* event)
+spel_hidden void spel_event_handle(void* event)
 {
 	SDL_Event* ev = (SDL_Event*)event;
 
@@ -227,7 +227,7 @@ sp_hidden void spel_event_handle(void* event)
 	{
 	case SDL_EVENT_LOW_MEMORY:
 		spel_event_emit(SPEL_EVENT_MEMORY_LOW, NULL);
-		sp_callback(spel.app.low_memory);
+		spel_callback(spel.app.low_memory);
 		break;
 
 	case SDL_EVENT_WINDOW_RESIZED:

@@ -1,6 +1,7 @@
 #ifndef SPEL_INPUT_PLATFORM
 #define SPEL_INPUT_PLATFORM
 
+#include "core/macros.h"
 typedef struct spel_cursor_t* spel_cursor;
 
 typedef enum
@@ -33,13 +34,13 @@ typedef enum
 	SPEL_CURSOR_COUNT
 } spel_cursor_type;
 
-spel_cursor spel_input_cursor_create_standard(spel_cursor_type type);
-spel_cursor spel_input_cursor_create_custom(const void* pixels, int w, int h, int hotX,
-									  int hotY);
-void spel_input_cursor_set(spel_cursor cursor);
-void spel_input_cursor_destroy(spel_cursor cursor);
+spel_api spel_cursor spel_input_cursor_create_standard(spel_cursor_type type);
+spel_api spel_cursor spel_input_cursor_create_custom(const void* pixels, int w, int h,
+													int hotX, int hotY);
+spel_api void spel_input_cursor_set(spel_cursor cursor);
+spel_api void spel_input_cursor_destroy(spel_cursor cursor);
 
-const char* spel_input_clipboard_text();
-void spel_input_clipboard_text_set(const char* text);
+spel_api const char* spel_input_clipboard_text();
+spel_api void spel_input_clipboard_text_set(const char* text);
 
 #endif

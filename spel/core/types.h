@@ -153,6 +153,6 @@ typedef struct spel_context
 	spel_runtime_hardware_info hardware;
 } spel_context;
 
-sp_api extern spel_context spel;
+spel_api extern spel_context spel;
 
 #endif

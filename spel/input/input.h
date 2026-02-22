@@ -6,6 +6,6 @@
 #include "input_keyboard.h"
 #include "input_mouse.h"
 
-void spel_input_update();
+spel_api void spel_input_update();
 
 #endif

@@ -113,10 +113,10 @@ typedef struct spel_input_t
 	bool gamepad_initialized;
 } spel_input_t;
 
-void spel_input_init();
-void spel_input_shutdown();
+spel_hidden void spel_input_init();
+spel_hidden void spel_input_shutdown();
 
-void spel_input_process_event(SDL_Event* event);
-void spel_input_ensure_gamepad();
+spel_hidden void spel_input_process_event(SDL_Event* event);
+spel_hidden void spel_input_ensure_gamepad();
 
 #endif

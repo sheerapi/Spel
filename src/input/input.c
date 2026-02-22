@@ -10,7 +10,7 @@
 
 spel_gamepad_id spel_find_gamepad_by_id(uint32_t sdlId);
 
-void spel_input_shutdown()
+spel_hidden void spel_input_shutdown()
 {
 	for (size_t i = 0; i < SPEL_MAX_CONTROLLERS; i++)
 	{
@@ -21,7 +21,7 @@ void spel_input_shutdown()
 	spel_memory_free(spel.input);
 }
 
-void spel_input_update()
+spel_api void spel_input_update()
 {
 	memcpy(spel.input->keys_prev, spel.input->keys, sizeof(spel.input->keys));
 	memcpy(spel.input->mouse_buttons_prev, spel.input->mouse_buttons,
@@ -76,7 +76,7 @@ void spel_input_update()
 	}
 }
 
-void spel_input_process_event(SDL_Event* event)
+spel_hidden void spel_input_process_event(SDL_Event* event)
 {
 	// someone else wants our input, controller detection should still work
 	// but no input should be forwarded
@@ -309,7 +309,7 @@ void spel_input_process_event(SDL_Event* event)
 	}
 }
 
-void spel_input_init()
+spel_hidden void spel_input_init()
 {
 	spel.input = spel_memory_malloc(sizeof(*spel.input), SPEL_MEM_TAG_CORE);
 
@@ -324,58 +324,58 @@ void spel_input_init()
 	}
 }
 
-bool spel_input_key(spel_key key)
+spel_api bool spel_input_key(spel_key key)
 {
 	return (spel.input->keys[SPEL_KEY_WORD(key)] & SPEL_KEY_MASK(key)) != 0;
 }
 
-bool spel_input_key_pressed(spel_key key)
+spel_api bool spel_input_key_pressed(spel_key key)
 {
 	return (spel.input->keys[SPEL_KEY_WORD(key)] & SPEL_KEY_MASK(key)) != 0 &&
 		   (spel.input->keys_prev[SPEL_KEY_WORD(key)] & SPEL_KEY_MASK(key)) == 0;
 }
 
-bool spel_input_key_released(spel_key key)
+spel_api bool spel_input_key_released(spel_key key)
 {
 	return (spel.input->keys[SPEL_KEY_WORD(key)] & SPEL_KEY_MASK(key)) == 0 &&
 		   (spel.input->keys_prev[SPEL_KEY_WORD(key)] & SPEL_KEY_MASK(key)) != 0;
 }
 
-bool spel_input_key_shift()
+spel_api bool spel_input_key_shift()
 {
 	return spel_input_key(SPEL_KEY_LSHIFT) || spel_input_key(SPEL_KEY_RSHIFT);
 }
 
-bool spel_input_key_ctrl()
+spel_api bool spel_input_key_ctrl()
 {
 	return spel_input_key(SPEL_KEY_LCTRL) || spel_input_key(SPEL_KEY_RCTRL);
 }
 
-bool spel_input_key_alt()
+spel_api bool spel_input_key_alt()
 {
 	return spel_input_key(SPEL_KEY_LALT) || spel_input_key(SPEL_KEY_RALT);
 }
 
-void spel_input_text_start()
+spel_api void spel_input_text_start()
 {
 	SDL_StartTextInput(spel.window.handle);
 	spel.input->text_input_enabled = true;
 	spel_event_emit(SPEL_EVENT_TEXT_INPUT_START, NULL);
 }
 
-void spel_input_text_stop()
+spel_api void spel_input_text_stop()
 {
 	SDL_StopTextInput(spel.window.handle);
 	spel_input_text_clear();
 	spel_event_emit(SPEL_EVENT_TEXT_INPUT_STOP, NULL);
 }
 
-bool spel_input_text_active()
+spel_api bool spel_input_text_active()
 {
 	return spel.input->text_input_enabled;
 }
 
-const char* spel_input_text(uint8_t* size)
+spel_api const char* spel_input_text(uint8_t* size)
 {
 	if (size != NULL)
 	{
@@ -384,53 +384,53 @@ const char* spel_input_text(uint8_t* size)
 	return spel.input->text_input;
 }
 
-void spel_input_text_clear()
+spel_api void spel_input_text_clear()
 {
 	spel.input->text_input_enabled = false;
 	memset(spel.input->text_input, 0, 256);
 }
 
-spel_vec2 spel_input_mouse_pos()
+spel_api spel_vec2 spel_input_mouse_pos()
 {
 	return spel.input->mouse_pos;
 }
 
-spel_vec2 spel_input_mouse_delta()
+spel_api spel_vec2 spel_input_mouse_delta()
 {
 	return spel.input->mouse_delta;
 }
 
-spel_vec2 spel_input_mouse_wheel()
+spel_api spel_vec2 spel_input_mouse_wheel()
 {
 	return spel.input->mouse_wheel;
 }
 
-bool spel_input_mouse_button(spel_mouse_button btn)
+spel_api bool spel_input_mouse_button(spel_mouse_button btn)
 {
 	return spel.input->mouse_buttons[btn];
 }
 
-bool spel_input_mouse_pressed(spel_mouse_button btn)
+spel_api bool spel_input_mouse_pressed(spel_mouse_button btn)
 {
 	return spel.input->mouse_buttons[btn] && !spel.input->mouse_buttons_prev[btn];
 }
 
-bool spel_input_mouse_released(spel_mouse_button btn)
+spel_api bool spel_input_mouse_released(spel_mouse_button btn)
 {
 	return !spel.input->mouse_buttons[btn] && spel.input->mouse_buttons_prev[btn];
 }
 
-void spel_input_mouse_set_visible(bool visible)
+spel_api void spel_input_mouse_set_visible(bool visible)
 {
 	visible ? SDL_ShowCursor() : SDL_HideCursor();
 }
 
-void spel_input_mouse_set_locked(bool locked)
+spel_api void spel_input_mouse_set_locked(bool locked)
 {
 	SDL_SetWindowMouseGrab(spel.window.handle, locked);
 }
 
-spel_gamepad_id spel_find_gamepad_by_id(uint32_t sdlId)
+spel_hidden spel_gamepad_id spel_find_gamepad_by_id(uint32_t sdlId)
 {
 	for (int i = 0; i < SPEL_MAX_CONTROLLERS; i++)
 	{
@@ -444,13 +444,13 @@ spel_gamepad_id spel_find_gamepad_by_id(uint32_t sdlId)
 	return -1;
 }
 
-bool spel_input_gamepad_connected(spel_gamepad_id id)
+spel_api bool spel_input_gamepad_connected(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->connected;
 }
 
-bool spel_input_gamepad_button(spel_gamepad_id id, spel_gamepad_button btn)
+spel_api bool spel_input_gamepad_button(spel_gamepad_id id, spel_gamepad_button btn)
 {
 	if (id >= SPEL_MAX_CONTROLLERS || btn >= SPEL_GAMEPAD_BUTTON_COUNT)
 	{
@@ -460,7 +460,8 @@ bool spel_input_gamepad_button(spel_gamepad_id id, spel_gamepad_button btn)
 	return (spel.input->gamepads[id]->buttons & (1 << btn)) != 0;
 }
 
-bool spel_input_gamepad_button_pressed(spel_gamepad_id id, spel_gamepad_button btn)
+spel_api bool spel_input_gamepad_button_pressed(spel_gamepad_id id,
+											   spel_gamepad_button btn)
 {
 	if (id >= SPEL_MAX_CONTROLLERS || btn >= SPEL_GAMEPAD_BUTTON_COUNT)
 	{
@@ -472,7 +473,8 @@ bool spel_input_gamepad_button_pressed(spel_gamepad_id id, spel_gamepad_button b
 		   !(spel.input->gamepads[id]->buttons_prev & mask);
 }
 
-bool spel_input_gamepad_button_released(spel_gamepad_id id, spel_gamepad_button btn)
+spel_api bool spel_input_gamepad_button_released(spel_gamepad_id id,
+												spel_gamepad_button btn)
 {
 	if (id >= SPEL_MAX_CONTROLLERS || btn >= SPEL_GAMEPAD_BUTTON_COUNT)
 	{
@@ -484,28 +486,28 @@ bool spel_input_gamepad_button_released(spel_gamepad_id id, spel_gamepad_button 
 		   (spel.input->gamepads[id]->buttons_prev & mask);
 }
 
-float spel_input_gamepad_axis(spel_gamepad_id id, spel_gamepad_axis axis)
+spel_api float spel_input_gamepad_axis(spel_gamepad_id id, spel_gamepad_axis axis)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->axes[axis];
 }
 
-spel_vec2 spel_input_gamepad_left_stick(spel_gamepad_id id)
+spel_api spel_vec2 spel_input_gamepad_left_stick(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return (spel_vec2){.x = spel.input->gamepads[id]->axes[SPEL_GAMEPAD_AXIS_LEFT_X],
 					   .y = spel.input->gamepads[id]->axes[SPEL_GAMEPAD_AXIS_LEFT_Y]};
 }
 
-spel_vec2 spel_input_gamepad_right_stick(spel_gamepad_id id)
+spel_api spel_vec2 spel_input_gamepad_right_stick(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return (spel_vec2){.x = spel.input->gamepads[id]->axes[SPEL_GAMEPAD_AXIS_RIGHT_X],
 					   .y = spel.input->gamepads[id]->axes[SPEL_GAMEPAD_AXIS_RIGHT_Y]};
 }
 
-float spel_input_gamepad_axis_deadzone(spel_gamepad_id id, spel_gamepad_axis axis,
-									   float deadzone)
+spel_api float spel_input_gamepad_axis_deadzone(spel_gamepad_id id, spel_gamepad_axis axis,
+											   float deadzone)
 {
 	spel_input_ensure_gamepad();
 	float value = spel_input_gamepad_axis(id, axis);
@@ -519,7 +521,8 @@ float spel_input_gamepad_axis_deadzone(spel_gamepad_id id, spel_gamepad_axis axi
 	return sign * (fabsf(value) - deadzone) / (1.0F - deadzone);
 }
 
-spel_vec2 spel_input_gamepad_left_stick_deadzone(spel_gamepad_id id, float deadzone)
+spel_api spel_vec2 spel_input_gamepad_left_stick_deadzone(spel_gamepad_id id,
+														 float deadzone)
 {
 	spel_input_ensure_gamepad();
 	spel_vec2 stick = spel_input_gamepad_left_stick(id);
@@ -534,7 +537,8 @@ spel_vec2 spel_input_gamepad_left_stick_deadzone(spel_gamepad_id id, float deadz
 	return (spel_vec2){stick.x * scale, stick.y * scale};
 }
 
-spel_vec2 spel_input_gamepad_right_stick_deadzone(spel_gamepad_id id, float deadzone)
+spel_api spel_vec2 spel_input_gamepad_right_stick_deadzone(spel_gamepad_id id,
+														  float deadzone)
 {
 	spel_input_ensure_gamepad();
 	spel_vec2 stick = spel_input_gamepad_right_stick(id);
@@ -549,8 +553,8 @@ spel_vec2 spel_input_gamepad_right_stick_deadzone(spel_gamepad_id id, float dead
 	return (spel_vec2){stick.x * scale, stick.y * scale};
 }
 
-void spel_input_gamepad_rumble(spel_gamepad_id id, float lowFreq, float highFreq,
-							   uint32_t durationMs)
+spel_api void spel_input_gamepad_rumble(spel_gamepad_id id, float lowFreq, float highFreq,
+									   uint32_t durationMs)
 {
 	spel_input_ensure_gamepad();
 
@@ -564,8 +568,8 @@ void spel_input_gamepad_rumble(spel_gamepad_id id, float lowFreq, float highFreq
 					  durationMs);
 }
 
-void spel_input_gamepad_rumble_triggers(spel_gamepad_id id, float left, float right,
-										uint32_t durationMs)
+spel_api void spel_input_gamepad_rumble_triggers(spel_gamepad_id id, float left,
+												float right, uint32_t durationMs)
 {
 	spel_input_ensure_gamepad();
 
@@ -579,7 +583,7 @@ void spel_input_gamepad_rumble_triggers(spel_gamepad_id id, float left, float ri
 							  (uint16_t)(right * UINT16_MAX), durationMs);
 }
 
-void spel_input_gamepad_led(spel_gamepad_id id, spel_color color)
+spel_api void spel_input_gamepad_led(spel_gamepad_id id, spel_color color)
 {
 	spel_input_ensure_gamepad();
 
@@ -596,37 +600,37 @@ void spel_input_gamepad_led(spel_gamepad_id id, spel_color color)
 	SDL_SetGamepadLED(spel.input->gamepads[id]->sdl_gamepad, final_r, final_g, final_b);
 }
 
-bool spel_input_gamepad_has_gyro(spel_gamepad_id id)
+spel_api bool spel_input_gamepad_has_gyro(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->gyro_enabled;
 }
 
-bool spel_input_gamepad_has_accel(spel_gamepad_id id)
+spel_api bool spel_input_gamepad_has_accel(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->accel_enabled;
 }
 
-spel_vec3 spel_input_gamepad_gyro(spel_gamepad_id id)
+spel_api spel_vec3 spel_input_gamepad_gyro(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->gyro;
 }
 
-spel_vec3 spel_input_gamepad_accel(spel_gamepad_id id)
+spel_api spel_vec3 spel_input_gamepad_accel(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->accel;
 }
 
-bool spel_input_gamepad_has_touchpad(spel_gamepad_id id)
+spel_api bool spel_input_gamepad_has_touchpad(spel_gamepad_id id)
 {
 	spel_input_ensure_gamepad();
 	return spel.input->gamepads[id]->touchpad_enabled;
 }
 
-spel_vec2 spel_input_gamepad_touchpad(spel_gamepad_id id, uint8_t finger)
+spel_api spel_vec2 spel_input_gamepad_touchpad(spel_gamepad_id id, uint8_t finger)
 {
 	if (finger >= SPEL_MAX_CONTROLLER_FINGERS)
 	{
@@ -636,7 +640,7 @@ spel_vec2 spel_input_gamepad_touchpad(spel_gamepad_id id, uint8_t finger)
 	return spel.input->gamepads[id]->touchpad[finger].pos;
 }
 
-float spel_input_gamepad_touchpad_pressure(spel_gamepad_id id, uint8_t finger)
+spel_api float spel_input_gamepad_touchpad_pressure(spel_gamepad_id id, uint8_t finger)
 {
 	if (finger >= SPEL_MAX_CONTROLLER_FINGERS)
 	{
@@ -646,7 +650,7 @@ float spel_input_gamepad_touchpad_pressure(spel_gamepad_id id, uint8_t finger)
 	return spel.input->gamepads[id]->touchpad[finger].pressure;
 }
 
-bool spel_input_gamepad_touchpad_active(spel_gamepad_id id, uint8_t finger)
+spel_api bool spel_input_gamepad_touchpad_active(spel_gamepad_id id, uint8_t finger)
 {
 	if (finger >= SPEL_MAX_CONTROLLER_FINGERS)
 	{
@@ -656,7 +660,7 @@ bool spel_input_gamepad_touchpad_active(spel_gamepad_id id, uint8_t finger)
 	return spel.input->gamepads[id]->touchpad[finger].active;
 }
 
-spel_action spel_input_action_create(const char* name, spel_action_type type)
+spel_api spel_action spel_input_action_create(const char* name, spel_action_type type)
 {
 	if (spel.input->action_count >= spel.input->action_capacity)
 	{
@@ -672,20 +676,20 @@ spel_action spel_input_action_create(const char* name, spel_action_type type)
 	return action;
 }
 
-void spel_input_action_destroy(spel_action action)
+spel_api void spel_input_action_destroy(spel_action action)
 {
 	spel.input->action_count--;
 	spel_memory_free(action);
 }
 
-void spel_input_action_bind_key(spel_action action, spel_key key)
+spel_api void spel_input_action_bind_key(spel_action action, spel_key key)
 {
 	spel_action_binding* binding = &action->bindings[action->binding_count++];
 	binding->type = SPEL_BINDING_KEY;
 	binding->key = key;
 }
 
-void spel_input_action_bind_axis(spel_action action, spel_key neg, spel_key pos)
+spel_api void spel_input_action_bind_axis(spel_action action, spel_key neg, spel_key pos)
 {
 	spel_action_binding* binding = &action->bindings[action->binding_count++];
 	binding->type = SPEL_BINDING_KEY_AXIS;
@@ -693,8 +697,8 @@ void spel_input_action_bind_axis(spel_action action, spel_key neg, spel_key pos)
 	binding->key_axis.positive = pos;
 }
 
-void spel_input_action_bind_gamepad_axis(spel_action action, spel_gamepad_id pad,
-										 spel_gamepad_axis axis)
+spel_api void spel_input_action_bind_gamepad_axis(spel_action action, spel_gamepad_id pad,
+												 spel_gamepad_axis axis)
 {
 	spel_input_ensure_gamepad();
 	spel_action_binding* binding = &action->bindings[action->binding_count++];
@@ -703,15 +707,17 @@ void spel_input_action_bind_gamepad_axis(spel_action action, spel_gamepad_id pad
 	binding->gamepad_axis.axis = axis;
 }
 
-void spel_input_action_bind_mouse_button(spel_action action, spel_mouse_button btn)
+spel_api void spel_input_action_bind_mouse_button(spel_action action,
+												 spel_mouse_button btn)
 {
 	spel_action_binding* binding = &action->bindings[action->binding_count++];
 	binding->type = SPEL_BINDING_MOUSE_BUTTON;
 	binding->mouse_button = btn;
 }
 
-void spel_input_action_bind_gamepad_button(spel_action action, spel_gamepad_id pad,
-										   spel_gamepad_button btn)
+spel_api void spel_input_action_bind_gamepad_button(spel_action action,
+												   spel_gamepad_id pad,
+												   spel_gamepad_button btn)
 {
 	spel_input_ensure_gamepad();
 	spel_action_binding* binding = &action->bindings[action->binding_count++];
@@ -720,7 +726,7 @@ void spel_input_action_bind_gamepad_button(spel_action action, spel_gamepad_id p
 	binding->gamepad_button.gamepad = pad;
 }
 
-void spel_input_action_unbind_all(spel_action action)
+spel_api void spel_input_action_unbind_all(spel_action action)
 {
 	for (size_t i = 0; i < action->binding_count; i++)
 	{
@@ -730,7 +736,7 @@ void spel_input_action_unbind_all(spel_action action)
 	action->binding_count = 0;
 }
 
-bool spel_input_action(spel_action action)
+spel_api bool spel_input_action(spel_action action)
 {
 	bool result = false;
 	for (size_t i = 0; i < action->binding_count; i++)
@@ -775,7 +781,7 @@ bool spel_input_action(spel_action action)
 	return result;
 }
 
-bool spel_input_action_pressed(spel_action action)
+spel_api bool spel_input_action_pressed(spel_action action)
 {
 	bool result = false;
 
@@ -811,7 +817,7 @@ bool spel_input_action_pressed(spel_action action)
 	return result;
 }
 
-bool spel_input_action_released(spel_action action)
+spel_api bool spel_input_action_released(spel_action action)
 {
 	bool result = false;
 	for (size_t i = 0; i < action->binding_count; i++)
@@ -846,7 +852,7 @@ bool spel_input_action_released(spel_action action)
 	return result;
 }
 
-float spel_input_action_value(spel_action action)
+spel_api float spel_input_action_value(spel_action action)
 {
 	float result = 0;
 
@@ -903,7 +909,7 @@ float spel_input_action_value(spel_action action)
 	return result;
 }
 
-void spel_input_ensure_gamepad()
+spel_hidden void spel_input_ensure_gamepad()
 {
 	if (spel.input->gamepad_initialized)
 	{

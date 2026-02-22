@@ -41,31 +41,31 @@ typedef struct
 	bool srgb;
 } spel_gfx_texture_load_desc;
 
-sp_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
 												const spel_gfx_texture_desc* desc);
 
-sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
 													  spel_color color);
 
-sp_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
-sp_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);
-sp_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx);
+spel_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
+spel_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);
+spel_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx);
 
-sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
+spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 											  const spel_gfx_texture_load_desc* desc);
 
-sp_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 													const char* path);
-sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
 													 const char* path);
 
-sp_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
+spel_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
 									uint32_t height);
 
-sp_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
+spel_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
 									spel_rect region, void* data, size_t dataSize);
 
-sp_api spel_gfx_sampler_desc spel_gfx_sampler_default();
-sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
+spel_api spel_gfx_sampler_desc spel_gfx_sampler_default();
+spel_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 											 const spel_gfx_sampler_desc* desc);
 #endif

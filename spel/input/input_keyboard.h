@@ -1,5 +1,6 @@
 #ifndef SPEL_INPUT_KEYBOARD
 #define SPEL_INPUT_KEYBOARD
+#include "core/macros.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -271,19 +272,19 @@ typedef enum
 	SPEL_KEY_COUNT = 291
 } spel_key;
 
-bool spel_input_key(spel_key key);
-bool spel_input_key_pressed(spel_key key);
-bool spel_input_key_released(spel_key key);
+spel_api bool spel_input_key(spel_key key);
+spel_api bool spel_input_key_pressed(spel_key key);
+spel_api bool spel_input_key_released(spel_key key);
 
-bool spel_input_key_shift();
-bool spel_input_key_ctrl();
-bool spel_input_key_alt();
+spel_api bool spel_input_key_shift();
+spel_api bool spel_input_key_ctrl();
+spel_api bool spel_input_key_alt();
 
-void spel_input_text_start();
-void spel_input_text_stop();
-bool spel_input_text_active();
+spel_api void spel_input_text_start();
+spel_api void spel_input_text_stop();
+spel_api bool spel_input_text_active();
 
-const char* spel_input_text(uint8_t* size);
-void spel_input_text_clear();
+spel_api const char* spel_input_text(uint8_t* size);
+spel_api void spel_input_text_clear();
 
 #endif

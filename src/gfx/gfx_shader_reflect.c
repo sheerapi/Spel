@@ -27,31 +27,31 @@ spel_gfx_shader_stage spel_gfx_spvreflect_stage_to_spel(
 		return SPEL_GFX_SHADER_COMPUTE;
 
 	default:
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "unsupported shader type %x", bits);
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "unsupported shader type %x", bits);
 		return SPEL_GFX_SHADER_VERTEX;
 	}
 }
 
-sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
+spel_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 										   SpvReflectDescriptorBinding* binding,
 										   spel_gfx_buffer_type type,
 										   const spel_gfx_shader_desc* desc,
 										   spel_gfx_shader shader);
-sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
+spel_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 												const spel_gfx_shader_desc* desc);
-sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
+spel_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 											  const char* prefix,
 											  spel_gfx_shader_uniform* uniforms,
 											  uint32_t* index, spel_gfx_shader shader);
 
-sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_desc* desc)
+spel_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_desc* desc)
 {
 	SpvReflectShaderModule module;
 
 	if (spvReflectCreateShaderModule(desc->source_size, desc->source, &module) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -63,7 +63,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, NULL) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -75,7 +75,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, bindings) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -134,7 +134,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 
 		if (binding->accessed != true)
 		{
-			sp_warn("shader uniform/block %s is never accessed (%s)", binding->name,
+			spel_warn("shader uniform/block %s is never accessed (%s)", binding->name,
 					desc->debug_name);
 		}
 
@@ -175,7 +175,7 @@ sp_hidden void spel_gfx_shader_reflect(spel_gfx_shader shader, spel_gfx_shader_d
 	spvReflectDestroyShaderModule(&module);
 }
 
-sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
+spel_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 										   SpvReflectDescriptorBinding* binding,
 										   spel_gfx_buffer_type type,
 										   const spel_gfx_shader_desc* desc,
@@ -204,7 +204,7 @@ sp_hidden void spel_gfx_reflect_fill_block(spel_gfx_shader_block* block,
 	}
 }
 
-sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
+spel_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 												const spel_gfx_shader_desc* desc)
 {
 	if (block->member_count == 0)
@@ -221,7 +221,7 @@ sp_hidden uint32_t spel_gfx_count_block_members(SpvReflectBlockVariable* block,
 	return count;
 }
 
-sp_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
+spel_hidden void spel_gfx_flatten_block_members(SpvReflectBlockVariable* var,
 											  const char* prefix,
 											  spel_gfx_shader_uniform* uniforms,
 											  uint32_t* index, spel_gfx_shader shader)

@@ -5,7 +5,7 @@
 
 const char* fbo_status_string(GLenum status);
 
-sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
+spel_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
 	spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc)
 {
 	spel_gfx_framebuffer fb =
@@ -18,7 +18,7 @@ sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
 
 	if (!fb->data)
 	{
-		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
+		spel_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
 		spel_memory_free(fb);
 		return NULL;
 	}
@@ -46,25 +46,25 @@ sp_hidden spel_gfx_framebuffer spel_gfx_framebuffer_create_gl(
 	GLenum status = glCheckNamedFramebufferStatus(*gl_handle, GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE)
 	{
-		sp_error(SPEL_ERR_INVALID_RESOURCE, "framebuffer incomplete: %s",
+		spel_error(SPEL_ERR_INVALID_RESOURCE, "framebuffer incomplete: %s",
 				 fbo_status_string(status));
 	}
 
-	sp_trace("created GL framebuffer %d (%dx%d, attachments=%d, depth=%d)", *gl_handle,
+	spel_trace("created GL framebuffer %d (%dx%d, attachments=%d, depth=%d)", *gl_handle,
 			 desc->width, desc->height, desc->color_count, desc->depth.texture != NULL);
 
 	return fb;
 }
 
-sp_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb)
+spel_hidden void spel_gfx_framebuffer_destroy_gl(spel_gfx_framebuffer fb)
 {
-	sp_trace("destroyed GL framebuffer %d", *(GLuint*)fb->data);
+	spel_trace("destroyed GL framebuffer %d", *(GLuint*)fb->data);
 	glDeleteFramebuffers(1, fb->data);
 	spel_memory_free(fb->data);
 	spel_memory_free(fb);
 }
 
-sp_hidden spel_gfx_render_pass spel_gfx_render_pass_create_gl(
+spel_hidden spel_gfx_render_pass spel_gfx_render_pass_create_gl(
 	spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc)
 {
 	spel_gfx_render_pass pass =
@@ -96,13 +96,13 @@ sp_hidden spel_gfx_render_pass spel_gfx_render_pass_create_gl(
 	return pass;
 }
 
-sp_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass)
+spel_hidden void spel_gfx_render_pass_destroy_gl(spel_gfx_render_pass pass)
 {
 	spel_memory_free(pass->data);
 	spel_memory_free(pass);
 }
 
-sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect srcRegion,
+spel_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect srcRegion,
 											spel_gfx_framebuffer dst, spel_rect dstRegion,
 											uint8_t attachment,
 											spel_gfx_sampler_filter filter)
@@ -122,7 +122,7 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 	{
 		if (gl_filter != GL_NEAREST)
 		{
-			sp_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
+			spel_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
 			gl_filter = GL_NEAREST;
 		}
 		mask |= GL_DEPTH_BUFFER_BIT;
@@ -132,7 +132,7 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 	{
 		if (gl_filter != GL_NEAREST)
 		{
-			sp_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
+			spel_warn("gl: blitting the depth/stencil buffers requires nearest sampling");
 			gl_filter = GL_NEAREST;
 		}
 		mask |= GL_DEPTH_BUFFER_BIT;
@@ -145,7 +145,7 @@ sp_hidden void spel_gfx_framebuffer_blit_gl(spel_gfx_framebuffer src, spel_rect 
 						   dstRegion.y + dstRegion.height, mask, gl_filter);
 }
 
-sp_hidden void spel_gfx_framebuffer_resize_gl(spel_gfx_framebuffer fb, uint32_t width,
+spel_hidden void spel_gfx_framebuffer_resize_gl(spel_gfx_framebuffer fb, uint32_t width,
 											  uint32_t height)
 {
 	// Avoid zero-sized attachments which make FBO incomplete during live resize.

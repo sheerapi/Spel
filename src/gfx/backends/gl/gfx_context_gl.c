@@ -22,7 +22,7 @@ typedef struct spel_gfx_context_gl
 	} version;
 } spel_gfx_context_gl;
 
-sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
+spel_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 {
 	spel_gfx_context_gl* gl =
 		(ctx->data = spel_memory_malloc(sizeof(spel_gfx_context_gl), SPEL_MEM_TAG_GFX));
@@ -30,7 +30,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	gl->ctx = SDL_GL_CreateContext(spel.window.handle);
 	if (!gl->ctx)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to create an opengl context");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "failed to create an opengl context");
 		ctx->vt = NULL;
 		spel_memory_free(gl);
 		return;
@@ -46,7 +46,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 
 	if (gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress) == 0)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to load GL functions");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "failed to load GL functions");
 		SDL_GL_DestroyContext(gl->ctx);
 		ctx->vt = NULL;
 		ctx->data = NULL;
@@ -55,7 +55,7 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 	}
 	if (gladLoaderLoadGL() == 0)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "failed to finalize GL loader");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "failed to finalize GL loader");
 		SDL_GL_DestroyContext(gl->ctx);
 		ctx->vt = NULL;
 		ctx->data = NULL;
@@ -75,10 +75,10 @@ sp_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 							  0, NULL, GL_FALSE);
 	}
 
-	sp_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
+	spel_debug("GL context created (vsync=%d, debug=%d)", ctx->vsync, ctx->debug);
 }
 
-sp_hidden void spel_gfx_context_conf_gl()
+spel_hidden void spel_gfx_context_conf_gl()
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_DEBUG_FLAG, (int)spel.env.debug);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, spel.window.swapchain.depth);
@@ -92,9 +92,9 @@ sp_hidden void spel_gfx_context_conf_gl()
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_SAMPLES > 0 ? MSAA_SAMPLES : 0);
 }
 
-sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
+spel_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 {
-	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
+	for (size_t i = 0; i < spel_array_size(ctx->shaders); i++)
 	{
 		if (ctx->shaders[i] == NULL)
 		{
@@ -144,15 +144,15 @@ sp_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	spel_memory_free(gl);
 	ctx->data = NULL;
 
-	sp_trace("GL context destroyed");
+	spel_trace("GL context destroyed");
 }
 
-sp_hidden void* spel_gfx_context_internal_handle_gl(spel_gfx_context ctx)
+spel_hidden void* spel_gfx_context_internal_handle_gl(spel_gfx_context ctx)
 {
 	return ((spel_gfx_context_gl*)ctx->data)->ctx;
 }
 
-sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
+spel_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 {
 	// Keep drawable size in sync in case window-pixel events lag (e.g., Wayland live
 	// resize), but debounce heavy reallocations while the user is dragging.
@@ -187,7 +187,7 @@ sp_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 	glBindTextureUnit(0, *(GLuint*)ctx->white_tex->data);
 }
 
-sp_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
+spel_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
 	// flush any remaining commands
 	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
@@ -259,7 +259,7 @@ const static char* gl_severity_to_string(GLenum severity)
 	}
 }
 
-sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
+spel_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
 									   unsigned int id, unsigned int severity, int length,
 									   const char* message, const void* userParam)
 {
@@ -282,22 +282,22 @@ sp_hidden void spel_gfx_debug_callback(unsigned int source, unsigned int type,
 
 	if (severity == GL_DEBUG_SEVERITY_HIGH || type == GL_DEBUG_TYPE_ERROR)
 	{
-		sp_log(SPEL_SEV_ERROR, SPEL_ERR_CONTEXT_FAILED, &msg, SPEL_DATA_GFX_MSG,
+		spel_log(SPEL_SEV_ERROR, SPEL_ERR_CONTEXT_FAILED, &msg, SPEL_DATA_GFX_MSG,
 			   sizeof(msg), "error from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
 	{
-		sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+		spel_log(SPEL_SEV_WARN, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
 			   "warning from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else if (severity == GL_DEBUG_SEVERITY_LOW)
 	{
-		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+		spel_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
 			   "debug info from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 	else
 	{
-		sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
+		spel_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, &msg, SPEL_DATA_GFX_MSG, sizeof(msg),
 			   "trace info from opengl (%s, %s, %s): %s", src, typ, sev, message);
 	}
 }

@@ -1,6 +1,6 @@
 
 #define _GNU_SOURCE
-#include "core/panic.h"
+#include "core/log.h"
 #include "core/memory.h"
 #include "utils/internal/execinfo.h"
 #include "utils/internal/stacktraverse.h"
@@ -231,28 +231,28 @@ void spel_backtrace_symbols_fd(void* const* buffer, int size, FILE* fd, bool col
 
 				if (strncmp("spel", info.dli_sname, strlen("spel")) == 0)
 				{
-					strcpy(color, sp_terminal_green);
+					strcpy(color, spel_terminal_green);
 				}
 				else if (strncmp("_", info.dli_sname, strlen("_")) == 0 ||
 						 strcmp("<unknown>", info.dli_sname) == 0)
 				{
-					strcpy(color, sp_terminal_gray);
+					strcpy(color, spel_terminal_gray);
 				}
 				else if (strcmp(basename(info.dli_fname), basename(spel.process.name)) ==
 						 0)
 				{
-					strcpy(color, sp_terminal_bright_magenta);
+					strcpy(color, spel_terminal_bright_magenta);
 				}
 				else
 				{
-					strcpy(color, sp_terminal_bright_cyan);
+					strcpy(color, spel_terminal_bright_cyan);
 				}
 
-				fprintf(fd, "    %s#%d  %s%s%s +0x%tx\n", sp_terminal_bright_blue, i,
-						color, info.dli_sname, sp_terminal_reset, offset);
+				fprintf(fd, "    %s#%d  %s%s%s +0x%tx\n", spel_terminal_bright_blue, i,
+						color, info.dli_sname, spel_terminal_reset, offset);
 				fprintf(fd, "    %*s  %s%s %s%s[%p]%s\n", padding, "",
-						sp_terminal_bright_cyan, basename(info.dli_fname),
-						sp_terminal_gray, sp_terminal_italic, addr, sp_terminal_reset);
+						spel_terminal_bright_cyan, basename(info.dli_fname),
+						spel_terminal_gray, spel_terminal_italic, addr, spel_terminal_reset);
 			}
 			else
 			{
@@ -281,8 +281,8 @@ void spel_panic_stderr(spel_log_event evt)
 	char avail[32];
 	char total[32];
 
-	fprintf(stderr, "%s%s======== PANIC! ========%s\n\n", sp_terminal_bold,
-			sp_terminal_bg_bright_red, sp_terminal_reset);
+	fprintf(stderr, "%s%s======== PANIC! ========%s\n\n", spel_terminal_bold,
+			spel_terminal_bg_bright_red, spel_terminal_reset);
 
 	fprintf(stderr, "you weren't supposed to see this...\n\n");
 
@@ -290,14 +290,14 @@ void spel_panic_stderr(spel_log_event evt)
 		stderr,
 		"%s had a %s%s(pretty serious)%s problem and crashed. %sspël%s generated a crash "
 		"report at \"./crash.log\"\n",
-		basename(spel.process.name), sp_terminal_gray, sp_terminal_italic,
-		sp_terminal_reset, sp_terminal_green, sp_terminal_reset);
+		basename(spel.process.name), spel_terminal_gray, spel_terminal_italic,
+		spel_terminal_reset, spel_terminal_green, spel_terminal_reset);
 
 	fprintf(stderr,
 			"running on %s%s %s%s %s%s%s (\e[%sm%s\e[0;0m) under a %s session (%s)\n\n",
-			sp_terminal_bright_cyan, spel.env.os_name, sp_terminal_bright_blue,
-			spel.env.arch, sp_terminal_bright_green, spel.env.os_release,
-			sp_terminal_reset, spel.env.distro_color, spel.env.distro,
+			spel_terminal_bright_cyan, spel.env.os_name, spel_terminal_bright_blue,
+			spel.env.arch, spel_terminal_bright_green, spel.env.os_release,
+			spel_terminal_reset, spel.env.distro_color, spel.env.distro,
 			spel.env.session_type, spel.env.display_server);
 
 	fprintf(stderr, "error info:\n");
@@ -307,8 +307,8 @@ void spel_panic_stderr(spel_log_event evt)
 		const char* p = strstr(msg, "(assertion");
 		if (p)
 		{
-			fprintf(stderr, "    %sreason%s: ", sp_terminal_bright_blue,
-					sp_terminal_reset);
+			fprintf(stderr, "    %sreason%s: ", spel_terminal_bright_blue,
+					spel_terminal_reset);
 			if (p > msg)
 			{
 				fwrite(msg, 1, (size_t)(p - msg), stderr);
@@ -322,45 +322,45 @@ void spel_panic_stderr(spel_log_event evt)
 				int len_before_colon = (int)(colon - p + 1);
 				int len_expr = (int)(closing - (colon + 1));
 
-				fprintf(stderr, "%s%s%.*s%s%.*s%s%c%s\n", sp_terminal_italic,
-						sp_terminal_gray, len_before_colon, p, sp_terminal_bright_magenta,
-						len_expr, colon + 1, sp_terminal_gray, *closing,
-						sp_terminal_reset);
+				fprintf(stderr, "%s%s%.*s%s%.*s%s%c%s\n", spel_terminal_italic,
+						spel_terminal_gray, len_before_colon, p, spel_terminal_bright_magenta,
+						len_expr, colon + 1, spel_terminal_gray, *closing,
+						spel_terminal_reset);
 				if (*(closing + 1) != '\0')
 				{
-					fprintf(stderr, "    %s%s\n", sp_terminal_reset, closing + 1);
+					fprintf(stderr, "    %s%s\n", spel_terminal_reset, closing + 1);
 				}
 			}
 		}
 		else
 		{
-			fprintf(stderr, "    %sreason%s: %s\n", sp_terminal_bright_blue,
-					sp_terminal_reset, evt->message);
+			fprintf(stderr, "    %sreason%s: %s\n", spel_terminal_bright_blue,
+					spel_terminal_reset, evt->message);
 		}
 	}
 	else
 	{
-		fprintf(stderr, "    %sreason%s: %s\n", sp_terminal_bright_blue,
-				sp_terminal_reset, evt->message);
+		fprintf(stderr, "    %sreason%s: %s\n", spel_terminal_bright_blue,
+				spel_terminal_reset, evt->message);
 	}
 
-	fprintf(stderr, "    %ssource%s: %s%s:%s%d%s\n", sp_terminal_bright_blue,
-			sp_terminal_reset, sp_terminal_bright_cyan, evt->file,
-			sp_terminal_bright_magenta, evt->line, sp_terminal_reset);
+	fprintf(stderr, "    %ssource%s: %s%s:%s%d%s\n", spel_terminal_bright_blue,
+			spel_terminal_reset, spel_terminal_bright_cyan, evt->file,
+			spel_terminal_bright_magenta, evt->line, spel_terminal_reset);
 
 	if (evt->code != SPEL_ERR_NONE)
 	{
-		fprintf(stderr, "    %scode%s: %s%03x%s\n", sp_terminal_bright_blue,
-				sp_terminal_reset, sp_terminal_bright_red, evt->code, sp_terminal_reset);
+		fprintf(stderr, "    %scode%s: %s%03x%s\n", spel_terminal_bright_blue,
+				spel_terminal_reset, spel_terminal_bright_red, evt->code, spel_terminal_reset);
 	}
 
 	fprintf(stderr, "\n");
 
 	fprintf(stderr, "runtime info:\n");
-	fprintf(stderr, "    %sprocessor%s:  %s\n", sp_terminal_bright_blue,
-			sp_terminal_reset, spel.hardware.cpu_model);
-	fprintf(stderr, "    %score count%s: %d threads, ", sp_terminal_bright_blue,
-			sp_terminal_reset, spel.hardware.cpu_threads);
+	fprintf(stderr, "    %sprocessor%s:  %s\n", spel_terminal_bright_blue,
+			spel_terminal_reset, spel.hardware.cpu_model);
+	fprintf(stderr, "    %score count%s: %d threads, ", spel_terminal_bright_blue,
+			spel_terminal_reset, spel.hardware.cpu_threads);
 	if (spel.hardware.cpu_cores != 0)
 	{
 		fprintf(stderr, "%d cores\n", spel.hardware.cpu_cores);
@@ -371,26 +371,26 @@ void spel_panic_stderr(spel_log_event evt)
 	}
 
 	fprintf(stderr, "    %smemory%s:     %s / %s %s%s(%.2f%%)%s\n",
-			sp_terminal_bright_blue, sp_terminal_reset,
+			spel_terminal_bright_blue, spel_terminal_reset,
 			spel_memory_fmt_size(spel.hardware.ram_total - spel.hardware.ram_available,
 								 avail, true),
-			spel_memory_fmt_size(spel.hardware.ram_total, total, true), sp_terminal_gray,
-			sp_terminal_italic,
+			spel_memory_fmt_size(spel.hardware.ram_total, total, true), spel_terminal_gray,
+			spel_terminal_italic,
 			(((float)spel.hardware.ram_total - (float)spel.hardware.ram_available) /
 			 (float)spel.hardware.ram_total) *
 				100,
-			sp_terminal_reset);
+			spel_terminal_reset);
 
 	fprintf(stderr, "    %sfeatures%s:   avx %s%s, avx2 %s%s, sse %s%s, neon %s%s\n",
-			sp_terminal_bright_blue, sp_terminal_reset,
-			(int)spel.hardware.has_avx ? sp_terminal_green "✓" : sp_terminal_red "x",
-			sp_terminal_reset,
-			(int)spel.hardware.has_avx2 ? sp_terminal_green "✓" : sp_terminal_red "x",
-			sp_terminal_reset,
-			(int)spel.hardware.has_sse ? sp_terminal_green "✓" : sp_terminal_red "x",
-			sp_terminal_reset,
-			(int)spel.hardware.has_neon ? sp_terminal_green "✓" : sp_terminal_red "x",
-			sp_terminal_reset);
+			spel_terminal_bright_blue, spel_terminal_reset,
+			(int)spel.hardware.has_avx ? spel_terminal_green "✓" : spel_terminal_red "x",
+			spel_terminal_reset,
+			(int)spel.hardware.has_avx2 ? spel_terminal_green "✓" : spel_terminal_red "x",
+			spel_terminal_reset,
+			(int)spel.hardware.has_sse ? spel_terminal_green "✓" : spel_terminal_red "x",
+			spel_terminal_reset,
+			(int)spel.hardware.has_neon ? spel_terminal_green "✓" : spel_terminal_red "x",
+			spel_terminal_reset);
 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "stack trace:\n");
@@ -402,9 +402,9 @@ void spel_panic_stderr(spel_log_event evt)
 	fprintf(stderr, "\n");
 	fprintf(stderr,
 			"%s%sfor more information, see the core dump and/or run this command:\n",
-			sp_terminal_gray, sp_terminal_italic);
-	fprintf(stderr, "%saddr2line%s -e %s -pfisC ", sp_terminal_bright_cyan,
-			sp_terminal_gray, spel.process.exe_path);
+			spel_terminal_gray, spel_terminal_italic);
+	fprintf(stderr, "%saddr2line%s -e %s -pfisC ", spel_terminal_bright_cyan,
+			spel_terminal_gray, spel.process.exe_path);
 
 	Dl_info info;
 	ptrdiff_t offset;
@@ -432,10 +432,10 @@ void spel_panic_stderr(spel_log_event evt)
 		}
 	}
 
-	fprintf(stderr, "%s\n", sp_terminal_reset);
+	fprintf(stderr, "%s\n", spel_terminal_reset);
 
-	fprintf(stderr, "%s%s========================%s\n", sp_terminal_bold,
-			sp_terminal_bg_bright_red, sp_terminal_reset);
+	fprintf(stderr, "%s%s========================%s\n", spel_terminal_bold,
+			spel_terminal_bg_bright_red, spel_terminal_reset);
 	fflush(stderr);
 }
 
@@ -620,7 +620,7 @@ void spel_panic_file(spel_log_event evt)
 	fclose(file);
 }
 
-_Noreturn void spel_panic(spel_log_event evt)
+spel_api _Noreturn void spel_log_panic(spel_log_event evt)
 {
 	spel_panic_file(evt);
 	spel_panic_stderr(evt);

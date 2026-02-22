@@ -1,7 +1,6 @@
 #include "core/memory.h"
 #include "SDL3/SDL_stdinc.h"
 #include "core/log.h"
-#include "core/panic.h"
 #include "core/types.h"
 #include "utils/terminal.h"
 #include <limits.h>
@@ -16,11 +15,11 @@ typedef struct spel_alloc_header
 	spel_memory_tag tag;
 } spel_alloc_header;
 
-sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
+spel_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 {
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid memory tag %d", tag);
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "invalid memory tag %d", tag);
 		raise(SIGTRAP);
 		return NULL;
 	}
@@ -70,7 +69,7 @@ sp_api void* spel_memory_malloc(size_t size, spel_memory_tag tag)
 	return (void*)(h + 1);
 }
 
-sp_api void spel_memory_free(void* ptr)
+spel_api void spel_memory_free(void* ptr)
 {
 	if (!ptr)
 	{
@@ -83,13 +82,13 @@ sp_api void spel_memory_free(void* ptr)
 
 	if (h->magic != 0x5350454C)
 	{
-		sp_panic(SPEL_ERR_INVALID_ARGUMENT, "this block (%p) does NOT belong to me!",
+		spel_panic(SPEL_ERR_INVALID_ARGUMENT, "this block (%p) does NOT belong to me!",
 				 ptr);
 	}
 
 	if ((int)tag < 0 || tag >= SPEL_MEM_TAG_COUNT)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in free", tag);
+		spel_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in free", tag);
 		raise(SIGTRAP);
 		return;
 	}
@@ -107,7 +106,7 @@ sp_api void spel_memory_free(void* ptr)
 	ptr = NULL;
 }
 
-sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
+spel_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 {
 
 	if (!ptr)
@@ -127,7 +126,7 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 
 	if ((int)old_tag < 0 || old_tag >= SPEL_MEM_TAG_COUNT)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in realloc", old_tag);
+		spel_error(SPEL_ERR_INVALID_STATE, "corrupted tag (%d) in realloc", old_tag);
 		raise(SIGTRAP);
 		return NULL;
 	}
@@ -136,14 +135,14 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 
 	if ((int)use_tag < 0 || use_tag >= SPEL_MEM_TAG_COUNT)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid tag %d in realloc", use_tag);
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "invalid tag %d in realloc", use_tag);
 		raise(SIGTRAP);
 		return NULL;
 	}
 
 	if (newSize > SIZE_MAX - sizeof(spel_alloc_header))
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "requested realloc too large (%zu)", newSize);
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "requested realloc too large (%zu)", newSize);
 		raise(SIGTRAP);
 		return NULL;
 	}
@@ -197,7 +196,7 @@ sp_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 	return (void*)(new_h + 1);
 }
 
-const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
+const spel_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 {
 	const char* units[] = {"B", "KB", "MB", "GB"};
 	double size = (double)bytes;
@@ -211,9 +210,9 @@ const sp_api char* spel_memory_fmt_size(size_t bytes, char buf[32], bool colors)
 
 	if (colors)
 	{
-		snprintf(buf, 32, "%s%.2f%s %s%s%s", sp_terminal_bright_green, size,
-				 sp_terminal_bold, sp_terminal_bright_magenta, units[unit],
-				 sp_terminal_reset);
+		snprintf(buf, 32, "%s%.2f%s %s%s%s", spel_terminal_bright_green, size,
+				 spel_terminal_bold, spel_terminal_bright_magenta, units[unit],
+				 spel_terminal_reset);
 	}
 	else
 	{
@@ -229,37 +228,37 @@ char* spel_mem_tag_names[SPEL_MEM_TAG_COUNT] = {
 	[SPEL_MEM_TAG_TEMP] = "temp",
 };
 
-sp_api void spel_memory_dump_terminal()
+spel_api void spel_memory_dump_terminal()
 {
 	char cur[32];
 	char peak[32];
 	char total[32];
 	char freed[32];
 
-	printf("%s%s==== spël memory dump ====%s\n", sp_terminal_bright_green,
-		   sp_terminal_bold, sp_terminal_reset);
+	printf("%s%s==== spël memory dump ====%s\n", spel_terminal_bright_green,
+		   spel_terminal_bold, spel_terminal_reset);
 
 	printf("global:\n");
-	printf("    %scurrent%s:  %s\n", sp_terminal_bright_blue, sp_terminal_reset,
+	printf("    %scurrent%s:  %s\n", spel_terminal_bright_blue, spel_terminal_reset,
 		   spel_memory_fmt_size(spel.memory.current, cur, true));
 
-	printf("    %speak%s:     %s\n", sp_terminal_bright_blue, sp_terminal_reset,
+	printf("    %speak%s:     %s\n", spel_terminal_bright_blue, spel_terminal_reset,
 		   spel_memory_fmt_size(spel.memory.peak, peak, true));
-	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", sp_terminal_bright_blue,
-		   sp_terminal_reset,
+	printf("    %stotal%s:    %s %s%s(%s%s%s freed)%s\n", spel_terminal_bright_blue,
+		   spel_terminal_reset,
 		   spel_memory_fmt_size(spel.memory.total_allocated, total, true),
-		   sp_terminal_italic, sp_terminal_gray,
-		   spel_memory_fmt_size(spel.memory.total_freed, freed, true), sp_terminal_gray,
-		   sp_terminal_italic, sp_terminal_reset);
+		   spel_terminal_italic, spel_terminal_gray,
+		   spel_memory_fmt_size(spel.memory.total_freed, freed, true), spel_terminal_gray,
+		   spel_terminal_italic, spel_terminal_reset);
 
 	printf("    %sallocs%s:   %s%zu%s\n    %sfrees%s:    %s%zu%s %s%s(%s%zu%s "
 		   "still alive%s)%s\n",
-		   sp_terminal_bright_blue, sp_terminal_reset, sp_terminal_bright_green,
-		   spel.memory.alloc_count, sp_terminal_reset, sp_terminal_bright_blue,
-		   sp_terminal_reset, sp_terminal_bright_green, spel.memory.free_count,
-		   sp_terminal_reset, sp_terminal_italic, sp_terminal_gray,
-		   sp_terminal_bright_yellow, spel.memory.alloc_count - spel.memory.free_count,
-		   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset);
+		   spel_terminal_bright_blue, spel_terminal_reset, spel_terminal_bright_green,
+		   spel.memory.alloc_count, spel_terminal_reset, spel_terminal_bright_blue,
+		   spel_terminal_reset, spel_terminal_bright_green, spel.memory.free_count,
+		   spel_terminal_reset, spel_terminal_italic, spel_terminal_gray,
+		   spel_terminal_bright_yellow, spel.memory.alloc_count - spel.memory.free_count,
+		   spel_terminal_italic, spel_terminal_gray, spel_terminal_reset);
 
 	printf("\nby tag:\n");
 	for (int i = 0; i < SPEL_MEM_TAG_COUNT; ++i)
@@ -274,21 +273,21 @@ sp_api void spel_memory_dump_terminal()
 		char tag_peak[32];
 		printf("    %s%-8s%s  %-10s %s%s(peak %10s%s%s)%s	 %s%sallocs: %s%zu%s	"
 			   "%s%sfrees: %s%zu%s	%s%s(%zu still alive, largest block = %s%s%s)%s\n",
-			   sp_terminal_bright_blue, spel_mem_tag_names[i], sp_terminal_reset,
-			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), sp_terminal_italic,
-			   sp_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
-			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset,
-			   sp_terminal_bright_blue, sp_terminal_italic, sp_terminal_bright_green,
-			   ts->alloc_count, sp_terminal_reset, sp_terminal_bright_blue,
-			   sp_terminal_italic, sp_terminal_bright_green, ts->free_count,
-			   sp_terminal_reset, sp_terminal_italic, sp_terminal_gray,
+			   spel_terminal_bright_blue, spel_mem_tag_names[i], spel_terminal_reset,
+			   spel_memory_fmt_size(ts->bytes_current, tag_cur, true), spel_terminal_italic,
+			   spel_terminal_gray, spel_memory_fmt_size(ts->bytes_peak, tag_peak, true),
+			   spel_terminal_italic, spel_terminal_gray, spel_terminal_reset,
+			   spel_terminal_bright_blue, spel_terminal_italic, spel_terminal_bright_green,
+			   ts->alloc_count, spel_terminal_reset, spel_terminal_bright_blue,
+			   spel_terminal_italic, spel_terminal_bright_green, ts->free_count,
+			   spel_terminal_reset, spel_terminal_italic, spel_terminal_gray,
 			   ts->alloc_count - ts->free_count,
 			   spel_memory_fmt_size(ts->largest_block, tag_peak, true),
-			   sp_terminal_italic, sp_terminal_gray, sp_terminal_reset);
+			   spel_terminal_italic, spel_terminal_gray, spel_terminal_reset);
 	}
 
-	printf("%s%s===========================%s\n", sp_terminal_bright_green,
-		   sp_terminal_bold, sp_terminal_reset);
+	printf("%s%s===========================%s\n", spel_terminal_bright_green,
+		   spel_terminal_bold, spel_terminal_reset);
 }
 
 void* sdl_spel_malloc(size_t size)
@@ -312,13 +311,13 @@ void* sdl_spel_realloc(void* mem, size_t size)
 	return spel_memory_realloc(mem, size, SPEL_MEM_TAG_MISC);
 }
 
-sp_hidden void spel_memory_sdl_setup()
+spel_hidden void spel_memory_sdl_setup()
 {
 	SDL_SetMemoryFunctions(sdl_spel_malloc, sdl_spel_calloc, sdl_spel_realloc,
 						   spel_memory_free);
 }
 
-sp_api char* spel_memory_strdup(const char* src, spel_memory_tag tag)
+spel_api char* spel_memory_strdup(const char* src, spel_memory_tag tag)
 {
 	char* str;
 	char* p;

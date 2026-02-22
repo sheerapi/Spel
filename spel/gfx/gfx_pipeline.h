@@ -81,29 +81,29 @@ typedef struct spel_gfx_pipeline_desc
 
 } spel_gfx_pipeline_desc;
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default();
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_default();
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_minimal(spel_gfx_shader vertex,
 														spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_vertex_color(spel_gfx_shader vertex,
 															 spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_textured(spel_gfx_shader vertex,
 														 spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_fullscreen(spel_gfx_context ctx,
 														   spel_gfx_shader fragment);
 
-sp_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx);
+spel_api spel_gfx_pipeline_desc spel_gfx_pipeline_default_2d(spel_gfx_context ctx);
 
-sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
+spel_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 												  const spel_gfx_pipeline_desc* desc);
-sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline);
+spel_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline);
 
-sp_api uint8_t spel_gfx_pipeline_texture_count(spel_gfx_pipeline pipeline);
+spel_api uint8_t spel_gfx_pipeline_texture_count(spel_gfx_pipeline pipeline);
 
-#define sp_gfx_invalid_uniform_handle ((spel_gfx_uniform_handle*){0})
-#define sp_gfx_invalid_sampler_handle ((spel_gfx_sampler_handle*){0})
+#define spel_gfx_invalid_uniform_handle ((spel_gfx_uniform_handle*){0})
+#define spel_gfx_invalid_sampler_handle ((spel_gfx_sampler_handle*){0})
 
 #endif

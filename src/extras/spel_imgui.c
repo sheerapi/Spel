@@ -34,15 +34,15 @@ typedef struct spel_imgui_context_t
 	spel_gfx_texture atlas;
 } spel_imgui_context_t;
 
-sp_hidden void spel_imgui_resources_create(spel_imgui_context ctx);
-sp_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture);
-sp_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* drawData);
-sp_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
+spel_hidden void spel_imgui_resources_create(spel_imgui_context ctx);
+spel_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture);
+spel_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* drawData);
+spel_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
 									   ImDrawData* drawData);
 
-sp_hidden bool spel_imgui_event_callback(void* event, void* ctx);
+spel_hidden bool spel_imgui_event_callback(void* event, void* ctx);
 
-sp_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
+spel_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
 {
 	spel_imgui_context ctx = spel_memory_malloc(sizeof(*ctx), SPEL_MEM_TAG_MISC);
 
@@ -75,12 +75,12 @@ sp_api spel_imgui_context spel_imgui_context_create(spel_gfx_context gfx)
 	spel_event_register(SPEL_EVENT_INTERNAL_INPUT_SDL_EVENT, spel_imgui_event_callback,
 						ctx);
 
-	sp_debug("initialized imgui");
+	spel_debug("initialized imgui");
 
 	return ctx;
 }
 
-sp_api void spel_imgui_frame_begin(spel_imgui_context ctx)
+spel_api void spel_imgui_frame_begin(spel_imgui_context ctx)
 {
 	ImGui_SetCurrentContext(ctx->context);
 
@@ -100,7 +100,7 @@ sp_api void spel_imgui_frame_begin(spel_imgui_context ctx)
 	ImGui_NewFrame();
 }
 
-sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
+spel_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 {
 	ImGui_Render();
 	ImDrawData* draw_data = ImGui_GetDrawData();
@@ -207,7 +207,7 @@ sp_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 	spel_gfx_cmd_scissor(cl, 0, 0, fb_size.x, fb_size.y);
 }
 
-sp_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
+spel_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
 {
 	spel_gfx_shader_desc vtx_shader_desc;
 	vtx_shader_desc.shader_source = SPEL_GFX_SHADER_STATIC;
@@ -262,7 +262,7 @@ sp_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
 	}
 }
 
-sp_api void spel_imgui_context_destroy(spel_imgui_context ctx)
+spel_api void spel_imgui_context_destroy(spel_imgui_context ctx)
 {
 	ImGui_SetCurrentContext(ctx->context);
 
@@ -286,7 +286,7 @@ sp_api void spel_imgui_context_destroy(spel_imgui_context ctx)
 	spel_memory_free(ctx);
 }
 
-sp_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* drawData)
+spel_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* drawData)
 {
 	uint32_t vtx_size = drawData->TotalVtxCount * sizeof(ImDrawVert);
 	uint32_t idx_size = drawData->TotalIdxCount * sizeof(ImDrawIdx);
@@ -326,11 +326,11 @@ sp_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* draw
 	}
 }
 
-sp_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture)
+spel_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture)
 {
-	sp_assert(texture->TexID != 0,
+	spel_assert(texture->TexID != 0,
 			  "tried to update empty texture %p", texture->TexID);
-	sp_assert(texture->Format == ImTextureFormat_RGBA32, "invalid texture format %d",
+	spel_assert(texture->Format == ImTextureFormat_RGBA32, "invalid texture format %d",
 			  texture->Format);
 
 	if (texture->Status == ImTextureStatus_WantCreate)
@@ -389,7 +389,7 @@ spel_vec4* ortho_proj(float L, float R, float T, float B)
 	return ORTHO_PROJECTION;
 }
 
-sp_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
+spel_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
 									   ImDrawData* drawData)
 {
 	float L = drawData->DisplayPos.x;
@@ -402,7 +402,7 @@ sp_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist 
 	spel_gfx_cmd_uniform_update(cl, ctx->ubuffer, ctx->matrix_handle, mat, 64);
 }
 
-sp_hidden bool spel_imgui_event_callback(void* event, void* ctx)
+spel_hidden bool spel_imgui_event_callback(void* event, void* ctx)
 {
 	cImGui_ImplSDL3_ProcessEvent(event);
 	spel_imgui_context context = (spel_imgui_context)ctx;

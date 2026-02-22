@@ -58,19 +58,33 @@ typedef struct spel_log_event_t
 	size_t data_size;
 } spel_log_event_t;
 
-sp_api void spel_log_filter(spel_severity severity);
-sp_api void spel_log_callback_set(spel_log_fn fn, void* user);
-sp_api void spel_log_emit(spel_log_event evt);
-sp_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
+spel_api void spel_log_filter(spel_severity severity);
+spel_api void spel_log_callback_set(spel_log_fn fn, void* user);
+spel_api void spel_log_emit(spel_log_event evt);
+spel_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...);
 
-sp_api void spel_log_assert(bool condition, spel_log_event evt);
+spel_api void spel_log_assert(bool condition, spel_log_event evt);
 
-sp_api void spel_log_stderr_install();
-sp_hidden void spel_log_stderr(spel_log_event evt, void* user);
+spel_api void spel_log_stderr_install();
+spel_hidden void spel_log_stderr(spel_log_event evt, void* user);
 
-const sp_api char* spel_log_sev_to_string(spel_severity severity);
+const spel_api char* spel_log_sev_to_string(spel_severity severity);
 
-#define sp_log(sev, error, dataVal, dataType, dataSize, msg, ...)                        \
+spel_api _Noreturn void spel_log_panic(spel_log_event evt);
+
+#define spel_panic(err, msg, ...)                                                        \
+	spel_log_panic(spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),            \
+												.code = (err),                           \
+												.message = NULL,                         \
+												.length = 0,                             \
+												.file = __FILE__,                        \
+												.line = __LINE__,                        \
+												.data = NULL,                            \
+												.data_type = SPEL_DATA_NONE,             \
+												.data_size = 0},                         \
+							msg, ##__VA_ARGS__))
+
+#define spel_log(sev, error, dataVal, dataType, dataSize, msg, ...)                        \
 	spel_log_emit(spel_log_fmt(&(spel_log_event_t){.severity = (sev),                    \
 												   .code = (error),                      \
 												   .message = NULL,                      \
@@ -84,19 +98,19 @@ const sp_api char* spel_log_sev_to_string(spel_severity severity);
 												   .wall_sec = spel_time_now_sec()},     \
 							   msg, ##__VA_ARGS__))
 
-#define sp_info(msg, ...)                                                                \
-	sp_log(SPEL_SEV_INFO, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define sp_warn(msg, ...)                                                                \
-	sp_log(SPEL_SEV_WARN, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define sp_error(code, msg, ...)                                                         \
-	sp_log(SPEL_SEV_ERROR, code, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define sp_trace(msg, ...)                                                               \
-	sp_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define spel_info(msg, ...)                                                                \
+	spel_log(SPEL_SEV_INFO, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define spel_warn(msg, ...)                                                                \
+	spel_log(SPEL_SEV_WARN, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define spel_error(code, msg, ...)                                                         \
+	spel_log(SPEL_SEV_ERROR, code, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#define spel_trace(msg, ...)                                                               \
+	spel_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 
 #ifdef DEBUG
-#	define sp_debug(msg, ...)                                                           \
-		sp_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#	define sp_assert(condition, msg, ...)                                               \
+#	define spel_debug(msg, ...)                                                           \
+		spel_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#	define spel_assert(condition, msg, ...)                                               \
 		spel_log_assert(                                                                 \
 			condition,                                                                   \
 			spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),               \
@@ -110,7 +124,7 @@ const sp_api char* spel_log_sev_to_string(spel_severity severity);
 											 .data_size = 0},                            \
 						 msg, ##__VA_ARGS__))
 #else
-#	define sp_debug(msg, ...)
-#	define sp_assert(condition, msg, ...)
+#	define spel_debug(msg, ...)
+#	define spel_assert(condition, msg, ...)
 #endif
 #endif

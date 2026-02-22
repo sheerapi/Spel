@@ -11,13 +11,13 @@
 #	include <unistd.h>
 #endif
 
-bool spel_path_exists(const char* path)
+spel_api bool spel_path_exists(const char* path)
 {
 	struct stat st;
 	return stat(path, &st) == 0;
 }
 
-bool spel_path_is_dir(const char* path)
+spel_api bool spel_path_is_dir(const char* path)
 {
 	struct stat st;
 	if (stat(path, &st) != 0)
@@ -27,7 +27,7 @@ bool spel_path_is_dir(const char* path)
 	return S_ISDIR(st.st_mode);
 }
 
-bool spel_path_is_file(const char* path)
+spel_api bool spel_path_is_file(const char* path)
 {
 	struct stat st;
 	if (stat(path, &st) != 0)
@@ -37,7 +37,7 @@ bool spel_path_is_file(const char* path)
 	return S_ISREG(st.st_mode);
 }
 
-const char* spel_path_filename(const char* path)
+spel_api const char* spel_path_filename(const char* path)
 {
 	if (!path)
 	{
@@ -57,7 +57,7 @@ const char* spel_path_filename(const char* path)
 	return last_sep ? last_sep + 1 : path;
 }
 
-const char* spel_path_extension(const char* path)
+spel_api const char* spel_path_extension(const char* path)
 {
 	const char* filename = spel_path_filename(path);
 	if (!filename)
@@ -74,7 +74,7 @@ const char* spel_path_extension(const char* path)
 	return NULL;
 }
 
-char* spel_path_stem(const char* path, char* buf, size_t bufsize)
+spel_api char* spel_path_stem(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
@@ -104,7 +104,7 @@ char* spel_path_stem(const char* path, char* buf, size_t bufsize)
 	return buf;
 }
 
-char* spel_path_dirname(const char* path, char* buf, size_t bufsize)
+spel_api char* spel_path_dirname(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
@@ -142,7 +142,7 @@ char* spel_path_dirname(const char* path, char* buf, size_t bufsize)
 	return buf;
 }
 
-char* spel_path_join(const char* base, const char* rel, char* buf, size_t bufsize)
+spel_api char* spel_path_join(const char* base, const char* rel, char* buf, size_t bufsize)
 {
 	if (!base || !rel || !buf || bufsize == 0)
 	{
@@ -174,7 +174,7 @@ char* spel_path_join(const char* base, const char* rel, char* buf, size_t bufsiz
 	return buf;
 }
 
-char* spel_path_normalize(const char* path, char* buf, size_t bufsize)
+spel_api char* spel_path_normalize(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{
@@ -236,7 +236,7 @@ char* spel_path_normalize(const char* path, char* buf, size_t bufsize)
 	return buf;
 }
 
-bool spel_path_is_absolute(const char* path)
+spel_api bool spel_path_is_absolute(const char* path)
 {
 	if (!path || path[0] == '\0')
 	{
@@ -262,7 +262,7 @@ bool spel_path_is_absolute(const char* path)
 #endif
 }
 
-char* spel_path_absolute(const char* path, char* buf, size_t bufsize)
+spel_api char* spel_path_absolute(const char* path, char* buf, size_t bufsize)
 {
 	if (!path || !buf || bufsize == 0)
 	{

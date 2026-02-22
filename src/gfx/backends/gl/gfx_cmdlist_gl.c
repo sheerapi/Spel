@@ -51,7 +51,7 @@ spel_gfx_cmdlist spel_gfx_cmdlist_create_gl(spel_gfx_context ctx)
 {
 	spel_gfx_cmdlist cl =
 		(spel_gfx_cmdlist)spel_memory_malloc(sizeof(*cl), SPEL_MEM_TAG_GFX);
-	cl->capacity = (int)sp_cmdlist_default_size;
+	cl->capacity = (int)spel_cmdlist_default_size;
 	cl->offset = 0;
 	cl->ctx = ctx;
 	cl->buffer = spel_memory_malloc(cl->capacity, SPEL_MEM_TAG_GFX);
@@ -95,7 +95,7 @@ void* spel_gfx_cmdlist_alloc_gl(spel_gfx_cmdlist cl, size_t size, size_t align)
 			spel_memory_realloc(cl->buffer, cl->capacity, SPEL_MEM_TAG_GFX);
 		if (new_buffer == NULL)
 		{
-			sp_error(SPEL_ERR_OOM, "out of memory?");
+			spel_error(SPEL_ERR_OOM, "out of memory?");
 			return NULL;
 		}
 		cl->buffer = new_buffer;
@@ -199,13 +199,13 @@ void exec_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_bind_vertex_cmd* cmd)
 {
 	if (cmd->buf->type != SPEL_GFX_BUFFER_VERTEX)
 	{
-		sp_warn("buffer type does not correspond to binding cmd (vertex). this is "
+		spel_warn("buffer type does not correspond to binding cmd (vertex). this is "
 				"allowed, but discouraged");
 	}
 
 	if (((spel_gfx_cmdlist_gl*)cl->data)->pipeline == NULL)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE,
+		spel_error(SPEL_ERR_INVALID_STATE,
 				 "you need to bind a pipeline before binding a vertex buffer");
 		return;
 	}
@@ -312,7 +312,7 @@ void exec_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_bind_index_cmd* cmd)
 {
 	if (cmd->buf->type != SPEL_GFX_BUFFER_INDEX)
 	{
-		sp_warn("buffer type does not correspond to binding cmd (index). this is "
+		spel_warn("buffer type does not correspond to binding cmd (index). this is "
 				"allowed, but discouraged");
 	}
 
@@ -342,7 +342,7 @@ static inline size_t spel_gl_index_size(GLenum type)
 	case GL_UNSIGNED_INT:
 		return 4;
 	default:
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "unsupported index type");
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "unsupported index type");
 		return 0;
 	}
 }
@@ -437,7 +437,7 @@ void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 
 	if (binding == -1)
 	{
-		sp_warn("location %d not found within reflection data", cmd->location);
+		spel_warn("location %d not found within reflection data", cmd->location);
 		return;
 	}
 
@@ -448,7 +448,7 @@ void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 
 void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd)
 {
-	sp_assert(cmd->size <= (size_t)(cmd->handle.size * cmd->handle.count),
+	spel_assert(cmd->size <= (size_t)(cmd->handle.size * cmd->handle.count),
 			  "data exceeds uniform handle size, expected %d got %d",
 			  (size_t)(cmd->handle.size * cmd->handle.count), cmd->size);
 
@@ -467,7 +467,7 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 
 	if (glCmd->current_pass != NULL)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE,
+		spel_error(SPEL_ERR_INVALID_STATE,
 				 "did you forget to end the current pass before starting another one?");
 		return;
 	}
@@ -578,7 +578,7 @@ void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd*
 
 	if (glCmd->current_pass == NULL)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "there is NO pass to end!");
+		spel_error(SPEL_ERR_INVALID_STATE, "there is NO pass to end!");
 		return;
 	}
 

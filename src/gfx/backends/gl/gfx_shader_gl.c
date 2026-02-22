@@ -34,14 +34,14 @@ void spel_gfx_shader_destroy_gl(spel_gfx_shader shader)
 {
 	if (shader->internal)
 	{
-		sp_error(SPEL_ERR_INVALID_RESOURCE, "you can't delete an internal shader!");
+		spel_error(SPEL_ERR_INVALID_RESOURCE, "you can't delete an internal shader!");
 		return;
 	}
 
 	spel_gfx_shader_reflection_free(shader);
 	spel_memory_free(shader->entry);
 
-	sp_trace("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).shader);
+	spel_trace("destroyed GL shader %d", (*(spel_gfx_shader_gl*)shader->data).shader);
 	glDeleteShader((*(spel_gfx_shader_gl*)shader->data).shader);
 	spel_memory_free(shader->data);
 	spel_memory_free(shader);
@@ -88,7 +88,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 
 	if (desc->source_size > (size_t)INT_MAX)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "shader binary too large");
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "shader binary too large");
 		spel_memory_free(shader->data);
 		spel_memory_free(shader);
 		return NULL;
@@ -117,7 +117,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 								   .log = info_log,
 								   .log_size = (size_t)info_log_size};
 
-		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
+		spel_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
 			   sizeof(log), "shader specialization failed: %s", desc->debug_name);
 
 		spel_gfx_shader_reflection_free(shader);
@@ -130,7 +130,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 
 	spel_memory_free(desc->source);
 
-	sp_trace(
+	spel_trace(
 		"created %s GL shader %u (%s, %lu bytes)", spel_gfx_shader_type_str(shader->type),
 		(*(spel_gfx_shader_gl*)shader->data).shader, desc->debug_name, desc->source_size);
 
@@ -144,7 +144,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 	if (spvReflectCreateShaderModule(desc->source_size, desc->source, &module) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -153,7 +153,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, NULL) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -165,7 +165,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 	if (spvReflectEnumerateDescriptorBindings(&module, &binding_count, bindings) !=
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
-		sp_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
+		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
 				 "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
@@ -180,7 +180,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 
 		if (binding->accessed != true)
 		{
-			sp_warn("shader uniform/block %s is never accessed (%s)", binding->name,
+			spel_warn("shader uniform/block %s is never accessed (%s)", binding->name,
 					desc->debug_name);
 		}
 

@@ -33,13 +33,13 @@ static void spel_gl_configure_vertex_layout(GLuint vao,
 	{
 		const spel_gfx_vertex_attrib* attrib = &layout->attribs[i];
 
-		const uint32_t FLAGS = sp_vtx_flags(attrib->format);
+		const uint32_t FLAGS = spel_vtx_flags(attrib->format);
 		const bool INTEGER = (FLAGS & SPEL_GFX_VERTEX_INTEGER) != 0;
 		const bool NORMALIZED = (FLAGS & SPEL_GFX_VERTEX_NORMALIZED) != 0;
 
 		const GLenum TYPE =
-			spel_gl_vertex_type(sp_vtx_base(attrib->format), sp_vtx_bits(attrib->format));
-		const GLint SIZE = (GLint)sp_vtx_comps(attrib->format);
+			spel_gl_vertex_type(spel_vtx_base(attrib->format), spel_vtx_bits(attrib->format));
+		const GLint SIZE = (GLint)spel_vtx_comps(attrib->format);
 
 		glEnableVertexArrayAttrib(vao, attrib->location);
 
@@ -221,7 +221,7 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 								   .log = info_log,
 								   .log_size = info_log_size};
 
-		sp_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
+		spel_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
 			   sizeof(log), "failed to compile pipeline %s: %s", str, info_log);
 
 		glDeleteProgram(gl_pipeline->program);
@@ -307,7 +307,7 @@ static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bit
 		break;
 	}
 
-	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid vertex format");
+	spel_error(SPEL_ERR_INVALID_ARGUMENT, "invalid vertex format");
 	return GL_FLOAT;
 }
 
@@ -434,7 +434,7 @@ static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f)
 		return GL_ONE_MINUS_DST_COLOR;
 	}
 
-	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend factor");
+	spel_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend factor");
 	return GL_ONE;
 }
 
@@ -454,7 +454,7 @@ static GLenum spel_gl_blend_op(spel_gfx_blend_op op)
 		return GL_MAX;
 	}
 
-	sp_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend op");
+	spel_error(SPEL_ERR_INVALID_ARGUMENT, "invalid blend op");
 	return GL_FUNC_ADD;
 }
 

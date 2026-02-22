@@ -38,15 +38,15 @@ typedef enum
 
 typedef uint32_t spel_gfx_access;
 
-#define sp_gfx_access_read (1u << 0)
-#define sp_gfx_access_write (1u << 1)
+#define spel_gfx_access_read (1u << 0)
+#define spel_gfx_access_write (1u << 1)
 
-#define sp_gfx_access_invalidate_range (1u << 2)
-#define sp_gfx_access_invalidate_buffer (1u << 3)
-#define sp_gfx_access_unsynchronized (1u << 4)
-#define sp_gfx_access_flush_explicit (1u << 5)
-#define sp_gfx_access_persistent (1u << 6)
-#define sp_gfx_access_coherent (1u << 7)
+#define spel_gfx_access_invalidate_range (1u << 2)
+#define spel_gfx_access_invalidate_buffer (1u << 3)
+#define spel_gfx_access_unsynchronized (1u << 4)
+#define spel_gfx_access_flush_explicit (1u << 5)
+#define spel_gfx_access_persistent (1u << 6)
+#define spel_gfx_access_coherent (1u << 7)
 
 typedef enum
 {
@@ -160,24 +160,24 @@ typedef enum
 
 typedef uint32_t spel_gfx_vertex_format;
 
-#define sp_vtx_fmt(base, comps, bits, flags)                                             \
+#define spel_vtx_fmt(base, comps, bits, flags)                                             \
 	((spel_gfx_vertex_format)(((base) & 0x3) | (((comps) - 1) << 2) |                    \
 							  (((bits) & 0xFF) << 4) | ((flags) << 12)))
 
-#define sp_vtx_base(fmt) ((spel_gfx_vertex_base_format)(((fmt) >> 0) & 0x3))
+#define spel_vtx_base(fmt) ((spel_gfx_vertex_base_format)(((fmt) >> 0) & 0x3))
 
-#define sp_vtx_comps(fmt) ((((fmt) >> 2) & 0x3) + 1)
+#define spel_vtx_comps(fmt) ((((fmt) >> 2) & 0x3) + 1)
 
-#define sp_vtx_bits(fmt) (((fmt) >> 4) & 0xFF)
+#define spel_vtx_bits(fmt) (((fmt) >> 4) & 0xFF)
 
-#define sp_vtx_flags(fmt) ((fmt) >> 12)
+#define spel_vtx_flags(fmt) ((fmt) >> 12)
 
-#define sp_gfx_vertex_format_float2 sp_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 2, 32, 0)
-#define sp_gfx_vertex_format_float3 sp_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 3, 32, 0)
-#define sp_gfx_vertex_format_float4 sp_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 4, 32, 0)
+#define spel_gfx_vertex_format_float2 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 2, 32, 0)
+#define spel_gfx_vertex_format_float3 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 3, 32, 0)
+#define spel_gfx_vertex_format_float4 spel_vtx_fmt(SPEL_GFX_VERTEX_FLOAT, 4, 32, 0)
 
-#define sp_gfx_vertex_format_ubyte4n                                                     \
-	sp_vtx_fmt(SPEL_GFX_VERTEX_UINT, 4, 8, SPEL_GFX_VERTEX_NORMALIZED)
+#define spel_gfx_vertex_format_ubyte4n                                                     \
+	spel_vtx_fmt(SPEL_GFX_VERTEX_UINT, 4, 8, SPEL_GFX_VERTEX_NORMALIZED)
 
 typedef enum
 {

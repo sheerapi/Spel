@@ -27,7 +27,7 @@
 void spel_gfx_context_default_data(spel_gfx_context ctx);
 void spel_checker_rgba8_make(uint8_t* out, int width, int height, int tileSize);
 
-sp_api void spel_gfx_context_conf(spel_gfx_backend backend)
+spel_api void spel_gfx_context_conf(spel_gfx_backend backend)
 {
 	switch (backend)
 	{
@@ -37,7 +37,7 @@ sp_api void spel_gfx_context_conf(spel_gfx_backend backend)
 	}
 }
 
-sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
+spel_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 {
 	spel_gfx_context ctx = (spel_gfx_context)spel_memory_malloc(
 		sizeof(spel_gfx_context_t), SPEL_MEM_TAG_GFX);
@@ -60,7 +60,7 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	ctx->sampler_cache.capacity = 0;
 	ctx->sampler_cache.count = 0;
 
-	for (size_t i = 0; i < sp_array_size(ctx->shaders); i++)
+	for (size_t i = 0; i < spel_array_size(ctx->shaders); i++)
 	{
 		ctx->shaders[i] = NULL;
 	}
@@ -74,7 +74,7 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 
 	if (ctx->vt == NULL)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "backend creation failed");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "backend creation failed");
 		spel_memory_free(ctx);
 		return NULL;
 	}
@@ -90,77 +90,77 @@ sp_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	return ctx;
 }
 
-sp_api void spel_gfx_context_destroy(spel_gfx_context ctx)
+spel_api void spel_gfx_context_destroy(spel_gfx_context ctx)
 {
 	ctx->vt->ctx_destroy(ctx);
 	spel_memory_free(ctx);
 }
 
-sp_api void spel_gfx_frame_begin(spel_gfx_context ctx)
+spel_api void spel_gfx_frame_begin(spel_gfx_context ctx)
 {
 	ctx->vt->frame_begin(ctx);
 }
 
-sp_api void spel_gfx_frame_present(spel_gfx_context ctx)
+spel_api void spel_gfx_frame_present(spel_gfx_context ctx)
 {
 	ctx->vt->frame_end(ctx);
 }
 
-sp_api spel_gfx_cmdlist spel_gfx_cmdlist_create(spel_gfx_context ctx)
+spel_api spel_gfx_cmdlist spel_gfx_cmdlist_create(spel_gfx_context ctx)
 {
 	return ctx->vt->cmdlist_create(ctx);
 }
 
-sp_api void spel_gfx_cmdlist_destroy(spel_gfx_cmdlist cmdlist)
+spel_api void spel_gfx_cmdlist_destroy(spel_gfx_cmdlist cmdlist)
 {
 	cmdlist->ctx->vt->cmdlist_destroy(cmdlist);
 }
 
-sp_api void spel_gfx_cmdlist_submit(spel_gfx_cmdlist cmdlist)
+spel_api void spel_gfx_cmdlist_submit(spel_gfx_cmdlist cmdlist)
 {
 	cmdlist->ctx->vt->cmdlist_submit(cmdlist);
 }
 
-sp_api spel_gfx_buffer spel_gfx_buffer_create(spel_gfx_context ctx,
+spel_api spel_gfx_buffer spel_gfx_buffer_create(spel_gfx_context ctx,
 											  const spel_gfx_buffer_desc* desc)
 {
 	return ctx->vt->buffer_create(ctx, desc);
 }
 
-sp_api void spel_gfx_buffer_destroy(spel_gfx_buffer buf)
+spel_api void spel_gfx_buffer_destroy(spel_gfx_buffer buf)
 {
 	buf->ctx->vt->buffer_destroy(buf);
 }
 
-sp_api void spel_gfx_buffer_update(spel_gfx_buffer buf, const void* data, size_t size,
+spel_api void spel_gfx_buffer_update(spel_gfx_buffer buf, const void* data, size_t size,
 								   size_t offset)
 {
 	buf->ctx->vt->buffer_update(buf, data, size, offset);
 }
 
-sp_api void* spel_gfx_buffer_map(spel_gfx_buffer buf, size_t offset, size_t size,
+spel_api void* spel_gfx_buffer_map(spel_gfx_buffer buf, size_t offset, size_t size,
 								 spel_gfx_access access)
 {
 	return buf->ctx->vt->buffer_map(buf, offset, size, access);
 }
 
-sp_api void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
+spel_api void spel_gfx_buffer_unmap(spel_gfx_buffer buf)
 {
 	buf->ctx->vt->buffer_unmap(buf);
 }
 
-sp_api spel_gfx_shader spel_gfx_shader_create(spel_gfx_context ctx,
+spel_api spel_gfx_shader spel_gfx_shader_create(spel_gfx_context ctx,
 											  spel_gfx_shader_desc* desc)
 {
 	return ctx->vt->shader_create(ctx, desc);
 }
 
-sp_api void spel_gfx_shader_destroy(spel_gfx_shader shader)
+spel_api void spel_gfx_shader_destroy(spel_gfx_shader shader)
 {
 	shader->ctx->vt->shader_destroy(shader);
 }
 
-sp_hidden void spel_gfx_shader_reflection_free(spel_gfx_shader shader)
+spel_hidden void spel_gfx_shader_reflection_free(spel_gfx_shader shader)
 {
 	spel_gfx_shader_reflection* refl = &shader->reflection;
 
@@ -197,11 +197,11 @@ sp_hidden void spel_gfx_shader_reflection_free(spel_gfx_shader shader)
 	spel_memory_free(refl->storage);
 }
 
-sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path)
+spel_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* path)
 {
 	if (!spel_path_exists(path))
 	{
-		sp_log(SPEL_SEV_ERROR, SPEL_ERR_FILE_NOT_FOUND, path, SPEL_DATA_STRING,
+		spel_log(SPEL_SEV_ERROR, SPEL_ERR_FILE_NOT_FOUND, path, SPEL_DATA_STRING,
 			   strlen(path), "file %s does not exist", path);
 		return NULL;
 	}
@@ -233,7 +233,7 @@ sp_api spel_gfx_shader spel_gfx_shader_load(spel_gfx_context ctx, const char* pa
 	return shader;
 }
 
-sp_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
+spel_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_clear_cmd* cmd = (spel_gfx_clear_cmd*)cl->ctx->vt->cmdlist_alloc(
@@ -244,7 +244,7 @@ sp_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 	cmd->color = color;
 }
 
-sp_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream,
+spel_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream,
 									 spel_gfx_buffer buf, size_t offset)
 {
 	uint64_t start_offset = cl->offset;
@@ -258,7 +258,7 @@ sp_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream,
 	cmd->offset = offset;
 }
 
-sp_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
+spel_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 									spel_gfx_index_type type, size_t offset)
 {
 	uint64_t start_offset = cl->offset;
@@ -272,7 +272,7 @@ sp_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 	cmd->type = type;
 }
 
-sp_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline)
+spel_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pipeline)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_pipeline_cmd* cmd =
@@ -284,7 +284,7 @@ sp_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline pi
 	cmd->pipeline = pipeline;
 }
 
-sp_api void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount,
+spel_api void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount,
 							  uint32_t firstVertex)
 {
 	uint64_t start_offset = cl->offset;
@@ -297,7 +297,7 @@ sp_api void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount,
 	cmd->first_vertex = firstVertex;
 }
 
-sp_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
+spel_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
 									  uint32_t firstIndex, int32_t vertexOffset)
 {
 	uint64_t start_offset = cl->offset;
@@ -312,20 +312,20 @@ sp_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount,
 	cmd->vertex_offset = vertexOffset;
 }
 
-sp_api spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
+spel_api spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
 {
 	spel_gfx_cmdlist cmdlist = ctx->cmdlist;
 	spel_gfx_cmd_begin_pass(cmdlist, spel_gfx_render_pass_default(ctx));
 	return cmdlist;
 }
 
-sp_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
+spel_api spel_gfx_pipeline spel_gfx_pipeline_create(spel_gfx_context ctx,
 												  const spel_gfx_pipeline_desc* desc)
 {
 	return ctx->vt->pipeline_create(ctx, desc);
 }
 
-sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
+spel_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
 											  uint64_t hash, spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0)
@@ -374,7 +374,7 @@ sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
 	}
 }
 
-sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
+spel_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 {
 	spel_gfx_pipeline_cache_remove(&pipeline->ctx->pipeline_cache, pipeline->hash,
 								   pipeline);
@@ -418,7 +418,7 @@ sp_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }
 
-sp_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline)
 {
 	if (cache->count * 10 >= cache->capacity * 7)
@@ -478,7 +478,7 @@ sp_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	}
 }
 
-sp_api bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
+spel_api bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 {
 	bool valid = true;
 
@@ -522,7 +522,7 @@ sp_api bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc)
 	return valid;
 }
 
-sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
+spel_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 											 const spel_gfx_sampler_desc* desc)
 {
 	spel_gfx_sampler_cache* cache = &ctx->sampler_cache;
@@ -585,7 +585,7 @@ sp_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
 	}
 }
 
-sp_api void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
+spel_api void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
 									  spel_gfx_texture texture)
 {
 	uint64_t start_offset = cl->offset;
@@ -599,7 +599,7 @@ sp_api void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
 	cmd->slot = slot;
 }
 
-sp_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
+spel_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
 									  spel_gfx_sampler sampler)
 {
 	uint64_t start_offset = cl->offset;
@@ -613,7 +613,7 @@ sp_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
 	cmd->slot = slot;
 }
 
-sp_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
+spel_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
 									spel_gfx_texture texture, spel_gfx_sampler sampler)
 {
 	uint64_t start_offset = cl->offset;
@@ -701,28 +701,28 @@ void spel_checker_rgba8_make(uint8_t* out, int width, int height, int tileSize)
 	}
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
 												const spel_gfx_texture_desc* desc)
 {
 	return ctx->vt->texture_create(ctx, desc);
 }
 
-sp_api void spel_gfx_texture_destroy(spel_gfx_texture texture)
+spel_api void spel_gfx_texture_destroy(spel_gfx_texture texture)
 {
 	texture->ctx->vt->texture_destroy(texture);
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx)
+spel_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx)
 {
 	return ctx->white_tex;
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx)
+spel_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx)
 {
 	return ctx->checkerboard;
 }
 
-sp_api spel_gfx_sampler_desc spel_gfx_sampler_default()
+spel_api spel_gfx_sampler_desc spel_gfx_sampler_default()
 {
 	static const spel_gfx_sampler_desc DEFAULT_SAMPLER = {
 		.min = SPEL_GFX_SAMPLER_FILTER_LINEAR,
@@ -757,7 +757,7 @@ uint8_t* rgb_to_rgba(const uint8_t* src, int pixelCount)
 	return dst;
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
+spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 											  const spel_gfx_texture_load_desc* desc)
 {
 	int w;
@@ -790,7 +790,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* 
 	{
 		if ((int)desc->srgb && comp < 3)
 		{
-			sp_error(SPEL_ERR_INVALID_ARGUMENT, "sRGB requested for non-RGB texture");
+			spel_error(SPEL_ERR_INVALID_ARGUMENT, "sRGB requested for non-RGB texture");
 			stbi_image_free(pixels);
 			return spel_gfx_texture_checker_get(ctx);
 		}
@@ -847,7 +847,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* 
 	return out;
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 													const char* path)
 {
 	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB,
@@ -858,7 +858,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 	return spel_gfx_texture_load(ctx, path, &desc);
 }
 
-sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
 													 const char* path)
 {
 	spel_gfx_texture_load_desc desc = {.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
@@ -869,7 +869,7 @@ sp_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
 	return spel_gfx_texture_load(ctx, path, &desc);
 }
 
-sp_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width,
+spel_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width,
 								  int height)
 {
 	uint64_t start_offset = cl->offset;
@@ -884,7 +884,7 @@ sp_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width,
 	cmd->height = height;
 }
 
-sp_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, int height)
+spel_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, int height)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_scissor_cmd* cmd = (spel_gfx_scissor_cmd*)cl->ctx->vt->cmdlist_alloc(
@@ -899,7 +899,7 @@ sp_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width, i
 }
 
 #ifdef DEBUG
-sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage)
+spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage)
 {
 	switch (stage)
 	{
@@ -918,7 +918,7 @@ sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stag
 }
 #endif
 
-sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
+spel_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
 													  spel_color color)
 {
 	const spel_gfx_texture_desc COLOR_TEX = {.type = SPEL_GFX_TEXTURE_2D,
@@ -933,12 +933,12 @@ sp_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
 	return spel_gfx_texture_create(ctx, &COLOR_TEX);
 }
 
-sp_api uint8_t spel_gfx_pipeline_texture_count(spel_gfx_pipeline pipeline)
+spel_api uint8_t spel_gfx_pipeline_texture_count(spel_gfx_pipeline pipeline)
 {
 	return pipeline->reflection.sampler_count;
 }
 
-sp_api spel_gfx_uniform* spel_gfx_uniform_list(spel_gfx_pipeline pipeline,
+spel_api spel_gfx_uniform* spel_gfx_uniform_list(spel_gfx_pipeline pipeline,
 											   uint32_t* count)
 {
 	uint32_t member_count = 0;
@@ -997,7 +997,7 @@ sp_api spel_gfx_uniform* spel_gfx_uniform_list(spel_gfx_pipeline pipeline,
 	return uniforms;
 }
 
-const sp_api char* spel_gfx_uniform_name(spel_gfx_pipeline pipeline,
+const spel_api char* spel_gfx_uniform_name(spel_gfx_pipeline pipeline,
 										 spel_gfx_uniform handle)
 {
 	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
@@ -1035,7 +1035,7 @@ const sp_api char* spel_gfx_uniform_name(spel_gfx_pipeline pipeline,
 	return "";
 }
 
-sp_api uint32_t spel_gfx_uniform_block_size(spel_gfx_pipeline pipeline,
+spel_api uint32_t spel_gfx_uniform_block_size(spel_gfx_pipeline pipeline,
 											spel_gfx_uniform handle)
 {
 	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
@@ -1053,7 +1053,7 @@ sp_api uint32_t spel_gfx_uniform_block_size(spel_gfx_pipeline pipeline,
 	return 0;
 }
 
-sp_api spel_gfx_uniform spel_gfx_uniform_get(spel_gfx_pipeline pipeline, const char* name)
+spel_api spel_gfx_uniform spel_gfx_uniform_get(spel_gfx_pipeline pipeline, const char* name)
 {
 	spel_gfx_uniform uniform;
 
@@ -1093,7 +1093,7 @@ sp_api spel_gfx_uniform spel_gfx_uniform_get(spel_gfx_pipeline pipeline, const c
 		}
 	}
 
-	sp_error(SPEL_ERR_INVALID_ARGUMENT, "uniform %s not found in pipeline %X", name,
+	spel_error(SPEL_ERR_INVALID_ARGUMENT, "uniform %s not found in pipeline %X", name,
 			 pipeline->hash);
 
 	uniform.location = 0;
@@ -1103,12 +1103,12 @@ sp_api spel_gfx_uniform spel_gfx_uniform_get(spel_gfx_pipeline pipeline, const c
 	return uniform;
 }
 
-sp_api void spel_gfx_buffer_flush(spel_gfx_buffer buf, size_t offset, size_t size)
+spel_api void spel_gfx_buffer_flush(spel_gfx_buffer buf, size_t offset, size_t size)
 {
 	buf->ctx->vt->buffer_flush(buf, offset, size);
 }
 
-sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
+spel_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 											spel_gfx_uniform_buffer buf)
 {
 	uint64_t start_offset = cl->offset;
@@ -1122,7 +1122,7 @@ sp_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 	cmd->location = buf.location;
 }
 
-sp_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_t* count)
+spel_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_t* count)
 {
 	uint32_t block_count =
 		pipeline->reflection.uniform_count + pipeline->reflection.storage_count;
@@ -1149,7 +1149,7 @@ sp_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_t*
 	return arr;
 }
 
-sp_api spel_gfx_uniform_buffer spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline,
+spel_api spel_gfx_uniform_buffer spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline,
 															  const char* blockName)
 {
 	spel_gfx_shader_block* block = NULL;
@@ -1183,7 +1183,7 @@ sp_api spel_gfx_uniform_buffer spel_gfx_uniform_buffer_create(spel_gfx_pipeline 
 		.size = block->size};
 }
 
-sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_buffer buf,
+spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_buffer buf,
 										spel_gfx_uniform handle, const void* data,
 										size_t size)
 {
@@ -1222,12 +1222,12 @@ sp_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_bu
 	cl->dirty_buffers[cl->dirty_buffer_count++] = cmd->buffer.buffer;
 }
 
-sp_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
+spel_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
 {
 	spel_gfx_buffer_destroy(buf.buffer);
 }
 
-sp_api spel_gfx_framebuffer
+spel_api spel_gfx_framebuffer
 spel_gfx_framebuffer_create(spel_gfx_context ctx, const spel_gfx_framebuffer_desc* desc)
 {
 	spel_gfx_framebuffer fb = ctx->vt->framebuffer_create(ctx, desc);
@@ -1248,12 +1248,12 @@ spel_gfx_framebuffer_create(spel_gfx_context ctx, const spel_gfx_framebuffer_des
 	return fb;
 }
 
-sp_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb)
+spel_api void spel_gfx_framebuffer_destroy(spel_gfx_framebuffer fb)
 {
 	fb->ctx->vt->framebuffer_destroy(fb);
 }
 
-sp_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pass)
+spel_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pass)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_begin_render_pass_cmd* cmd =
@@ -1265,7 +1265,7 @@ sp_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass pa
 	cmd->pass = pass;
 }
 
-sp_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
+spel_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
 {
 	uint64_t start_offset = cl->offset;
 	spel_gfx_end_render_pass_cmd* cmd =
@@ -1276,18 +1276,18 @@ sp_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 }
 
-sp_api spel_gfx_render_pass
+spel_api spel_gfx_render_pass
 spel_gfx_render_pass_create(spel_gfx_context ctx, const spel_gfx_render_pass_desc* desc)
 {
 	return ctx->vt->render_pass_create(ctx, desc);
 }
 
-sp_api void spel_gfx_render_pass_destroy(spel_gfx_render_pass pass)
+spel_api void spel_gfx_render_pass_destroy(spel_gfx_render_pass pass)
 {
 	pass->ctx->vt->render_pass_destroy(pass);
 }
 
-sp_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect srcRegion,
+spel_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect srcRegion,
 										   spel_gfx_framebuffer dst, spel_rect dstRegion,
 										   uint8_t attachment,
 										   spel_gfx_sampler_filter filter)
@@ -1304,14 +1304,14 @@ sp_api void spel_gfx_framebuffer_blit_mask(spel_gfx_framebuffer src, spel_rect s
 	}
 	else
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT,
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
 				 "i couldn't get a context from these framebuffers!");
 	}
 
 	fb->ctx->vt->framebuffer_blit(src, srcRegion, dst, dstRegion, attachment, filter);
 }
 
-sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcRegion,
+spel_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcRegion,
 									  spel_gfx_framebuffer dst, spel_rect dstRegion)
 {
 	spel_gfx_framebuffer_blit_mask(src, srcRegion, dst, dstRegion,
@@ -1320,7 +1320,7 @@ sp_api void spel_gfx_framebuffer_blit(spel_gfx_framebuffer src, spel_rect srcReg
 								   SPEL_GFX_SAMPLER_FILTER_NEAREST);
 }
 
-sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
+spel_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
 											 spel_gfx_framebuffer dst)
 {
 	spel_rect src_region;
@@ -1348,40 +1348,40 @@ sp_api void spel_gfx_framebuffer_blit_simple(spel_gfx_framebuffer src,
 	spel_gfx_framebuffer_blit(src, src_region, dst, dst_region);
 }
 
-sp_api spel_vec2 spel_gfx_framebuffer_size(spel_gfx_framebuffer fb)
+spel_api spel_vec2 spel_gfx_framebuffer_size(spel_gfx_framebuffer fb)
 {
 	return (spel_vec2){.x = (float)fb->desc.width, .y = (float)fb->desc.height};
 }
 
-sp_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb,
+spel_api spel_gfx_texture spel_gfx_framebuffer_color(spel_gfx_framebuffer fb,
 												   uint32_t index)
 {
 	return fb->desc.color[index].texture;
 }
 
-sp_api spel_gfx_texture spel_gfx_framebuffer_depth(spel_gfx_framebuffer fb)
+spel_api spel_gfx_texture spel_gfx_framebuffer_depth(spel_gfx_framebuffer fb)
 {
 	return fb->desc.depth.texture;
 }
 
-sp_api spel_gfx_render_pass spel_gfx_render_pass_default(spel_gfx_context ctx)
+spel_api spel_gfx_render_pass spel_gfx_render_pass_default(spel_gfx_context ctx)
 {
 	return ctx->default_pass;
 }
 
-sp_api void spel_gfx_framebuffer_resize(spel_gfx_framebuffer fb, uint32_t width,
+spel_api void spel_gfx_framebuffer_resize(spel_gfx_framebuffer fb, uint32_t width,
 										uint32_t height)
 {
 	fb->ctx->vt->framebuffer_resize(fb, width, height);
 }
 
-sp_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
+spel_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
 									uint32_t height)
 {
 	texture->ctx->vt->texture_resize(texture, width, height);
 }
 
-sp_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
+spel_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
 {
 	for (size_t i = 0; i < ctx->tracked_fbo_count; i++)
 	{
@@ -1389,7 +1389,7 @@ sp_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
 	}
 }
 
-sp_api void spel_gfx_buffer_resize(spel_gfx_buffer buf, size_t newSize, bool preserveData)
+spel_api void spel_gfx_buffer_resize(spel_gfx_buffer buf, size_t newSize, bool preserveData)
 {
 	if (newSize < buf->size)
 	{
@@ -1399,23 +1399,76 @@ sp_api void spel_gfx_buffer_resize(spel_gfx_buffer buf, size_t newSize, bool pre
 	buf->ctx->vt->buffer_resize(buf, newSize, preserveData);
 }
 
-sp_api size_t spel_gfx_buffer_size(spel_gfx_buffer buf)
+spel_api size_t spel_gfx_buffer_size(spel_gfx_buffer buf)
 {
 	return buf->size;
 }
 
-sp_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
+spel_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
 									spel_rect region, void* data, size_t dataSize)
 {
 	texture->ctx->vt->texture_update(texture, mip, region, data, dataSize);
 }
 
-sp_api spel_gfx_backend spel_gfx_context_backend(spel_gfx_context ctx)
+spel_api spel_gfx_backend spel_gfx_context_backend(spel_gfx_context ctx)
 {
 	return ctx->backend;
 }
 
-sp_api void* spel_gfx_context_internal_handle(spel_gfx_context ctx)
+spel_api void* spel_gfx_context_internal_handle(spel_gfx_context ctx)
 {
 	return ctx->vt->ctx_handle(ctx);
+}
+
+spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
+											  spel_gfx_uniform_buffer buf,
+											  const void* data, size_t size)
+{
+	if (size > buf.size)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				 "buffer overflow when updating uniform buffer, expected %d got %d",
+				 buf.size, size);
+		return;
+	}
+
+	uint64_t start_offset = cl->offset;
+	// Allocate inline storage for the payload to avoid dangling host pointers.
+	size_t payload_size = size;
+	size_t cmd_size = sizeof(spel_gfx_uniform_update_cmd) + payload_size;
+	spel_gfx_uniform_update_cmd* cmd =
+		(spel_gfx_uniform_update_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, cmd_size, _Alignof(spel_gfx_uniform_update_cmd));
+
+	spel_gfx_uniform handle;
+	handle.location = buf.location;
+	handle.size = size;
+	handle.offset = 0;
+	handle.count = 1;
+
+	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->buffer = buf;
+	cmd->handle = handle;
+	cmd->data = cmd + 1; // payload is packed immediately after the command
+	cmd->size = payload_size;
+	memcpy((void*)cmd->data, data, payload_size);
+
+	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
+	{
+		if (cl->dirty_buffers[i] == cmd->buffer.buffer)
+		{
+			return;
+		}
+	}
+
+	if (cl->dirty_buffer_count + 1 > cl->dirty_buffer_cap)
+	{
+		cl->dirty_buffer_cap *= 2;
+		cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_realloc(
+			(void*)cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
+			SPEL_MEM_TAG_GFX);
+	}
+
+	cl->dirty_buffers[cl->dirty_buffer_count++] = cmd->buffer.buffer;
 }

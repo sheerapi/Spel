@@ -16,7 +16,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 		(spel_gfx_buffer)spel_memory_malloc(sizeof(*buf), SPEL_MEM_TAG_GFX);
 	if (!buf)
 	{
-		sp_error(SPEL_ERR_OOM, "failed to allocate buffer object");
+		spel_error(SPEL_ERR_OOM, "failed to allocate buffer object");
 		return NULL;
 	}
 
@@ -24,7 +24,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	buf->data = spel_memory_malloc(sizeof(spel_gfx_gl_buffer), SPEL_MEM_TAG_GFX);
 	if (!buf->data)
 	{
-		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
+		spel_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
 		spel_memory_free(buf);
 		return NULL;
 	}
@@ -53,7 +53,7 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	glCreateBuffers(1, &glBuf->buffer);
 	if (glBuf->buffer == 0)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
 		spel_memory_free(buf->data);
 		spel_memory_free(buf);
 		return NULL;
@@ -67,14 +67,14 @@ spel_gfx_buffer spel_gfx_buffer_create_gl(spel_gfx_context ctx,
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
+		spel_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
 		glDeleteBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
 		spel_memory_free(buf->data);
 		spel_memory_free(buf);
 		return NULL;
 	}
 
-	sp_trace("created GL buffer %u size=%zu", glBuf->buffer, desc->size);
+	spel_trace("created GL buffer %u size=%zu", glBuf->buffer, desc->size);
 
 	return buf;
 }
@@ -88,7 +88,7 @@ void spel_gfx_buffer_destroy_gl(spel_gfx_buffer buf)
 
 	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
 	glDeleteBuffers(1, &handle);
-	sp_trace("destroyed GL buffer %u", handle);
+	spel_trace("destroyed GL buffer %u", handle);
 	spel_memory_free(buf->data);
 	spel_memory_free(buf);
 }
@@ -104,7 +104,7 @@ void* spel_gfx_buffer_map_gl(spel_gfx_buffer buf, size_t offset, size_t size,
 							 spel_gfx_access access)
 {
 	GLbitfield flags = spel_gfx_gl_map_access(access);
-	buf->persistent = (access & sp_gfx_access_persistent) != 0;
+	buf->persistent = (access & spel_gfx_access_persistent) != 0;
 	return glMapNamedBufferRange(((spel_gfx_gl_buffer*)buf->data)->buffer, offset, size,
 								 flags);
 }
@@ -145,57 +145,57 @@ void spel_gfx_buffer_flush_gl(spel_gfx_buffer buf, size_t offset, size_t size)
 GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)
 {
 #ifdef DEBUG
-	if ((access & sp_gfx_access_read) &&
-		(access & (sp_gfx_access_invalidate_range | sp_gfx_access_invalidate_buffer)))
+	if ((access & spel_gfx_access_read) &&
+		(access & (spel_gfx_access_invalidate_range | spel_gfx_access_invalidate_buffer)))
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT,
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
 				 "Invalidate flags are meaningless with READ access");
 	}
 
-	if ((access & sp_gfx_access_persistent) && !(access & sp_gfx_access_write))
+	if ((access & spel_gfx_access_persistent) && !(access & spel_gfx_access_write))
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "Persistent mapping requires WRITE access");
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "Persistent mapping requires WRITE access");
 	}
 #endif
 
 	GLbitfield flags = 0;
 
-	if (access & sp_gfx_access_read)
+	if (access & spel_gfx_access_read)
 	{
 		flags |= GL_MAP_READ_BIT;
 	}
 
-	if (access & sp_gfx_access_write)
+	if (access & spel_gfx_access_write)
 	{
 		flags |= GL_MAP_WRITE_BIT;
 	}
 
-	if (access & sp_gfx_access_invalidate_range)
+	if (access & spel_gfx_access_invalidate_range)
 	{
 		flags |= GL_MAP_INVALIDATE_RANGE_BIT;
 	}
 
-	if (access & sp_gfx_access_invalidate_buffer)
+	if (access & spel_gfx_access_invalidate_buffer)
 	{
 		flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
 	}
 
-	if (access & sp_gfx_access_unsynchronized)
+	if (access & spel_gfx_access_unsynchronized)
 	{
 		flags |= GL_MAP_UNSYNCHRONIZED_BIT;
 	}
 
-	if (access & sp_gfx_access_flush_explicit)
+	if (access & spel_gfx_access_flush_explicit)
 	{
 		flags |= GL_MAP_FLUSH_EXPLICIT_BIT;
 	}
 
-	if (access & sp_gfx_access_persistent)
+	if (access & spel_gfx_access_persistent)
 	{
 		flags |= GL_MAP_PERSISTENT_BIT;
 	}
 
-	if (access & sp_gfx_access_coherent)
+	if (access & spel_gfx_access_coherent)
 	{
 		flags |= GL_MAP_COHERENT_BIT;
 	}
@@ -203,7 +203,7 @@ GLbitfield spel_gfx_gl_map_access(spel_gfx_access access)
 	return flags;
 }
 
-sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
+spel_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 										 bool preserveData)
 {
 	GLuint handle = ((spel_gfx_gl_buffer*)buf->data)->buffer;
@@ -213,7 +213,7 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 	glCreateBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
 	if (((spel_gfx_gl_buffer*)buf->data)->buffer == 0)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "glCreateBuffers returned 0");
 		buf->data = &handle;
 		return;
 	}
@@ -227,7 +227,7 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
-		sp_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
+		spel_error(SPEL_ERR_INVALID_STATE, "glNamedBufferStorage error 0x%x", err);
 		glDeleteBuffers(1, &((spel_gfx_gl_buffer*)buf->data)->buffer);
 		buf->data = &handle;
 		return;
@@ -239,7 +239,7 @@ sp_hidden void spel_gfx_buffer_resize_gl(spel_gfx_buffer buf, size_t newSize,
 		glCopyNamedBufferSubData(handle, *(GLuint*)buf->data, 0, 0, copy_size);
 	}
 
-	sp_trace("buffer resized to %zu bytes (%.2fx more)", newSize,
+	spel_trace("buffer resized to %zu bytes (%.2fx more)", newSize,
 			 old_size ? (double)newSize / (double)old_size : 0.0);
 
 	buf->size = newSize;

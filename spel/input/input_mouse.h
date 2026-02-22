@@ -12,15 +12,15 @@ typedef enum
 	SPEL_MOUSE_BUTTON_COUNT
 } spel_mouse_button;
 
-spel_vec2 spel_input_mouse_pos();
-spel_vec2 spel_input_mouse_delta();
-spel_vec2 spel_input_mouse_wheel();
+spel_api spel_vec2 spel_input_mouse_pos();
+spel_api spel_vec2 spel_input_mouse_delta();
+spel_api spel_vec2 spel_input_mouse_wheel();
 
-bool spel_input_mouse_button(spel_mouse_button btn);
-bool spel_input_mouse_pressed(spel_mouse_button btn);
-bool spel_input_mouse_released(spel_mouse_button btn);
+spel_api bool spel_input_mouse_button(spel_mouse_button btn);
+spel_api bool spel_input_mouse_pressed(spel_mouse_button btn);
+spel_api bool spel_input_mouse_released(spel_mouse_button btn);
 
-void spel_input_mouse_set_visible(bool visible);
-void spel_input_mouse_set_locked(bool locked);
+spel_api void spel_input_mouse_set_visible(bool visible);
+spel_api void spel_input_mouse_set_locked(bool locked);
 
 #endif

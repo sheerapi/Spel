@@ -143,16 +143,16 @@ struct spel_event_bucket
 	size_t cap;
 };
 
-sp_api spel_event_id spel_event_intern(const char* name);
-sp_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* user);
+spel_api spel_event_id spel_event_intern(const char* name);
+spel_api void spel_event_register(spel_event_id id, spel_event_callback cb, void* user);
 
 /// @returns true when every callback was called, execution should continue normally
 /// @returns false when a callback requested halting callback execution
-sp_api bool spel_event_emit(spel_event_id id, void* data);
+spel_api bool spel_event_emit(spel_event_id id, void* data);
 
-sp_api void spel_event_poll();
+spel_api void spel_event_poll();
 
-sp_hidden void spel_event_handle(void* event);
-sp_hidden void spel_event_terminate();
+spel_hidden void spel_event_handle(void* event);
+spel_hidden void spel_event_terminate();
 
 #endif

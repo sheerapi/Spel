@@ -1,5 +1,4 @@
 #include "core/log.h"
-#include "core/panic.h"
 #include "core/types.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -7,13 +6,13 @@
 #include <time.h>
 #include <unistd.h>
 
-sp_api void spel_log_callback_set(spel_log_fn fn, void* user)
+spel_api void spel_log_callback_set(spel_log_fn fn, void* user)
 {
 	spel.log.function = fn;
 	spel.log.user = user;
 }
 
-sp_api void spel_log_emit(spel_log_event evt)
+spel_api void spel_log_emit(spel_log_event evt)
 {
 	bool should_callback = (evt->severity >= spel.log.severity && spel.log.function) != 0;
 	if (should_callback)
@@ -29,12 +28,12 @@ sp_api void spel_log_emit(spel_log_event evt)
 	}
 }
 
-sp_api void spel_log_filter(spel_severity severity)
+spel_api void spel_log_filter(spel_severity severity)
 {
 	spel.log.severity = severity;
 }
 
-sp_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
+spel_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 {
 	if (evt->severity < spel.log.severity)
 	{
@@ -107,11 +106,11 @@ sp_api spel_log_event spel_log_fmt(spel_log_event evt, const char* fmt, ...)
 	return evt;
 }
 
-sp_api void spel_log_assert(bool condition, spel_log_event evt)
+spel_api void spel_log_assert(bool condition, spel_log_event evt)
 {
 	if (!condition)
 	{
-		spel_panic(evt);
+		spel_log_panic(evt);
 	}
 	else
 	{
@@ -124,12 +123,12 @@ sp_api void spel_log_assert(bool condition, spel_log_event evt)
 	}
 }
 
-sp_api void spel_log_stderr_install()
+spel_api void spel_log_stderr_install()
 {
 	spel_log_callback_set(&spel_log_stderr, NULL);
 }
 
-sp_hidden void spel_log_stderr(spel_log_event evt, void* user)
+spel_hidden void spel_log_stderr(spel_log_event evt, void* user)
 {
 	static const char* level_colors[] = {"\x1b[94m", "\x1b[36m", "\x1b[32m",
 										 "\x1b[33m", "\x1b[31m", "\x1b[35m"};
@@ -157,7 +156,7 @@ sp_hidden void spel_log_stderr(spel_log_event evt, void* user)
 	fflush(stderr);
 }
 
-const sp_api char* spel_log_sev_to_string(spel_severity severity)
+const spel_api char* spel_log_sev_to_string(spel_severity severity)
 {
 	switch (severity)
 	{

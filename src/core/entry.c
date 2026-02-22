@@ -3,7 +3,6 @@
 #include "SDL3/SDL_init.h"
 #include "core/event.h"
 #include "core/log.h"
-#include "core/panic.h"
 #include "core/types.h"
 #include "core/window.h"
 #include "gfx/gfx.h"
@@ -14,7 +13,7 @@
 #include "utils/time.h"
 #include <stdlib.h>
 
-sp_api spel_context spel = {
+spel_api spel_context spel = {
 	.window = {.title = "Spël",
 			   .width = 800,
 			   .height = 600,
@@ -28,7 +27,7 @@ int main(int argc, const char** argv)
 	spel_app_desc app = (spel_app_desc){.argc = argc,
 										.argv = argv,
 										.gfx_backend = SPEL_GFX_BACKEND_OPENGL,
-										.debug = sp_debug_build,
+										.debug = spel_debug_build,
 										.conf = spel_conf,
 										.load = spel_load,
 										.update = spel_update,
@@ -42,12 +41,12 @@ int main(int argc, const char** argv)
 
 #ifdef SP_WEAK_LINK
 #	ifndef _WIN32
-sp_weak void spel_run()
+spel_weak void spel_run()
 #	else
-sp_hidden void spel_run_fallback()
+spel_hidden void spel_run_fallback()
 #	endif
 #else
-sp_api void spel_run()
+spel_api void spel_run()
 #endif
 {
 	while (spel_window_running())
@@ -56,7 +55,7 @@ sp_api void spel_run()
 	}
 }
 
-sp_hidden void spel_run_frame()
+spel_hidden void spel_run_frame()
 {
 	spel_time_frame_begin(&spel.time);
 	spel_input_update();
@@ -68,11 +67,11 @@ sp_hidden void spel_run_frame()
 	}
 
 	spel_gfx_frame_begin(spel.gfx);
-	sp_callback(spel.app.draw);
+	spel_callback(spel.app.draw);
 	spel_gfx_frame_present(spel.gfx);
 }
 
-sp_api bool spel_args_has(const char* arg)
+spel_api bool spel_args_has(const char* arg)
 {
 	for (int i = 1; i < spel.process.argc; i++)
 	{
@@ -85,7 +84,7 @@ sp_api bool spel_args_has(const char* arg)
 	return false;
 }
 
-sp_api int spel_app_run(spel_app_desc* app)
+spel_api int spel_app_run(spel_app_desc* app)
 {
 	uint64_t start_ns = spel_time_now_ns();
 	spel_app_transform(app);
@@ -119,13 +118,13 @@ sp_api int spel_app_run(spel_app_desc* app)
 		spel.env.debug = true;
 	}
 
-	sp_callback(spel.app.conf);
+	spel_callback(spel.app.conf);
 
 	SDL_SetHint(SDL_HINT_JOYSTICK_LINUX_DEADZONES, "1");
 
 	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
-		sp_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s",
+		spel_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s",
 				 SDL_GetError());
 		return -1;
 	}
@@ -142,11 +141,11 @@ sp_api int spel_app_run(spel_app_desc* app)
 
 	spel.gfx = spel_gfx_context_create(&gfx_desc);
 
-	sp_callback(spel.app.load);
+	spel_callback(spel.app.load);
 
-	sp_debug("started application in %dms", (spel_time_now_ns() - start_ns) / 1000000);
-	sp_callback(spel.app.run);
-	sp_callback(spel.app.quit);
+	spel_debug("started application in %dms", (spel_time_now_ns() - start_ns) / 1000000);
+	spel_callback(spel.app.run);
+	spel_callback(spel.app.quit);
 
 	spel_input_shutdown();
 	spel_gfx_context_destroy(spel.gfx);
@@ -156,7 +155,7 @@ sp_api int spel_app_run(spel_app_desc* app)
 	return 0;
 }
 
-sp_hidden void spel_app_transform(spel_app_desc* app)
+spel_hidden void spel_app_transform(spel_app_desc* app)
 {
 	spel.process.argv = app->argv;
 	spel.process.argc = app->argc;
@@ -179,12 +178,12 @@ sp_hidden void spel_app_transform(spel_app_desc* app)
 	}
 }
 
-sp_api spel_app_desc spel_app_desc_default()
+spel_api spel_app_desc spel_app_desc_default()
 {
 	return (spel_app_desc){.argc = 0,
 						   .argv = NULL,
 						   .gfx_backend = SPEL_GFX_BACKEND_OPENGL,
-						   .debug = sp_debug_build,
+						   .debug = spel_debug_build,
 						   .conf = NULL,
 						   .load = NULL,
 						   .update = NULL,

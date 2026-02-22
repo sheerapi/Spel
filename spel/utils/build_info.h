@@ -28,6 +28,6 @@ typedef struct
 	spel_build_vcs_info vcs;
 } spel_build_info;
 
-sp_hidden void spel_build_info_init();
+spel_hidden void spel_build_info_init();
 
 #endif

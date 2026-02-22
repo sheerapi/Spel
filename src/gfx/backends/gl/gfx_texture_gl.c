@@ -65,7 +65,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 {
 	if (!spel_gfx_texture_validate(desc))
 	{
-		sp_warn("invalid texture description (w:%d h:%d d:%d mips:%d type:%d)",
+		spel_warn("invalid texture description (w:%d h:%d d:%d mips:%d type:%d)",
 				desc->width, desc->height, desc->depth, desc->mip_count, desc->type);
 		return ctx->checkerboard != NULL ? ctx->checkerboard : NULL;
 	}
@@ -74,13 +74,13 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 
 	if ((desc->usage & SPEL_GFX_TEXTURE_USAGE_RENDER) && !fmt->renderable)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "format not renderable");
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "format not renderable");
 		return NULL;
 	}
 
 	if ((desc->usage & SPEL_GFX_TEXTURE_USAGE_STORAGE) && !fmt->storage)
 	{
-		sp_error(SPEL_ERR_INVALID_ARGUMENT, "format not storage-capable");
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "format not storage-capable");
 		return NULL;
 	}
 
@@ -93,7 +93,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	{
 		size_t expected = (size_t)desc->width * (size_t)desc->height * (size_t)depth *
 						  (size_t)fmt->bytes_per_pixel;
-		sp_assert(desc->data_size >= expected, "i expected more data");
+		spel_assert(desc->data_size >= expected, "i expected more data");
 	}
 #endif
 
@@ -101,7 +101,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		(spel_gfx_texture)spel_memory_malloc(sizeof(*texture), SPEL_MEM_TAG_GFX);
 	if (!texture)
 	{
-		sp_error(SPEL_ERR_OOM, "failed to allocate texture object");
+		spel_error(SPEL_ERR_OOM, "failed to allocate texture object");
 		return NULL;
 	}
 
@@ -122,7 +122,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	texture->data = spel_memory_malloc(sizeof(GLuint), SPEL_MEM_TAG_GFX);
 	if (!texture->data)
 	{
-		sp_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
+		spel_error(SPEL_ERR_OOM, "failed to allocate GL handle storage");
 		spel_memory_free(texture);
 		return NULL;
 	}
@@ -132,7 +132,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	glCreateTextures(target, 1, gl_handle);
 	if (*gl_handle == 0)
 	{
-		sp_error(SPEL_ERR_CONTEXT_FAILED, "glCreateTextures returned 0");
+		spel_error(SPEL_ERR_CONTEXT_FAILED, "glCreateTextures returned 0");
 		spel_memory_free(texture->data);
 		spel_memory_free(texture);
 		return NULL;
@@ -184,7 +184,7 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 	}
 	glTextureParameteri(*gl_handle, GL_TEXTURE_MAX_LEVEL, max_level);
 
-	sp_trace("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
+	spel_trace("created GL texture %u (%dx%dx%d, mips=%d, fmt=%d)", *gl_handle, desc->width,
 			 desc->height, desc->depth, desc->mip_count, desc->format);
 
 	return texture;
@@ -194,13 +194,13 @@ void spel_gfx_texture_destroy_gl(spel_gfx_texture texture)
 {
 	if (texture->internal)
 	{
-		sp_error(SPEL_ERR_INVALID_RESOURCE, "you can't destroy an internal texture!");
+		spel_error(SPEL_ERR_INVALID_RESOURCE, "you can't destroy an internal texture!");
 		return;
 	}
 
 	GLuint handle = *(GLuint*)texture->data;
 	glDeleteTextures(1, &handle);
-	sp_trace("destroyed GL texture %u", handle);
+	spel_trace("destroyed GL texture %u", handle);
 	spel_memory_free(texture->data);
 	spel_memory_free(texture);
 }
@@ -258,7 +258,7 @@ void spel_gfx_sampler_destroy_gl(spel_gfx_sampler sampler)
 	spel_memory_free(sampler);
 }
 
-sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture tex, uint32_t width,
+spel_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture tex, uint32_t width,
 										  uint32_t height)
 {
 	width = width == 0 ? 1 : width;
@@ -304,7 +304,7 @@ sp_hidden void spel_gfx_texture_resize_gl(spel_gfx_texture tex, uint32_t width,
 	tex->height = height;
 }
 
-sp_hidden void spel_gfx_texture_update_gl(spel_gfx_texture texture, uint32_t mip,
+spel_hidden void spel_gfx_texture_update_gl(spel_gfx_texture texture, uint32_t mip,
 										  spel_rect region, void* data, size_t dataSize)
 {
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

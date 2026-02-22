@@ -27,7 +27,7 @@ typedef struct spel_gfx_cmdlist_t
 	uint32_t dirty_buffer_cap;
 } spel_gfx_cmdlist_t;
 
-#define sp_cmdlist_default_size (4 * 1024) // 4 KB
+#define spel_cmdlist_default_size (4 * 1024) // 4 KB
 
 // buffers
 typedef struct spel_gfx_buffer_t
@@ -357,28 +357,28 @@ typedef struct spel_gfx_vtable_t
 	void (*render_pass_destroy)(spel_gfx_render_pass);
 } spel_gfx_vtable_t;
 
-sp_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
-sp_hidden extern void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx);
+spel_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
+spel_hidden extern void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx);
 
-sp_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
 
-sp_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
+spel_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
 											  uint64_t hash, spel_gfx_pipeline pipeline);
 
-sp_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
+spel_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 
-sp_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
+spel_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
 											  spel_gfx_shader_desc* desc);
 
-sp_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipeline,
+spel_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipeline,
 														  spel_gfx_shader* shaders,
 														  uint32_t shaderCount);
 
-sp_hidden extern void spel_gfx_shader_reflection_free(spel_gfx_shader shader);
+spel_hidden extern void spel_gfx_shader_reflection_free(spel_gfx_shader shader);
 
 #ifdef DEBUG
-sp_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
+spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
 #endif
 // initialization
 

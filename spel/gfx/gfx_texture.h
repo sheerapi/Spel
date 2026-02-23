@@ -42,30 +42,34 @@ typedef struct
 } spel_gfx_texture_load_desc;
 
 spel_api spel_gfx_texture spel_gfx_texture_create(spel_gfx_context ctx,
-												const spel_gfx_texture_desc* desc);
+												  const spel_gfx_texture_desc* desc);
 
 spel_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
-													  spel_color color);
+														spel_color color);
+
+spel_api spel_gfx_texture spel_gfx_texture_checker_create(spel_gfx_context ctx,
+														  spel_color bg, spel_color fg,
+														  float tileSize);
 
 spel_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
 spel_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);
 spel_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx);
 
 spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
-											  const spel_gfx_texture_load_desc* desc);
+												const spel_gfx_texture_load_desc* desc);
 
 spel_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
-													const char* path);
+													  const char* path);
 spel_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,
-													 const char* path);
+													   const char* path);
 
 spel_api void spel_gfx_texture_resize(spel_gfx_texture texture, uint32_t width,
-									uint32_t height);
+									  uint32_t height);
 
 spel_api void spel_gfx_texture_update(spel_gfx_texture texture, uint32_t mip,
-									spel_rect region, void* data, size_t dataSize);
+									  spel_rect region, void* data, size_t dataSize);
 
 spel_api spel_gfx_sampler_desc spel_gfx_sampler_default();
 spel_api spel_gfx_sampler spel_gfx_sampler_get(spel_gfx_context ctx,
-											 const spel_gfx_sampler_desc* desc);
+											   const spel_gfx_sampler_desc* desc);
 #endif

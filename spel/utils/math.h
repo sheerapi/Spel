@@ -332,7 +332,7 @@ spel_api spel_vec2 spel_vec4_xy(spel_vec4 v);
 spel_api int spel_vec4_eq(spel_vec4 a, spel_vec4 b);
 spel_api int spel_vec4_nearly_eq(spel_vec4 a, spel_vec4 b, float eps);
 
-spel_api spel_mat4 spel_mat4dentity(void);
+spel_api spel_mat4 spel_mat4_identity(void);
 spel_api spel_mat4 spel_mat4_zero(void);
 
 spel_api spel_mat4 spel_mat4_mul(spel_mat4 a, spel_mat4 b);
@@ -374,7 +374,7 @@ spel_api spel_vec3 spel_mat4_get_scale(spel_mat4 m);
 spel_api int spel_mat4_eq(spel_mat4 a, spel_mat4 b);
 spel_api int spel_mat4_nearly_eq(spel_mat4 a, spel_mat4 b, float eps);
 
-spel_api spel_mat3 spel_mat3dentity(void);
+spel_api spel_mat3 spel_mat3_identity(void);
 spel_api spel_mat3 spel_mat3_zero(void);
 spel_api spel_mat3 spel_mat3_mul(spel_mat3 a, spel_mat3 b);
 spel_api spel_vec3 spel_mat3_mul_vec3(spel_mat3 m, spel_vec3 v);
@@ -385,7 +385,7 @@ spel_api spel_mat3 spel_mat3_from_mat4(spel_mat4 m);
 spel_api spel_mat3 spel_mat3_normal_matrix(spel_mat4 model);
 spel_api spel_mat3 spel_mat3_rotate(float radians);
 
-spel_api spel_mat2 spel_mat2dentity(void);
+spel_api spel_mat2 spel_mat2_identity(void);
 spel_api spel_mat2 spel_mat2_zero(void);
 spel_api spel_mat2 spel_mat2_mul(spel_mat2 a, spel_mat2 b);
 spel_api spel_vec2 spel_mat2_mul_vec2(spel_mat2 m, spel_vec2 v);
@@ -394,9 +394,7 @@ spel_api spel_mat2 spel_mat2nverse(spel_mat2 m);
 spel_api float spel_mat2_determinant(spel_mat2 m);
 spel_api spel_mat2 spel_mat2_rotate(float radians);
 
-#define spel_quat_identity ((spel_quat){0.0f, 0.0f, 0.0f, 1.0f})
-
-spel_api spel_quat spel_quatdentity(void);
+spel_api spel_quat spel_quat_identity(void);
 spel_api spel_quat spel_quat_from_axis_angle(spel_vec3 axis, float radians);
 spel_api spel_quat spel_quat_from_euler(float pitch, float yaw, float roll);
 spel_api spel_quat spel_quat_from_mat4(spel_mat4 m);

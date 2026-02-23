@@ -10,6 +10,6 @@
 #include "gfx_types.h"
 #include "gfx_uniform.h"
 #include "gfx_framebuffer.h"
-#include "gfx_rg.h"
+#include "gfx_canvas.h"
 
 #endif

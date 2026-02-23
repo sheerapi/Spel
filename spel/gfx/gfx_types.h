@@ -12,9 +12,6 @@ typedef struct spel_gfx_texture_t* spel_gfx_texture;
 typedef struct spel_gfx_sampler_t* spel_gfx_sampler;
 typedef struct spel_gfx_framebuffer_t* spel_gfx_framebuffer;
 typedef struct spel_gfx_render_pass_t* spel_gfx_render_pass;
-typedef struct spel_gfx_rg_t* spel_gfx_rg;
-typedef struct spel_gfx_rg_pass_t* spel_gfx_rg_pass;
-typedef struct spel_gfx_rg_resource_t* spel_gfx_rg_resource;
 
 typedef enum
 {

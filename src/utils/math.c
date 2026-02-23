@@ -1170,7 +1170,7 @@ spel_quat spel_quat_from_to(spel_vec3 from, spel_vec3 to)
 	spel_vec3 t = spel_vec3_normalize(to);
 	float d = spel_vec3_dot(f, t);
 	if (d >= 1.0f - spel_epsilon)
-		return spel_quat_identity;
+		return ((spel_quat){0.0f, 0.0f, 0.0f, 1.0f});
 	if (d <= -1.0f + spel_epsilon)
 	{
 		spel_vec3 perp = spel_vec3_cross(spel_vec3_up, f);
@@ -1221,7 +1221,7 @@ spel_quat spel_quat_inverse(spel_quat q)
 {
 	float ls = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
 	if (ls < spel_epsilon)
-		return spel_quat_identity;
+		return ((spel_quat){0.0f, 0.0f, 0.0f, 1.0f});
 	float inv = 1.0f / ls;
 	return (spel_quat){-q.x * inv, -q.y * inv, -q.z * inv, q.w * inv};
 }
@@ -1241,7 +1241,7 @@ spel_quat spel_quat_normalize(spel_quat q)
 {
 	float l = spel_quat_len(q);
 	if (l < spel_epsilon)
-		return spel_quat_identity;
+		return ((spel_quat){0.0f, 0.0f, 0.0f, 1.0f});
 	return (spel_quat){q.x / l, q.y / l, q.z / l, q.w / l};
 }
 spel_quat spel_quat_nlerp(spel_quat a, spel_quat b, float t)

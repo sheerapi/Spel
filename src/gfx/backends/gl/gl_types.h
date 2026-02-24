@@ -13,7 +13,10 @@ typedef struct
 {
 	GLuint program;
 	GLuint vao;
+	uint64_t program_hash;
+	uint64_t vao_hash;
 
+	// Points to shared stride array owned by VAO cache entry.
 	GLsizei* strides;
 
 	struct

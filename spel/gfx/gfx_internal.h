@@ -148,6 +148,36 @@ typedef struct
 	uint32_t count;
 } spel_gfx_pipeline_cache;
 
+typedef struct
+{
+	uint64_t hash;
+	uint32_t handle;
+	uint32_t ref_count;
+} spel_gfx_program_cache_entry;
+
+typedef struct
+{
+	spel_gfx_program_cache_entry* entries;
+	uint32_t capacity;
+	uint32_t count;
+} spel_gfx_program_cache;
+
+typedef struct
+{
+	uint64_t hash;
+	uint32_t handle;
+	uint32_t ref_count;
+	uint32_t stream_count;
+	int* strides;
+} spel_gfx_vao_cache_entry;
+
+typedef struct
+{
+	spel_gfx_vao_cache_entry* entries;
+	uint32_t capacity;
+	uint32_t count;
+} spel_gfx_vao_cache;
+
 // textures & samplers
 typedef struct spel_gfx_texture_t
 {
@@ -240,6 +270,9 @@ typedef struct spel_canvas_t
 {
 	spel_canvas_context* ctx;
 
+	char name[16];
+	bool is_default;
+
 	spel_vec2 size;
 	uint8_t flags;
 
@@ -248,8 +281,6 @@ typedef struct spel_canvas_t
 
 	spel_gfx_framebuffer framebuffer;
 	spel_gfx_render_pass pass;
-
-	bool is_default;
 } spel_canvas_t;
 
 // initialization
@@ -289,6 +320,9 @@ typedef struct spel_gfx_context_t
 	spel_gfx_render_pass default_pass;
 
 	void* data;
+
+	spel_gfx_program_cache program_cache;
+	spel_gfx_vao_cache vao_cache;
 } spel_gfx_context_t;
 
 typedef struct spel_gfx_vtable_t

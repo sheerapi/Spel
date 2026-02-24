@@ -20,8 +20,8 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 spel_gfx_shader spel_gfx_shader_create_gl(spel_gfx_context ctx,
 										  spel_gfx_shader_desc* desc)
 {
-	spel_gfx_shader shader =
-		(spel_gfx_shader)spel_memory_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);
+	spel_gfx_shader shader = spel_memory_malloc(sizeof(*shader), SPEL_MEM_TAG_GFX);
+	memset(shader, 0, sizeof(*shader));
 
 	shader->ctx = ctx;
 	spel_gfx_shader_reflect(shader, desc);
@@ -118,7 +118,7 @@ spel_gfx_shader spel_gfx_shader_create_spirv_gl(spel_gfx_shader shader,
 								   .log_size = (size_t)info_log_size};
 
 		spel_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
-			   sizeof(log), "shader specialization failed: %s", desc->debug_name);
+				 sizeof(log), "shader specialization failed: %s", desc->debug_name);
 
 		spel_gfx_shader_reflection_free(shader);
 		spel_memory_free(shader->entry);
@@ -145,7 +145,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
 		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
-				 "shader reflection failed for shader %s", desc->debug_name);
+				   "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
 
@@ -154,7 +154,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
 		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
-				 "shader reflection failed for shader %s", desc->debug_name);
+				   "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
 
@@ -166,7 +166,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		SPV_REFLECT_RESULT_SUCCESS)
 	{
 		spel_error(SPEL_ERR_SHADER_REFLECTION_FAILED,
-				 "shader reflection failed for shader %s", desc->debug_name);
+				   "shader reflection failed for shader %s", desc->debug_name);
 		return;
 	}
 
@@ -181,7 +181,7 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		if (binding->accessed != true)
 		{
 			spel_warn("shader uniform/block %s is never accessed (%s)", binding->name,
-					desc->debug_name);
+					  desc->debug_name);
 		}
 
 		switch (binding->descriptor_type)
@@ -204,7 +204,8 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 		{
 			spel_gfx_shader_uniform* sampler =
 				&shader->reflection.samplers[sampler_idx++];
-			spvReflectChangeDescriptorBindingNumbers(&module, binding, sampler_idx - 1, 0);
+			spvReflectChangeDescriptorBindingNumbers(&module, binding, sampler_idx - 1,
+													 0);
 			sampler->internal = sampler_idx - 1;
 			break;
 		}

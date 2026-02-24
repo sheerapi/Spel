@@ -17,6 +17,18 @@ static GLenum spel_gl_compare(spel_gfx_compare_func f);
 static GLenum spel_gl_stencil_op(spel_gfx_stencil_op op);
 static GLenum spel_gl_blend_factor(spel_gfx_blend_factor f);
 static GLenum spel_gl_blend_op(spel_gfx_blend_op op);
+static uint64_t spel_hash_vertex_layout_value(const spel_gfx_vertex_layout* layout);
+static uint64_t spel_gl_program_hash(spel_gfx_shader vertex, spel_gfx_shader fragment,
+									 spel_gfx_shader geometry);
+static void spel_gl_program_cache_grow(spel_gfx_program_cache* cache);
+static GLuint spel_gl_program_cache_acquire(spel_gfx_context ctx, uint64_t hash,
+											spel_gfx_shader vertex, spel_gfx_shader fragment,
+											spel_gfx_shader geometry);
+static void spel_gl_program_cache_release(spel_gfx_context ctx, uint64_t hash);
+static void spel_gl_vao_cache_grow(spel_gfx_vao_cache* cache);
+static spel_gfx_vao_cache_entry* spel_gl_vao_cache_acquire(
+	spel_gfx_context ctx, uint64_t hash, const spel_gfx_vertex_layout* layout);
+static void spel_gl_vao_cache_release(spel_gfx_context ctx, uint64_t hash);
 
 static void spel_gl_configure_vertex_layout(GLuint vao,
 											const spel_gfx_vertex_layout* layout)
@@ -91,6 +103,323 @@ static void spel_gl_cache_pipeline_state(spel_gfx_pipeline_gl* glPipeline,
 	glPipeline->topology.winding = spel_gl_winding(desc->winding);
 }
 
+static void spel_gl_program_cache_grow(spel_gfx_program_cache* cache)
+{
+	uint32_t old_capacity = cache->capacity;
+	uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
+
+	spel_gfx_program_cache_entry* new_entries =
+		spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+	memset(new_entries, 0, new_capacity * sizeof(*new_entries));
+
+	for (uint32_t i = 0; i < old_capacity; ++i)
+	{
+		spel_gfx_program_cache_entry* old = &cache->entries[i];
+		if (old->ref_count == 0)
+		{
+			continue;
+		}
+
+		uint32_t index = (uint32_t)old->hash & (new_capacity - 1);
+		while (new_entries[index].ref_count != 0)
+		{
+			index = (index + 1) & (new_capacity - 1);
+		}
+
+		new_entries[index] = *old;
+	}
+
+	spel_memory_free(cache->entries);
+	cache->entries = new_entries;
+	cache->capacity = new_capacity;
+}
+
+static GLuint spel_gl_program_cache_acquire(spel_gfx_context ctx, uint64_t hash,
+											spel_gfx_shader vertex, spel_gfx_shader fragment,
+											spel_gfx_shader geometry)
+{
+	spel_gfx_program_cache* cache = &ctx->program_cache;
+
+	if (cache->capacity == 0 || cache->count * 10 >= cache->capacity * 7)
+	{
+		spel_gl_program_cache_grow(cache);
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_program_cache_entry* e = &cache->entries[index];
+
+		if (e->ref_count == 0)
+		{
+			GLuint program = glCreateProgram();
+
+			if (vertex != NULL)
+			{
+				glAttachShader(program, ((spel_gfx_shader_gl*)vertex->data)->shader);
+			}
+
+			if (fragment != NULL)
+			{
+				glAttachShader(program, ((spel_gfx_shader_gl*)fragment->data)->shader);
+			}
+
+			if (geometry != NULL)
+			{
+				glAttachShader(program, ((spel_gfx_shader_gl*)geometry->data)->shader);
+			}
+
+			glLinkProgram(program);
+
+			GLint status = GL_FALSE;
+			glGetProgramiv(program, GL_LINK_STATUS, &status);
+			if (status != GL_TRUE)
+			{
+				char info_log[512];
+				GLsizei info_log_size = 0;
+				glGetProgramInfoLog(program, sizeof(info_log), &info_log_size,
+									(GLchar*)info_log);
+
+				char str[24];
+				snprintf(str, sizeof(str), "%lx", (unsigned long)hash);
+
+				spel_gfx_shader_log log = {.name = str,
+										   .name_size = strlen(str),
+										   .log = info_log,
+										   .log_size = info_log_size};
+
+				spel_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log,
+						 SPEL_DATA_SHADER_LOG, sizeof(log),
+						 "failed to link program %s: %s", str, info_log);
+
+				glDeleteProgram(program);
+				return 0;
+			}
+
+			e->hash = hash;
+			e->handle = program;
+			e->ref_count = 1;
+			cache->count++;
+			return program;
+		}
+
+		if (e->hash == hash)
+		{
+			e->ref_count++;
+			return e->handle;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
+static void spel_gl_program_cache_release(spel_gfx_context ctx, uint64_t hash)
+{
+	spel_gfx_program_cache* cache = &ctx->program_cache;
+
+	if (cache->capacity == 0)
+	{
+		return;
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_program_cache_entry* e = &cache->entries[index];
+
+		if (e->ref_count == 0)
+		{
+			return; // not found
+		}
+
+		if (e->hash == hash)
+		{
+			if (--e->ref_count > 0)
+			{
+				return;
+			}
+
+			glDeleteProgram(e->handle);
+			cache->count--;
+			e->hash = 0;
+			e->handle = 0;
+			e->ref_count = 0;
+
+			for (uint32_t next = (index + 1) & mask; cache->entries[next].ref_count != 0;
+				 next = (next + 1) & mask)
+			{
+				spel_gfx_program_cache_entry entry = cache->entries[next];
+				cache->entries[next].ref_count = 0;
+				cache->entries[next].hash = 0;
+				cache->entries[next].handle = 0;
+
+				uint32_t dest = (uint32_t)entry.hash & mask;
+				while (cache->entries[dest].ref_count != 0)
+				{
+					dest = (dest + 1) & mask;
+				}
+
+				cache->entries[dest] = entry;
+			}
+
+			return;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
+static void spel_gl_vao_cache_grow(spel_gfx_vao_cache* cache)
+{
+	uint32_t old_capacity = cache->capacity;
+	uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
+
+	spel_gfx_vao_cache_entry* new_entries =
+		spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+	memset(new_entries, 0, new_capacity * sizeof(*new_entries));
+
+	for (uint32_t i = 0; i < old_capacity; ++i)
+	{
+		spel_gfx_vao_cache_entry* old = &cache->entries[i];
+		if (old->ref_count == 0)
+		{
+			continue;
+		}
+
+		uint32_t index = (uint32_t)old->hash & (new_capacity - 1);
+		while (new_entries[index].ref_count != 0)
+		{
+			index = (index + 1) & (new_capacity - 1);
+		}
+
+		new_entries[index] = *old;
+	}
+
+	spel_memory_free(cache->entries);
+	cache->entries = new_entries;
+	cache->capacity = new_capacity;
+}
+
+static spel_gfx_vao_cache_entry* spel_gl_vao_cache_acquire(
+	spel_gfx_context ctx, uint64_t hash, const spel_gfx_vertex_layout* layout)
+{
+	spel_gfx_vao_cache* cache = &ctx->vao_cache;
+
+	if (cache->capacity == 0 || cache->count * 10 >= cache->capacity * 7)
+	{
+		spel_gl_vao_cache_grow(cache);
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_vao_cache_entry* e = &cache->entries[index];
+
+		if (e->ref_count == 0)
+		{
+			GLuint vao;
+			glCreateVertexArrays(1, &vao);
+			spel_gl_configure_vertex_layout(vao, layout);
+
+			int* strides = spel_memory_malloc(sizeof(GLsizei) * layout->stream_count,
+											  SPEL_MEM_TAG_GFX);
+			for (uint32_t i = 0; i < layout->stream_count; i++)
+			{
+				strides[i] = (int)layout->streams[i].stride;
+			}
+
+			e->hash = hash;
+			e->handle = vao;
+			e->ref_count = 1;
+			e->stream_count = layout->stream_count;
+			e->strides = strides;
+			cache->count++;
+			return e;
+		}
+
+		if (e->hash == hash)
+		{
+			e->ref_count++;
+			return e;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
+static void spel_gl_vao_cache_release(spel_gfx_context ctx, uint64_t hash)
+{
+	spel_gfx_vao_cache* cache = &ctx->vao_cache;
+
+	if (cache->capacity == 0)
+	{
+		return;
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_vao_cache_entry* e = &cache->entries[index];
+
+		if (e->ref_count == 0)
+		{
+			return; // not found
+		}
+
+		if (e->hash == hash)
+		{
+			if (--e->ref_count > 0)
+			{
+				return;
+			}
+
+			glDeleteVertexArrays(1, &e->handle);
+			if (e->strides)
+			{
+				spel_memory_free(e->strides);
+			}
+
+			cache->count--;
+			e->hash = 0;
+			e->handle = 0;
+			e->strides = NULL;
+			e->ref_count = 0;
+			e->stream_count = 0;
+
+			for (uint32_t next = (index + 1) & mask; cache->entries[next].ref_count != 0;
+				 next = (next + 1) & mask)
+			{
+				spel_gfx_vao_cache_entry entry = cache->entries[next];
+				cache->entries[next].ref_count = 0;
+				cache->entries[next].hash = 0;
+				cache->entries[next].handle = 0;
+				cache->entries[next].strides = NULL;
+				cache->entries[next].stream_count = 0;
+
+				uint32_t dest = (uint32_t)entry.hash & mask;
+				while (cache->entries[dest].ref_count != 0)
+				{
+					dest = (dest + 1) & mask;
+				}
+
+				cache->entries[dest] = entry;
+			}
+
+			return;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
 static void spel_hash_vertex_layout(XXH3_state_t* state,
 									const spel_gfx_vertex_layout* layout);
 
@@ -99,6 +428,7 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 {
 	spel_gfx_pipeline pipeline =
 		(spel_gfx_pipeline)spel_memory_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
+	memset(pipeline, 0, sizeof(*pipeline));
 
 	XXH3_state_t* state = XXH3_createState();
 	XXH3_64bits_reset(state);
@@ -130,9 +460,14 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		shaders[2] = desc->geometry_shader;
 	}
 
+	uint64_t program_hash =
+		spel_gl_program_hash(desc->vertex_shader, desc->fragment_shader,
+							 desc->geometry_shader);
+
 	spel_gfx_pipeline_merge_reflections(pipeline, shaders, shaderCount);
 
 	spel_hash_vertex_layout(state, &desc->vertex_layout);
+	uint64_t vao_hash = spel_hash_vertex_layout_value(&desc->vertex_layout);
 
 	XXH3_64bits_update(state, &desc->topology, sizeof(desc->topology));
 	XXH3_64bits_update(state, &desc->cull_mode, sizeof(desc->cull_mode));
@@ -154,20 +489,10 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		sizeof(spel_gfx_pipeline_gl), SPEL_MEM_TAG_GFX);
 
 	spel_gfx_pipeline_gl* gl_pipeline = (spel_gfx_pipeline_gl*)pipeline->data;
+	memset(gl_pipeline, 0, sizeof(*gl_pipeline));
+	gl_pipeline->program_hash = program_hash;
+	gl_pipeline->vao_hash = vao_hash;
 	gl_pipeline->scissor_test = desc->scissor_test;
-
-	glCreateVertexArrays(1, &gl_pipeline->vao);
-	spel_gl_configure_vertex_layout(gl_pipeline->vao, &desc->vertex_layout);
-
-	spel_gl_cache_pipeline_state(gl_pipeline, desc);
-
-	gl_pipeline->strides = spel_memory_malloc(
-		sizeof(GLsizei) * desc->vertex_layout.stream_count, SPEL_MEM_TAG_GFX);
-
-	for (size_t i = 0; i < desc->vertex_layout.stream_count; i++)
-	{
-		gl_pipeline->strides[i] = (int)desc->vertex_layout.streams[i].stride;
-	}
 
 	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
 		&ctx->pipeline_cache, pipeline->hash, pipeline);
@@ -178,55 +503,44 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		return cached;
 	}
 
-	gl_pipeline->program = glCreateProgram();
+	spel_gl_cache_pipeline_state(gl_pipeline, desc);
+
+	spel_gfx_vao_cache_entry* vao_entry =
+		spel_gl_vao_cache_acquire(ctx, gl_pipeline->vao_hash, &desc->vertex_layout);
+	if (vao_entry == NULL)
+	{
+		spel_gfx_pipeline_destroy(pipeline);
+		return NULL;
+	}
+	gl_pipeline->vao = vao_entry->handle;
+	gl_pipeline->strides = (GLsizei*)vao_entry->strides;
+
+	GLuint program = spel_gl_program_cache_acquire(
+		ctx, gl_pipeline->program_hash, desc->vertex_shader, desc->fragment_shader,
+		desc->geometry_shader);
+	if (program == 0)
+	{
+		spel_gl_vao_cache_release(ctx, gl_pipeline->vao_hash);
+		gl_pipeline->vao_hash = 0;
+		gl_pipeline->program_hash = 0;
+		spel_gfx_pipeline_destroy(pipeline);
+		return NULL;
+	}
+	gl_pipeline->program = program;
 
 	if (desc->vertex_shader != NULL)
 	{
 		pipeline->vertex_shader = desc->vertex_shader;
-		glAttachShader(gl_pipeline->program,
-					   ((spel_gfx_shader_gl*)desc->vertex_shader->data)->shader);
 	}
 
 	if (desc->fragment_shader != NULL)
 	{
 		pipeline->fragment_shader = desc->fragment_shader;
-		glAttachShader(gl_pipeline->program,
-					   ((spel_gfx_shader_gl*)desc->fragment_shader->data)->shader);
 	}
 
 	if (desc->geometry_shader != NULL)
 	{
 		pipeline->geometry_shader = desc->geometry_shader;
-		glAttachShader(gl_pipeline->program,
-					   ((spel_gfx_shader_gl*)desc->geometry_shader->data)->shader);
-	}
-
-	glLinkProgram(gl_pipeline->program);
-
-	int status;
-	glGetProgramiv(gl_pipeline->program, GL_LINK_STATUS, &status);
-
-	if (status != GL_TRUE)
-	{
-		char info_log[512];
-		GLsizei info_log_size = 0;
-		glGetProgramInfoLog(gl_pipeline->program, sizeof(info_log), &info_log_size,
-							(GLchar*)info_log);
-
-		char str[24];
-		snprintf(str, sizeof(str), "%lx", pipeline->hash);
-
-		spel_gfx_shader_log log = {.name = str,
-								   .name_size = strlen(str),
-								   .log = info_log,
-								   .log_size = info_log_size};
-
-		spel_log(SPEL_SEV_ERROR, SPEL_ERR_SHADER_FAILED, &log, SPEL_DATA_SHADER_LOG,
-			   sizeof(log), "failed to compile pipeline %s: %s", str, info_log);
-
-		glDeleteProgram(gl_pipeline->program);
-		spel_gfx_pipeline_destroy(pipeline);
-		return NULL;
 	}
 
 	return pipeline;
@@ -236,35 +550,8 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 {
 	spel_gfx_pipeline_gl* glp = (spel_gfx_pipeline_gl*)pipeline->data;
 
-	if (glp->strides)
-	{
-		spel_memory_free(glp->strides);
-	}
-
-	if (glp->vao)
-	{
-		glDeleteVertexArrays(1, &glp->vao);
-	}
-
-	if (glp->program)
-	{
-		glDeleteProgram(glp->program);
-	}
-
-	if (pipeline->vertex_shader && !pipeline->vertex_shader->internal)
-	{
-		spel_gfx_shader_destroy_gl(pipeline->vertex_shader);
-	}
-
-	if (pipeline->fragment_shader && !pipeline->fragment_shader->internal)
-	{
-		spel_gfx_shader_destroy_gl(pipeline->fragment_shader);
-	}
-
-	if (pipeline->geometry_shader && !pipeline->geometry_shader->internal)
-	{
-		spel_gfx_shader_destroy_gl(pipeline->geometry_shader);
-	}
+	spel_gl_vao_cache_release(pipeline->ctx, glp->vao_hash);
+	spel_gl_program_cache_release(pipeline->ctx, glp->program_hash);
 
 	spel_memory_free(pipeline->data);
 	spel_memory_free(pipeline);
@@ -482,4 +769,46 @@ static void spel_hash_vertex_layout(XXH3_state_t* state,
 		XXH3_64bits_update(state, &s->stride, sizeof(s->stride));
 		XXH3_64bits_update(state, &s->rate, sizeof(s->rate));
 	}
+}
+
+static uint64_t spel_hash_vertex_layout_value(const spel_gfx_vertex_layout* layout)
+{
+	XXH3_state_t* state = XXH3_createState();
+	XXH3_64bits_reset(state);
+	spel_hash_vertex_layout(state, layout);
+	uint64_t hash = XXH3_64bits_digest(state);
+	XXH3_freeState(state);
+	return hash;
+}
+
+static uint64_t spel_gl_program_hash(spel_gfx_shader vertex, spel_gfx_shader fragment,
+									 spel_gfx_shader geometry)
+{
+	XXH3_state_t* state = XXH3_createState();
+	XXH3_64bits_reset(state);
+
+	if (vertex != NULL)
+	{
+		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_VERTEX;
+		XXH3_64bits_update(state, &tag, sizeof(tag));
+		XXH3_64bits_update(state, &vertex->hash, sizeof(vertex->hash));
+	}
+
+	if (fragment != NULL)
+	{
+		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_FRAGMENT;
+		XXH3_64bits_update(state, &tag, sizeof(tag));
+		XXH3_64bits_update(state, &fragment->hash, sizeof(fragment->hash));
+	}
+
+	if (geometry != NULL)
+	{
+		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_GEOMETRY;
+		XXH3_64bits_update(state, &tag, sizeof(tag));
+		XXH3_64bits_update(state, &geometry->hash, sizeof(geometry->hash));
+	}
+
+	uint64_t hash = XXH3_64bits_digest(state);
+	XXH3_freeState(state);
+	return hash;
 }

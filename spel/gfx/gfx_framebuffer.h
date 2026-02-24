@@ -25,7 +25,7 @@ typedef struct
 
 typedef struct
 {
-	const char* name;
+	char* name;
 
 	spel_gfx_framebuffer framebuffer;
 

@@ -13,6 +13,9 @@ spel_gfx_uniform_buffer ubuffer_frame;
 spel_gfx_uniform_buffer ubuffer_obj_cube;
 spel_gfx_uniform_buffer ubuffer_obj_plane;
 
+spel_gfx_shader vert_shader;
+spel_gfx_shader frag_shader;
+
 spel_canvas canvas;
 
 // we technically *could* make it one big buffer, but i dont know
@@ -133,8 +136,11 @@ void spel_load()
 	pipeline_desc.vertex_layout.streams = STREAMS;
 	pipeline_desc.vertex_layout.stream_count = 1;
 
-	pipeline_desc.vertex_shader = spel_gfx_shader_load(spel.gfx, "3d_test.vert.spv");
-	pipeline_desc.fragment_shader = spel_gfx_shader_load(spel.gfx, "3d_test.frag.spv");
+	vert_shader = spel_gfx_shader_load(spel.gfx, "3d_test.vert.spv");
+	frag_shader = spel_gfx_shader_load(spel.gfx, "3d_test.frag.spv");
+
+	pipeline_desc.vertex_shader = vert_shader;
+	pipeline_desc.fragment_shader = frag_shader;
 
 	pipeline_desc.depth_state.depth_test = true;
 	pipeline_desc.depth_state.depth_write = true;
@@ -284,6 +290,8 @@ void spel_draw()
 void spel_quit()
 {
 	spel_canvas_destroy(canvas);
+	spel_gfx_shader_destroy(vert_shader);
+	spel_gfx_shader_destroy(frag_shader);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_texture_destroy(ground_texture);
 	spel_gfx_uniform_buffer_destroy(ubuffer_obj_cube);

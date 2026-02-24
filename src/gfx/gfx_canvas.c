@@ -66,11 +66,10 @@ spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int hei
 
 	canvas->framebuffer = spel_gfx_framebuffer_create(gfx, &fb_desc);
 
-	char str[24];
-	sprintf(str, "Canvas #%d", canvas->ctx->canvas_count);
+	sprintf(canvas->name, "Canvas #%d", canvas->ctx->canvas_count);
 
 	spel_gfx_render_pass_desc pass_desc = {
-		.name = spel_memory_strdup(str, SPEL_MEM_TAG_GFX),
+		.name = canvas->name,
 		.framebuffer = canvas->framebuffer,
 		.clear_colors = {spel_color_black},
 		.color_load = {SPEL_GFX_LOAD_DONT_CARE},
@@ -176,6 +175,9 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
+	spel_memory_free(ctx->verts);
+	spel_memory_free(ctx->indices);
+	
 	spel_gfx_buffer_destroy(ctx->vbo);
 	spel_gfx_buffer_destroy(ctx->ibo);
 	spel_memory_free(ctx->default_canvas);

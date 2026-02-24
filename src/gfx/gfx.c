@@ -60,6 +60,14 @@ spel_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	ctx->sampler_cache.capacity = 0;
 	ctx->sampler_cache.count = 0;
 
+	ctx->program_cache.entries = NULL;
+	ctx->program_cache.capacity = 0;
+	ctx->program_cache.count = 0;
+
+	ctx->vao_cache.entries = NULL;
+	ctx->vao_cache.capacity = 0;
+	ctx->vao_cache.count = 0;
+
 	for (size_t i = 0; i < spel_array_size(ctx->shaders); i++)
 	{
 		ctx->shaders[i] = NULL;

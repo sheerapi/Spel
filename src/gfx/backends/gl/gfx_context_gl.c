@@ -22,6 +22,54 @@ typedef struct spel_gfx_context_gl
 	} version;
 } spel_gfx_context_gl;
 
+static void spel_gl_program_cache_clear(spel_gfx_program_cache* cache)
+{
+	if (!cache->entries)
+	{
+		return;
+	}
+
+	for (uint32_t i = 0; i < cache->capacity; ++i)
+	{
+		spel_gfx_program_cache_entry* e = &cache->entries[i];
+		if (e->handle && e->ref_count)
+		{
+			glDeleteProgram(e->handle);
+		}
+	}
+
+	spel_memory_free(cache->entries);
+	cache->entries = NULL;
+	cache->capacity = 0;
+	cache->count = 0;
+}
+
+static void spel_gl_vao_cache_clear(spel_gfx_vao_cache* cache)
+{
+	if (!cache->entries)
+	{
+		return;
+	}
+
+	for (uint32_t i = 0; i < cache->capacity; ++i)
+	{
+		spel_gfx_vao_cache_entry* e = &cache->entries[i];
+		if (e->handle && e->ref_count)
+		{
+			glDeleteVertexArrays(1, &e->handle);
+		}
+		if (e->strides)
+		{
+			spel_memory_free(e->strides);
+		}
+	}
+
+	spel_memory_free(cache->entries);
+	cache->entries = NULL;
+	cache->capacity = 0;
+	cache->count = 0;
+}
+
 spel_hidden void spel_gfx_context_create_gl(spel_gfx_context ctx)
 {
 	spel_gfx_context_gl* gl =
@@ -112,7 +160,7 @@ spel_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 			spel_gfx_pipeline_cache_entry* entry = &ctx->pipeline_cache.entries[i];
 			if (entry->pipeline)
 			{
-				ctx->vt->pipeline_destroy(entry->pipeline);
+				spel_gfx_pipeline_destroy(entry->pipeline);
 				break;
 			}
 		}
@@ -139,6 +187,8 @@ spel_hidden void spel_gfx_context_destroy_gl(spel_gfx_context ctx)
 	SDL_GL_DestroyContext(gl->ctx);
 	spel_gfx_render_pass_destroy_gl(ctx->default_pass);
 	spel_memory_free((void*)ctx->tracked_fbos);
+	spel_gl_program_cache_clear(&ctx->program_cache);
+	spel_gl_vao_cache_clear(&ctx->vao_cache);
 	spel_memory_free(ctx->pipeline_cache.entries);
 	spel_memory_free(ctx->sampler_cache.entries);
 	spel_memory_free(gl);

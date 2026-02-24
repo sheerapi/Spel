@@ -28,6 +28,7 @@ void exec_cmd_scissor(spel_gfx_cmdlist cl, spel_gfx_scissor_cmd* cmd);
 void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 								 spel_gfx_bind_shader_buffer_cmd* cmd);
 
+void exec_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer_update_cmd* cmd);
 void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd);
 void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_cmd* cmd);
 void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd* cmd);
@@ -115,6 +116,13 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		return;
 	}
 
+	GLint prev_program = 0;
+	GLint prev_vao = 0;
+	GLint prev_fbo = 0;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &prev_program);
+	glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prev_vao);
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prev_fbo);
+
 	if (((spel_gfx_cmdlist_gl*)cl->data)->current_pass != NULL)
 	{
 		spel_gfx_cmd_end_pass(cl);
@@ -168,6 +176,9 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 		case SPEL_GFX_CMD_BIND_SHADER_BUFFER:
 			exec_cmd_bind_shader_buffer(cl, (spel_gfx_bind_shader_buffer_cmd*)ptr);
 			break;
+		case SPEL_GFX_CMD_BUFFER_UPDATE:
+			exec_cmd_buffer_update(cl, (spel_gfx_buffer_update_cmd*)ptr);
+			break;
 		case SPEL_GFX_CMD_UNIFORM_UPDATE:
 			exec_cmd_uniform_update(cl, (spel_gfx_uniform_update_cmd*)ptr);
 			break;
@@ -186,6 +197,17 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 	cl->dirty_buffer_count = 0;
 
 	memset(cl->dirty_buffers, 0, cl->dirty_buffer_count * sizeof(*cl->dirty_buffers));
+
+	// Restore captured state.
+	if (prev_program != 0)
+	{
+		glUseProgram((GLuint)prev_program);
+	}
+	if (prev_vao != 0)
+	{
+		glBindVertexArray((GLuint)prev_vao);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
 }
 
 void exec_cmd_clear(spel_gfx_cmdlist cl, spel_gfx_clear_cmd* cmd)
@@ -219,14 +241,17 @@ void exec_cmd_bind_vertex(spel_gfx_cmdlist cl, spel_gfx_bind_vertex_cmd* cmd)
 
 void exec_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_bind_pipeline_cmd* cmd)
 {
-	if (((spel_gfx_cmdlist_gl*)cl->data)->pipeline == cmd->pipeline)
+	if (((spel_gfx_context_gl*)cl->data)->pipeline == cmd->pipeline)
 	{
 		return;
 	}
 
-	((spel_gfx_cmdlist_gl*)cl->data)->pipeline = cmd->pipeline;
-	spel_gfx_pipeline_gl* p = (spel_gfx_pipeline_gl*)cmd->pipeline->data;
+	((spel_gfx_context_gl*)cl->data)->pipeline = cmd->pipeline;
 
+	((spel_gfx_cmdlist_gl*)cl->data)->pipeline =
+		cmd->pipeline;
+	spel_gfx_pipeline_gl* p = (spel_gfx_pipeline_gl*)cmd->pipeline->data;
+	
 	glUseProgram(p->program);
 	glBindVertexArray(p->vao);
 
@@ -431,10 +456,34 @@ void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* c
 			  (size_t)(cmd->handle.size * cmd->handle.count), cmd->size);
 
 	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)cmd->buffer.buffer->data;
-	memcpy((uint8_t*)glBuf->mirror + cmd->handle.offset, cmd->data, cmd->size);
-	glBuf->dirty_min = (uint32_t)fmin(glBuf->dirty_min, cmd->handle.offset);
-	glBuf->dirty_max =
-		(uint32_t)fmax(glBuf->dirty_max, (double)(cmd->handle.offset + cmd->size));
+	if (glBuf->mirror)
+	{
+		memcpy((uint8_t*)glBuf->mirror + cmd->handle.offset, cmd->data, cmd->size);
+	}
+
+	glNamedBufferSubData(glBuf->buffer, cmd->handle.offset, cmd->size, cmd->data);
+}
+
+void exec_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer_update_cmd* cmd)
+{
+	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)cmd->buf->data;
+
+	if (cmd->offset + cmd->size > cmd->buf->size)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				 "buffer update overflow: size %zu at offset %zu exceeds buffer size %zu",
+				 cmd->size, cmd->offset, cmd->buf->size);
+		return;
+	}
+
+	// Keep CPU mirror in sync when present.
+	if (glBuf->mirror && cmd->offset + cmd->size <= cmd->buf->size)
+	{
+		memcpy((uint8_t*)glBuf->mirror + cmd->offset, cmd->data, cmd->size);
+	}
+
+	glNamedBufferSubData(glBuf->buffer, (GLintptr)cmd->offset, (GLsizeiptr)cmd->size,
+						 cmd->data);
 }
 
 void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_cmd* cmd)

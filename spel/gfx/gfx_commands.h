@@ -14,6 +14,7 @@ typedef enum
 	SPEL_GFX_CMD_BIND_SAMPLER,
 	SPEL_GFX_CMD_BIND_IMAGE,
 	SPEL_GFX_CMD_BIND_SHADER_BUFFER,
+	SPEL_GFX_CMD_BUFFER_UPDATE,
 	SPEL_GFX_CMD_CLEAR,
 	SPEL_GFX_CMD_DRAW,
 	SPEL_GFX_CMD_DRAW_INDEXED,
@@ -119,6 +120,15 @@ typedef struct spel_gfx_bind_shader_buffer_cmd
 	spel_gfx_buffer buf;
 	uint32_t location;
 } spel_gfx_bind_shader_buffer_cmd;
+
+typedef struct spel_gfx_buffer_update_cmd
+{
+	spel_gfx_cmd_header hdr;
+	spel_gfx_buffer buf;
+	size_t offset;
+	size_t size;
+	const void* data;
+} spel_gfx_buffer_update_cmd;
 
 typedef struct spel_gfx_uniform_update_cmd
 {

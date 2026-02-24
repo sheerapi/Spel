@@ -22,7 +22,8 @@ static uint64_t spel_gl_program_hash(spel_gfx_shader vertex, spel_gfx_shader fra
 									 spel_gfx_shader geometry);
 static void spel_gl_program_cache_grow(spel_gfx_program_cache* cache);
 static GLuint spel_gl_program_cache_acquire(spel_gfx_context ctx, uint64_t hash,
-											spel_gfx_shader vertex, spel_gfx_shader fragment,
+											spel_gfx_shader vertex,
+											spel_gfx_shader fragment,
 											spel_gfx_shader geometry);
 static void spel_gl_program_cache_release(spel_gfx_context ctx, uint64_t hash);
 static void spel_gl_vao_cache_grow(spel_gfx_vao_cache* cache);
@@ -49,8 +50,8 @@ static void spel_gl_configure_vertex_layout(GLuint vao,
 		const bool INTEGER = (FLAGS & SPEL_GFX_VERTEX_INTEGER) != 0;
 		const bool NORMALIZED = (FLAGS & SPEL_GFX_VERTEX_NORMALIZED) != 0;
 
-		const GLenum TYPE =
-			spel_gl_vertex_type(spel_vtx_base(attrib->format), spel_vtx_bits(attrib->format));
+		const GLenum TYPE = spel_gl_vertex_type(spel_vtx_base(attrib->format),
+												spel_vtx_bits(attrib->format));
 		const GLint SIZE = (GLint)spel_vtx_comps(attrib->format);
 
 		glEnableVertexArrayAttrib(vao, attrib->location);
@@ -135,7 +136,8 @@ static void spel_gl_program_cache_grow(spel_gfx_program_cache* cache)
 }
 
 static GLuint spel_gl_program_cache_acquire(spel_gfx_context ctx, uint64_t hash,
-											spel_gfx_shader vertex, spel_gfx_shader fragment,
+											spel_gfx_shader vertex,
+											spel_gfx_shader fragment,
 											spel_gfx_shader geometry)
 {
 	spel_gfx_program_cache* cache = &ctx->program_cache;
@@ -438,31 +440,26 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 
 	if (desc->vertex_shader != NULL)
 	{
-		XXH3_64bits_update(state, &desc->vertex_shader->hash,
-						   sizeof(desc->vertex_shader->hash));
 		shaderCount++;
 		shaders[0] = desc->vertex_shader;
 	}
 
 	if (desc->fragment_shader != NULL)
 	{
-		XXH3_64bits_update(state, &desc->fragment_shader->hash,
-						   sizeof(desc->fragment_shader->hash));
 		shaderCount++;
 		shaders[1] = desc->fragment_shader;
 	}
 
 	if (desc->geometry_shader != NULL)
 	{
-		XXH3_64bits_update(state, &desc->geometry_shader->hash,
-						   sizeof(desc->geometry_shader->hash));
 		shaderCount++;
 		shaders[2] = desc->geometry_shader;
 	}
 
-	uint64_t program_hash =
-		spel_gl_program_hash(desc->vertex_shader, desc->fragment_shader,
-							 desc->geometry_shader);
+	uint64_t program_hash = spel_gl_program_hash(
+		desc->vertex_shader, desc->fragment_shader, desc->geometry_shader);
+
+	XXH3_64bits_update(state, &program_hash, sizeof(program_hash));
 
 	spel_gfx_pipeline_merge_reflections(pipeline, shaders, shaderCount);
 
@@ -515,9 +512,9 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	gl_pipeline->vao = vao_entry->handle;
 	gl_pipeline->strides = (GLsizei*)vao_entry->strides;
 
-	GLuint program = spel_gl_program_cache_acquire(
-		ctx, gl_pipeline->program_hash, desc->vertex_shader, desc->fragment_shader,
-		desc->geometry_shader);
+	GLuint program =
+		spel_gl_program_cache_acquire(ctx, gl_pipeline->program_hash, desc->vertex_shader,
+									  desc->fragment_shader, desc->geometry_shader);
 	if (program == 0)
 	{
 		spel_gl_vao_cache_release(ctx, gl_pipeline->vao_hash);

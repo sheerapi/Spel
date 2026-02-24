@@ -10,6 +10,7 @@
 #define SPEL_CANVAS_VBUFFER_SIZE 16384
 
 spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx);
+spel_hidden void canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx);
 
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags)
@@ -101,23 +102,24 @@ spel_api void spel_canvas_begin(spel_canvas canvas)
 	if (canvas == NULL)
 	{
 		canvas = spel.gfx->canvas_ctx->default_canvas;
+		canvas->size.x = spel.gfx->fb_width;
+		canvas->size.y = spel.gfx->fb_height;
 	}
 
 	canvas->ctx->active = canvas;
 	spel_gfx_cmd_begin_pass(canvas->ctx->command_list, canvas->pass);
+	canvas->ctx->frame_data.proj =
+		spel_mat4_ortho(0, canvas->size.x, canvas->size.y, 0, -1, 1);
 }
 
-spel_api void spel_canvas_end(spel_canvas canvas)
+spel_api void spel_canvas_end()
 {
-	if (canvas == NULL)
-	{
-		canvas = spel.gfx->canvas_ctx->default_canvas;
-	}
+	spel_assert(spel.gfx->canvas_ctx->active != NULL,
+				"canvas_end called without canvas_begin");
 
-	spel_assert(canvas->ctx->active != NULL, "canvas_end called without canvas_begin");
-
-	spel_gfx_cmd_end_pass(canvas->ctx->command_list);
-	canvas->ctx->active = NULL;
+	spel_canvas_ctx_flush(spel.gfx->canvas_ctx);
+	spel_gfx_cmd_end_pass(spel.gfx->canvas_ctx->command_list);
+	spel.gfx->canvas_ctx->active = NULL;
 }
 
 void spel_canvas_clear(spel_color color)
@@ -158,6 +160,9 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ibuffer_desc.data = NULL;
 	ibuffer_desc.size = SPEL_CANVAS_VBUFFER_SIZE * 3 / 2;
 
+	ctx->transforms[0] = spel_mat3_identity();
+	ctx->transform_top = 0;
+
 	ctx->vbo = spel_gfx_buffer_create(gfx, &vbuffer_desc);
 	ctx->ibo = spel_gfx_buffer_create(gfx, &ibuffer_desc);
 
@@ -167,17 +172,24 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ctx->vert_count = 0;
 	ctx->index_count = 0;
 
+	ctx->color = spel_color_white;
+
 	spel_gfx_pipeline_desc pipeline_desc = spel_gfx_pipeline_default_2d(gfx);
-	
+
+	pipeline_desc.cull_mode = SPEL_GFX_CULL_NONE;
+
 	ctx->pipeline = spel_gfx_pipeline_create(gfx, &pipeline_desc);
 	ctx->white_texture = spel_gfx_texture_white_get(gfx);
+
+	ctx->ubuffer_frame = spel_gfx_uniform_buffer_create(ctx->pipeline, "FrameData");
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
 	spel_memory_free(ctx->verts);
 	spel_memory_free(ctx->indices);
-	
+
+	spel_gfx_uniform_buffer_destroy(ctx->ubuffer_frame);
 	spel_gfx_buffer_destroy(ctx->vbo);
 	spel_gfx_buffer_destroy(ctx->ibo);
 	spel_memory_free(ctx->default_canvas);
@@ -198,14 +210,18 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 	}
 
 	// upload scratch buffers to gpu
-	spel_gfx_buffer_update(ctx->vbo, ctx->verts,
-						   ctx->vert_count * sizeof(spel_canvas_vertex), 0);
-	spel_gfx_buffer_update(ctx->ibo, ctx->indices, ctx->index_count * sizeof(uint32_t),
-						   0);
+	spel_gfx_cmd_buffer_update(ctx->command_list, ctx->vbo, ctx->verts,
+							   ctx->vert_count * sizeof(spel_canvas_vertex), 0);
+	spel_gfx_cmd_buffer_update(ctx->command_list, ctx->ibo, ctx->indices,
+							   ctx->index_count * sizeof(uint32_t), 0);
 
 	// bind everything
 	spel_gfx_cmd_bind_pipeline(ctx->command_list, ctx->pipeline);
+
+	spel_gfx_cmd_uniform_block_update(ctx->command_list, ctx->ubuffer_frame,
+									  &ctx->frame_data, sizeof(ctx->frame_data), 0);
 	spel_gfx_cmd_bind_shader_buffer(ctx->command_list, ctx->ubuffer_frame);
+
 	spel_gfx_cmd_bind_vertex(ctx->command_list, 0, ctx->vbo, 0);
 	spel_gfx_cmd_bind_index(ctx->command_list, ctx->ibo, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(ctx->command_list, 0, ctx->batch_texture);
@@ -215,13 +231,13 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 	// reset scratch
 	ctx->vert_count = 0;
 	ctx->index_count = 0;
-
-	spel_gfx_cmdlist_submit(ctx->command_list);
 }
 
 void spel_canvas_draw_rect(spel_rect rect)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
+
+	canvas_check_batch(ctx->white_texture, ctx);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
 	int base = ctx->vert_count;
@@ -247,3 +263,21 @@ void spel_canvas_draw_rect(spel_rect rect)
 	ctx->vert_count += 4;
 	ctx->index_count += 6;
 }
+
+spel_hidden void canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx)
+{
+	if (texture != ctx->batch_texture || ctx->shader != ctx->batch_shader ||
+		ctx->blend_mode != ctx->batch_blend)
+	{
+		spel_canvas_ctx_flush(ctx);
+
+		ctx->batch_texture = texture;
+		ctx->batch_shader = ctx->shader;
+		ctx->batch_blend = ctx->blend_mode;
+	}
+}
+
+void spel_canvas_color_set(spel_color color)
+{
+	spel.gfx->canvas_ctx->color = color;
+	}

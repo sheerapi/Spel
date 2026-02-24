@@ -2087,7 +2087,7 @@ float spel_noise_fbm(float x, float y, int octaves, float lacunarity, float gain
 spel_vec2 spel_mat3_transform_point(spel_mat3 m, spel_vec2 p)
 {
 	return (spel_vec2){
-		m.m[0] * p.x + m.m[1] * p.y + m.m[2],
-		m.m[4] * p.x + m.m[5] * p.y + m.m[6],
+		m.m[0] * p.x + m.m[3] * p.y + m.m[6],
+		m.m[1] * p.x + m.m[4] * p.y + m.m[7],
 	};
 }

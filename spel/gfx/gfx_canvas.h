@@ -41,9 +41,10 @@ int spel_canvas_width(spel_canvas canvas);
 int spel_canvas_height(spel_canvas canvas);
 
 void spel_canvas_begin(spel_canvas canvas);
-void spel_canvas_end(spel_canvas canvas);
+void spel_canvas_end();
 
 void spel_canvas_clear(spel_color color);
 void spel_canvas_draw_rect(spel_rect rect);
+void spel_canvas_color_set(spel_color color);
 
 #endif

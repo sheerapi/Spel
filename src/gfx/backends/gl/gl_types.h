@@ -3,6 +3,7 @@
 #include "gfx/gfx_framebuffer.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
+#include "SDL3/SDL_video.h"
 
 typedef struct
 {
@@ -90,6 +91,18 @@ typedef struct
 	GLenum draw_buffers[SPEL_GFX_MAX_COLOR_ATTACHMENTS];
 	uint32_t draw_buffer_count;
 } spel_gfx_gl_framebuffer;
+
+typedef struct spel_gfx_context_gl
+{
+	SDL_GLContext ctx;
+	spel_gfx_pipeline pipeline;
+
+	struct
+	{
+		uint8_t major;
+		uint8_t minor;
+	} version;
+} spel_gfx_context_gl;
 
 static const spel_gfx_gl_format_info GL_FORMATS[SPEL_GFX_TEXTURE_FORMAT_COUNT] = {
 	[SPEL_GFX_TEXTURE_FMT_R8_UNORM] = {GL_R8, GL_RED, GL_UNSIGNED_BYTE, 1, 0, 0, 0, 1},

@@ -230,6 +230,11 @@ typedef struct spel_gfx_render_pass_t
 // canvases
 typedef struct
 {
+	spel_mat4 proj;
+} spel_canvas_frame_data;
+
+typedef struct
+{
 	spel_gfx_context ctx;
 
 	uint8_t canvas_count;
@@ -264,6 +269,9 @@ typedef struct
 	spel_gfx_texture batch_texture;
 	spel_canvas_shader batch_shader;
 	spel_gfx_blend_mode batch_blend;
+
+	// frame data
+	spel_canvas_frame_data frame_data;
 } spel_canvas_context;
 
 typedef struct spel_canvas_t

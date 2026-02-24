@@ -11,17 +11,6 @@
 #define GLAD_GL_IMPLEMENTATION 1
 #include "gl.h"
 
-typedef struct spel_gfx_context_gl
-{
-	SDL_GLContext ctx;
-
-	struct
-	{
-		uint8_t major;
-		uint8_t minor;
-	} version;
-} spel_gfx_context_gl;
-
 static void spel_gl_program_cache_clear(spel_gfx_program_cache* cache)
 {
 	if (!cache->entries)
@@ -239,8 +228,6 @@ spel_hidden void spel_gfx_frame_begin_gl(spel_gfx_context ctx)
 
 spel_hidden void spel_gfx_frame_end_gl(spel_gfx_context ctx)
 {
-	// flush any remaining commands
-	spel_gfx_cmdlist_submit_gl(ctx->cmdlist);
 	SDL_GL_SwapWindow(spel.window.handle);
 }
 

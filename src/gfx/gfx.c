@@ -118,7 +118,10 @@ spel_api void spel_gfx_frame_begin(spel_gfx_context ctx)
 
 spel_api void spel_gfx_frame_present(spel_gfx_context ctx)
 {
-	spel_canvas_ctx_flush(ctx->canvas_ctx);
+	if (ctx->canvas_ctx != NULL)
+	{
+		spel_gfx_cmdlist_submit(ctx->canvas_ctx->command_list);
+	}
 	ctx->vt->frame_end(ctx);
 }
 
@@ -642,6 +645,34 @@ spel_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
 	cmd->slot = slot;
 }
 
+spel_api void spel_gfx_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
+										 const void* data, size_t size, size_t offset)
+{
+	if (offset + size > buf->size)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "buffer update overflow: size %zu at offset %zu exceeds buffer size %zu",
+				   size, offset, buf->size);
+		return;
+	}
+
+	uint64_t start_offset = cl->offset;
+	size_t payload_size = size;
+	size_t cmd_size = sizeof(spel_gfx_buffer_update_cmd) + payload_size;
+
+	spel_gfx_buffer_update_cmd* cmd =
+		(spel_gfx_buffer_update_cmd*)cl->ctx->vt->cmdlist_alloc(
+			cl, cmd_size, _Alignof(spel_gfx_buffer_update_cmd));
+
+	cmd->hdr.type = SPEL_GFX_CMD_BUFFER_UPDATE;
+	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->buf = buf;
+	cmd->offset = offset;
+	cmd->size = payload_size;
+	cmd->data = cmd + 1; // payload packed immediately after the command
+	memcpy((void*)cmd->data, data, payload_size);
+}
+
 void spel_gfx_context_default_data(spel_gfx_context ctx)
 {
 	ctx->checkerboard = NULL;
@@ -674,10 +705,10 @@ void spel_gfx_context_default_data(spel_gfx_context ctx)
 	spel_gfx_render_pass_desc backbuffer_pass_desc = {
 		.name = "Back Buffer",
 		.framebuffer = NULL,
-		.color_load = {SPEL_GFX_LOAD_DONT_CARE},
+		.color_load = {SPEL_GFX_LOAD_LOAD},
 		.color_store = {SPEL_GFX_STORE_STORE},
-		.depth_load = SPEL_GFX_LOAD_DONT_CARE,
-		.depth_store = SPEL_GFX_STORE_DONT_CARE,
+		.depth_load = SPEL_GFX_LOAD_LOAD,
+		.depth_store = SPEL_GFX_STORE_STORE,
 	};
 
 	ctx->default_pass = spel_gfx_render_pass_create(ctx, &backbuffer_pass_desc);
@@ -1208,24 +1239,6 @@ spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl,
 	cmd->data = cmd + 1; // payload is packed immediately after the command
 	cmd->size = payload_size;
 	memcpy((void*)cmd->data, data, payload_size);
-
-	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
-	{
-		if (cl->dirty_buffers[i] == cmd->buffer.buffer)
-		{
-			return;
-		}
-	}
-
-	if (cl->dirty_buffer_count + 1 > cl->dirty_buffer_cap)
-	{
-		cl->dirty_buffer_cap *= 2;
-		cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_realloc(
-			(void*)cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
-			SPEL_MEM_TAG_GFX);
-	}
-
-	cl->dirty_buffers[cl->dirty_buffer_count++] = cmd->buffer.buffer;
 }
 
 spel_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
@@ -1430,7 +1443,8 @@ spel_api void* spel_gfx_context_internal_handle(spel_gfx_context ctx)
 
 spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 												spel_gfx_uniform_buffer buf,
-												const void* data, size_t size)
+												const void* data, size_t size,
+												size_t offset)
 {
 	if (size > buf.size)
 	{
@@ -1451,7 +1465,7 @@ spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 	spel_gfx_uniform handle;
 	handle.location = buf.location;
 	handle.size = size;
-	handle.offset = 0;
+	handle.offset = offset;
 	handle.count = 1;
 
 	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
@@ -1461,24 +1475,6 @@ spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 	cmd->data = cmd + 1; // payload is packed immediately after the command
 	cmd->size = payload_size;
 	memcpy((void*)cmd->data, data, payload_size);
-
-	for (size_t i = 0; i < cl->dirty_buffer_count; i++)
-	{
-		if (cl->dirty_buffers[i] == cmd->buffer.buffer)
-		{
-			return;
-		}
-	}
-
-	if (cl->dirty_buffer_count + 1 > cl->dirty_buffer_cap)
-	{
-		cl->dirty_buffer_cap *= 2;
-		cl->dirty_buffers = (spel_gfx_buffer*)spel_memory_realloc(
-			(void*)cl->dirty_buffers, sizeof(*cl->dirty_buffers) * cl->dirty_buffer_cap,
-			SPEL_MEM_TAG_GFX);
-	}
-
-	cl->dirty_buffers[cl->dirty_buffer_count++] = cmd->buffer.buffer;
 }
 
 spel_api spel_gfx_texture spel_gfx_texture_checker_create(spel_gfx_context ctx,

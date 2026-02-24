@@ -10,8 +10,7 @@ spel_gfx_pipeline pipeline;
 spel_gfx_buffer vbuffer;
 spel_gfx_buffer ibuffer;
 spel_gfx_uniform_buffer ubuffer_frame;
-spel_gfx_uniform_buffer ubuffer_obj_cube;
-spel_gfx_uniform_buffer ubuffer_obj_plane;
+spel_gfx_uniform_buffer ubuffer_obj;
 
 spel_gfx_shader vert_shader;
 spel_gfx_shader frag_shader;
@@ -177,8 +176,7 @@ void spel_load()
 	ibuffer_plane = spel_gfx_buffer_create(spel.gfx, &ibuffer_desc);
 
 	ubuffer_frame = spel_gfx_uniform_buffer_create(pipeline, "FrameData");
-	ubuffer_obj_cube = spel_gfx_uniform_buffer_create(pipeline, "ObjectData");
-	ubuffer_obj_plane = spel_gfx_uniform_buffer_create(pipeline, "ObjectData");
+	ubuffer_obj = spel_gfx_uniform_buffer_create(pipeline, "ObjectData");
 
 	ground_texture = spel_gfx_texture_checker_create(spel.gfx, spel_color_hex(0xcccccc),
 													 spel_color_hex(0x777777), 64);
@@ -256,13 +254,14 @@ void spel_draw()
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
 	spel_gfx_cmd_clear(cl, spel_color_sky);
 
-	spel_gfx_cmd_uniform_block_update(cl, ubuffer_frame, &frame_data, sizeof(FrameData));
+	spel_gfx_cmd_uniform_block_update(cl, ubuffer_frame, &frame_data, sizeof(FrameData),
+									  0);
 	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_frame);
 
 	// plane
-	spel_gfx_cmd_uniform_block_update(cl, ubuffer_obj_plane, &plane_data,
-									  sizeof(ObjectData));
-	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_obj_plane);
+	spel_gfx_cmd_uniform_block_update(cl, ubuffer_obj, &plane_data, sizeof(ObjectData),
+									  0);
+	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_obj);
 
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer_plane, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer_plane, SPEL_GFX_INDEX_U32, 0);
@@ -270,9 +269,8 @@ void spel_draw()
 	spel_gfx_cmd_draw_indexed(cl, 6, 0, 0);
 
 	// cube
-	spel_gfx_cmd_uniform_block_update(cl, ubuffer_obj_cube, &cube_data,
-									  sizeof(ObjectData));
-	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_obj_cube);
+	spel_gfx_cmd_uniform_block_update(cl, ubuffer_obj, &cube_data, sizeof(ObjectData), 0);
+	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_obj);
 
 	spel_gfx_cmd_bind_vertex(cl, 0, vbuffer, 0);
 	spel_gfx_cmd_bind_index(cl, ibuffer, SPEL_GFX_INDEX_U32, 0);
@@ -282,9 +280,35 @@ void spel_draw()
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
 
-	spel_canvas_begin(canvas);
-	spel_canvas_clear(spel_color_green);
-	spel_canvas_end(canvas);
+	spel_canvas_begin(NULL);
+	spel_color current_color = spel_color_red;
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		current_color.r = i * 25;
+		spel_canvas_color_set(current_color);
+		spel_canvas_draw_rect(spel_rect(100, i * 25 + 100, 25, 25));
+	}
+
+	current_color.r = 0;
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		current_color.g = i * 25;
+		spel_canvas_color_set(current_color);
+		spel_canvas_draw_rect(spel_rect(125, i * 25 + 100, 25, 25));
+	}
+
+	current_color.g = 0;
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		current_color.b = i * 25;
+		spel_canvas_color_set(current_color);
+		spel_canvas_draw_rect(spel_rect(150, i * 25 + 100, 25, 25));
+	}
+
+	spel_canvas_end();
 }
 
 void spel_quit()
@@ -294,8 +318,7 @@ void spel_quit()
 	spel_gfx_shader_destroy(frag_shader);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_texture_destroy(ground_texture);
-	spel_gfx_uniform_buffer_destroy(ubuffer_obj_cube);
-	spel_gfx_uniform_buffer_destroy(ubuffer_obj_plane);
+	spel_gfx_uniform_buffer_destroy(ubuffer_obj);
 	spel_gfx_uniform_buffer_destroy(ubuffer_frame);
 	spel_gfx_buffer_destroy(vbuffer_plane);
 	spel_gfx_buffer_destroy(ibuffer_plane);

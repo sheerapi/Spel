@@ -235,6 +235,13 @@ typedef struct
 
 typedef struct
 {
+	spel_color color;
+	spel_gfx_pipeline_desc pipeline_desc;
+	spel_mat3 transform;
+} spel_canvas_state;
+
+typedef struct
+{
 	spel_gfx_context ctx;
 
 	uint8_t canvas_count;
@@ -245,12 +252,15 @@ typedef struct
 
 	// canvas state
 	spel_color color;
-	spel_gfx_blend_mode blend_mode;
-	spel_canvas_shader shader;
+	spel_gfx_pipeline_desc pipeline_desc;
+	bool pipeline_dirty;
 
 	// transform stack
 	spel_mat3 transforms[32];
 	int transform_top;
+
+	spel_canvas_state states[32];
+	int state_top;
 
 	// gfx resources
 	spel_gfx_buffer vbo;
@@ -259,16 +269,19 @@ typedef struct
 	spel_gfx_uniform_buffer ubuffer_frame;
 	spel_gfx_texture white_texture;
 
+	spel_gfx_pipeline og_pipeline;
+
 	// cpu-side scratch
 	spel_canvas_vertex* verts;
 	uint32_t* indices;
 	int vert_count;
 	int index_count;
 
+	int vert_cap;
+	int index_cap;
+
 	// current batch state
 	spel_gfx_texture batch_texture;
-	spel_canvas_shader batch_shader;
-	spel_gfx_blend_mode batch_blend;
 
 	// frame data
 	spel_canvas_frame_data frame_data;
@@ -384,10 +397,14 @@ spel_hidden extern void spel_gfx_context_create_gl(spel_gfx_context ctx);
 spel_hidden extern void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx);
 
 spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+	spel_gfx_pipeline_cache* cache, uint64_t hash, bool* cached);
+spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get(
+	spel_gfx_pipeline_cache* cache, uint64_t hash);
+spel_hidden extern void spel_gfx_pipeline_cache_insert(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
 
 spel_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
-												uint64_t hash,
+									uint64_t hash,
 												spel_gfx_pipeline pipeline);
 
 spel_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);

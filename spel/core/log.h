@@ -110,19 +110,24 @@ spel_api _Noreturn void spel_log_panic(spel_log_event evt);
 #ifdef DEBUG
 #	define spel_debug(msg, ...)                                                           \
 		spel_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#	define spel_assert(condition, msg, ...)                                               \
-		spel_log_assert(                                                                 \
-			condition,                                                                   \
-			spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),               \
-											 .code = (SPEL_ERR_ASSERTION_FAILED),        \
-											 .message = "assertion failed: " #condition, \
-											 .length = 0,                                \
-											 .file = __FILE__,                           \
-											 .line = __LINE__,                           \
-											 .data = NULL,                               \
-											 .data_type = SPEL_DATA_NONE,                \
-											 .data_size = 0},                            \
-						 msg, ##__VA_ARGS__))
+#	define spel_assert(condition, msg, ...)                                             \
+		do                                                                               \
+		{                                                                                \
+			if (!(condition))                                                            \
+			{                                                                            \
+				spel_log_fmt(                                                            \
+					&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),                    \
+										.code = (SPEL_ERR_ASSERTION_FAILED),             \
+										.message = "assertion failed: " #condition,      \
+										.length = 0,                                     \
+										.file = __FILE__,                                \
+										.line = __LINE__,                                \
+										.data = NULL,                                    \
+										.data_type = SPEL_DATA_NONE,                     \
+										.data_size = 0},                                 \
+					msg, ##__VA_ARGS__);                                                  \
+			}                                                                            \
+		} while (0)
 #else
 #	define spel_debug(msg, ...)
 #	define spel_assert(condition, msg, ...)

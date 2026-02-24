@@ -47,4 +47,15 @@ void spel_canvas_clear(spel_color color);
 void spel_canvas_draw_rect(spel_rect rect);
 void spel_canvas_color_set(spel_color color);
 
+void spel_canvas_shader_set(spel_gfx_shader shader);
+
+void spel_canvas_translate(spel_vec2 position);
+void spel_canvas_scale(spel_vec2 scale);
+void spel_canvas_rotate(float degrees);
+
+void spel_canvas_push();
+void spel_canvas_pop();
+
+void spel_canvas_draw_image(spel_gfx_texture tex, spel_rect dst);
+
 #endif

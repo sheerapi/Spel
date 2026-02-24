@@ -5,6 +5,7 @@
 #include "gfx/gfx.h"
 #include "input/input.h"
 #include <math.h>
+#include <stdio.h>
 
 spel_gfx_pipeline pipeline;
 spel_gfx_buffer vbuffer;
@@ -14,8 +15,7 @@ spel_gfx_uniform_buffer ubuffer_obj;
 
 spel_gfx_shader vert_shader;
 spel_gfx_shader frag_shader;
-
-spel_canvas canvas;
+spel_gfx_shader frag_2d_shader;
 
 // we technically *could* make it one big buffer, but i dont know
 // how to do that yet
@@ -112,7 +112,7 @@ uint32_t plane_indices[] = {0, 2, 1, 0, 3, 2};
 
 void spel_conf()
 {
-	spel.window.resizable = false;
+	spel.window.resizable = true;
 	spel.window.swapchain.msaa = 2;
 	spel.log.severity = SPEL_SEV_DEBUG;
 }
@@ -137,6 +137,7 @@ void spel_load()
 
 	vert_shader = spel_gfx_shader_load(spel.gfx, "3d_test.vert.spv");
 	frag_shader = spel_gfx_shader_load(spel.gfx, "3d_test.frag.spv");
+	frag_2d_shader = spel_gfx_shader_load(spel.gfx, "2d_test.frag.spv");
 
 	pipeline_desc.vertex_shader = vert_shader;
 	pipeline_desc.fragment_shader = frag_shader;
@@ -190,9 +191,6 @@ void spel_load()
 	cam.radius = 5.0F;
 
 	plane_data.model = spel_mat4_identity();
-
-	canvas = spel_canvas_create(spel.gfx, spel.window.width, spel.window.height,
-								SPEL_CANVAS_AUTO_RESIZE);
 
 	spel_memory_dump_terminal();
 }
@@ -281,39 +279,22 @@ void spel_draw()
 	spel_gfx_cmdlist_submit(cl);
 
 	spel_canvas_begin(NULL);
-	spel_color current_color = spel_color_red;
 
-	for (size_t i = 0; i < 10; i++)
-	{
-		current_color.r = i * 25;
-		spel_canvas_color_set(current_color);
-		spel_canvas_draw_rect(spel_rect(100, i * 25 + 100, 25, 25));
-	}
+	spel_canvas_push();
+	spel_canvas_shader_set(frag_2d_shader);
+	spel_canvas_translate(spel_vec2(400, 300));
+	spel_canvas_rotate(45.0F);
+	spel_canvas_draw_rect(spel_rect(-50, -50, 100, 100));
+	spel_canvas_pop();
 
-	current_color.r = 0;
-
-	for (size_t i = 0; i < 10; i++)
-	{
-		current_color.g = i * 25;
-		spel_canvas_color_set(current_color);
-		spel_canvas_draw_rect(spel_rect(125, i * 25 + 100, 25, 25));
-	}
-
-	current_color.g = 0;
-
-	for (size_t i = 0; i < 10; i++)
-	{
-		current_color.b = i * 25;
-		spel_canvas_color_set(current_color);
-		spel_canvas_draw_rect(spel_rect(150, i * 25 + 100, 25, 25));
-	}
-
+	spel_canvas_draw_image(spel_gfx_texture_checker_get(spel.gfx),
+						   spel_rect(100, 100, 256, 256));
 	spel_canvas_end();
 }
 
 void spel_quit()
 {
-	spel_canvas_destroy(canvas);
+	spel_gfx_shader_destroy(frag_2d_shader);
 	spel_gfx_shader_destroy(vert_shader);
 	spel_gfx_shader_destroy(frag_shader);
 	spel_gfx_pipeline_destroy(pipeline);

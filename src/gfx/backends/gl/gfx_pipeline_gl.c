@@ -425,15 +425,20 @@ static void spel_gl_vao_cache_release(spel_gfx_context ctx, uint64_t hash)
 static void spel_hash_vertex_layout(XXH3_state_t* state,
 									const spel_gfx_vertex_layout* layout);
 
+XXH3_state_t* pipeline_state = NULL;
+XXH3_state_t* gl_pipeline_state = NULL;
+uint64_t pipeline_count = 0;
+
 spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 											  const spel_gfx_pipeline_desc* desc)
 {
-	spel_gfx_pipeline pipeline =
-		(spel_gfx_pipeline)spel_memory_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
-	memset(pipeline, 0, sizeof(*pipeline));
+	if (pipeline_state == NULL)
+	{
+		pipeline_state = XXH3_createState();
+		gl_pipeline_state = XXH3_createState();
+	}
 
-	XXH3_state_t* state = XXH3_createState();
-	XXH3_64bits_reset(state);
+	XXH3_64bits_reset(pipeline_state);
 
 	uint8_t shaderCount = 0;
 	spel_gfx_shader shaders[3];
@@ -459,25 +464,37 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	uint64_t program_hash = spel_gl_program_hash(
 		desc->vertex_shader, desc->fragment_shader, desc->geometry_shader);
 
-	XXH3_64bits_update(state, &program_hash, sizeof(program_hash));
+	XXH3_64bits_update(pipeline_state, &program_hash, sizeof(program_hash));
 
-	spel_gfx_pipeline_merge_reflections(pipeline, shaders, shaderCount);
-
-	spel_hash_vertex_layout(state, &desc->vertex_layout);
+	spel_hash_vertex_layout(pipeline_state, &desc->vertex_layout);
 	uint64_t vao_hash = spel_hash_vertex_layout_value(&desc->vertex_layout);
 
-	XXH3_64bits_update(state, &desc->topology, sizeof(desc->topology));
-	XXH3_64bits_update(state, &desc->cull_mode, sizeof(desc->cull_mode));
-	XXH3_64bits_update(state, &desc->winding, sizeof(desc->winding));
+	XXH3_64bits_update(pipeline_state, &desc->topology, sizeof(desc->topology));
+	XXH3_64bits_update(pipeline_state, &desc->cull_mode, sizeof(desc->cull_mode));
+	XXH3_64bits_update(pipeline_state, &desc->winding, sizeof(desc->winding));
 
-	XXH3_64bits_update(state, &desc->blend_state, sizeof(desc->blend_state));
-	XXH3_64bits_update(state, &desc->depth_state, sizeof(desc->depth_state));
-	XXH3_64bits_update(state, &desc->stencil, sizeof(desc->stencil));
+	XXH3_64bits_update(pipeline_state, &desc->blend_state, sizeof(desc->blend_state));
+	XXH3_64bits_update(pipeline_state, &desc->depth_state, sizeof(desc->depth_state));
+	XXH3_64bits_update(pipeline_state, &desc->stencil, sizeof(desc->stencil));
 
-	XXH3_64bits_update(state, &desc->scissor_test, sizeof(desc->scissor_test));
+	XXH3_64bits_update(pipeline_state, &desc->scissor_test, sizeof(desc->scissor_test));
 
-	pipeline->hash = XXH3_64bits_digest(state);
-	XXH3_freeState(state);
+	uint64_t pipeline_hash = XXH3_64bits_digest(pipeline_state);
+
+	spel_gfx_pipeline pipeline =
+		spel_gfx_pipeline_cache_get(&ctx->pipeline_cache, pipeline_hash);
+
+	if (pipeline)
+	{
+		return pipeline;
+	}
+
+	pipeline =
+		spel_memory_malloc(sizeof(*pipeline), SPEL_MEM_TAG_GFX);
+	memset(pipeline, 0, sizeof(*pipeline));
+	pipeline->hash = pipeline_hash;
+
+	spel_gfx_pipeline_merge_reflections(pipeline, shaders, shaderCount);
 
 	pipeline->ctx = ctx;
 	pipeline->type = SPEL_GFX_PIPELINE_GRAPHIC;
@@ -490,15 +507,6 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 	gl_pipeline->program_hash = program_hash;
 	gl_pipeline->vao_hash = vao_hash;
 	gl_pipeline->scissor_test = desc->scissor_test;
-
-	spel_gfx_pipeline cached = spel_gfx_pipeline_cache_get_or_create(
-		&ctx->pipeline_cache, pipeline->hash, pipeline);
-
-	if (cached != pipeline)
-	{
-		spel_gfx_pipeline_destroy(pipeline);
-		return cached;
-	}
 
 	spel_gl_cache_pipeline_state(gl_pipeline, desc);
 
@@ -540,6 +548,9 @@ spel_gfx_pipeline spel_gfx_pipeline_create_gl(spel_gfx_context ctx,
 		pipeline->geometry_shader = desc->geometry_shader;
 	}
 
+	spel_gfx_pipeline_cache_insert(&ctx->pipeline_cache, pipeline_hash, pipeline);
+
+	pipeline_count++;
 	return pipeline;
 }
 
@@ -552,6 +563,17 @@ void spel_gfx_pipeline_destroy_gl(spel_gfx_pipeline pipeline)
 
 	spel_memory_free(pipeline->data);
 	spel_memory_free(pipeline);
+
+	if (pipeline_count > 0)
+	{
+		pipeline_count--;
+		if (pipeline_count == 0)
+		{
+			XXH3_freeState(gl_pipeline_state);
+			XXH3_freeState(pipeline_state);
+			pipeline_state = NULL;
+		}
+	}
 }
 
 static GLenum spel_gl_vertex_type(spel_gfx_vertex_base_format base, uint32_t bits)
@@ -770,42 +792,36 @@ static void spel_hash_vertex_layout(XXH3_state_t* state,
 
 static uint64_t spel_hash_vertex_layout_value(const spel_gfx_vertex_layout* layout)
 {
-	XXH3_state_t* state = XXH3_createState();
-	XXH3_64bits_reset(state);
-	spel_hash_vertex_layout(state, layout);
-	uint64_t hash = XXH3_64bits_digest(state);
-	XXH3_freeState(state);
-	return hash;
+	XXH3_64bits_reset(gl_pipeline_state);
+	spel_hash_vertex_layout(gl_pipeline_state, layout);
+	return XXH3_64bits_digest(gl_pipeline_state);
 }
 
 static uint64_t spel_gl_program_hash(spel_gfx_shader vertex, spel_gfx_shader fragment,
 									 spel_gfx_shader geometry)
 {
-	XXH3_state_t* state = XXH3_createState();
-	XXH3_64bits_reset(state);
+	XXH3_64bits_reset(gl_pipeline_state);
 
 	if (vertex != NULL)
 	{
 		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_VERTEX;
-		XXH3_64bits_update(state, &tag, sizeof(tag));
-		XXH3_64bits_update(state, &vertex->hash, sizeof(vertex->hash));
+		XXH3_64bits_update(gl_pipeline_state, &tag, sizeof(tag));
+		XXH3_64bits_update(gl_pipeline_state, &vertex->hash, sizeof(vertex->hash));
 	}
 
 	if (fragment != NULL)
 	{
 		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_FRAGMENT;
-		XXH3_64bits_update(state, &tag, sizeof(tag));
-		XXH3_64bits_update(state, &fragment->hash, sizeof(fragment->hash));
+		XXH3_64bits_update(gl_pipeline_state, &tag, sizeof(tag));
+		XXH3_64bits_update(gl_pipeline_state, &fragment->hash, sizeof(fragment->hash));
 	}
 
 	if (geometry != NULL)
 	{
 		uint8_t tag = (uint8_t)SPEL_GFX_SHADER_GEOMETRY;
-		XXH3_64bits_update(state, &tag, sizeof(tag));
-		XXH3_64bits_update(state, &geometry->hash, sizeof(geometry->hash));
+		XXH3_64bits_update(gl_pipeline_state, &tag, sizeof(tag));
+		XXH3_64bits_update(gl_pipeline_state, &geometry->hash, sizeof(geometry->hash));
 	}
 
-	uint64_t hash = XXH3_64bits_digest(state);
-	XXH3_freeState(state);
-	return hash;
+	return XXH3_64bits_digest(gl_pipeline_state);
 }

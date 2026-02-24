@@ -436,40 +436,101 @@ spel_api void spel_gfx_pipeline_destroy(spel_gfx_pipeline pipeline)
 	pipeline->ctx->vt->pipeline_destroy(pipeline);
 }
 
-spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
-	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline)
+static void spel_gfx_pipeline_cache_grow(spel_gfx_pipeline_cache* cache)
 {
-	if (cache->count * 10 >= cache->capacity * 7)
+	uint32_t old_capacity = cache->capacity;
+	uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
+
+	spel_gfx_pipeline_cache_entry* new_entries =
+		spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
+	memset(new_entries, 0, new_capacity * sizeof(*new_entries));
+
+	for (uint32_t i = 0; i < old_capacity; ++i)
 	{
-		uint32_t old_capacity = cache->capacity;
-		uint32_t new_capacity = old_capacity ? old_capacity * 2 : 8;
+		spel_gfx_pipeline_cache_entry* old = &cache->entries[i];
 
-		spel_gfx_pipeline_cache_entry* new_entries =
-			spel_memory_malloc(new_capacity * sizeof(*new_entries), SPEL_MEM_TAG_GFX);
-		memset(new_entries, 0, new_capacity * sizeof(*new_entries));
-
-		for (uint32_t i = 0; i < old_capacity; ++i)
+		if (!old->pipeline)
 		{
-			spel_gfx_pipeline_cache_entry* old = &cache->entries[i];
-
-			if (!old->pipeline)
-			{
-				continue;
-			}
-
-			uint32_t index = (uint32_t)old->hash & (new_capacity - 1);
-
-			while (new_entries[index].pipeline)
-			{
-				index = (index + 1) & (new_capacity - 1);
-			}
-
-			new_entries[index] = *old;
+			continue;
 		}
 
-		spel_memory_free(cache->entries);
-		cache->entries = new_entries;
-		cache->capacity = new_capacity;
+		uint32_t index = (uint32_t)old->hash & (new_capacity - 1);
+
+		while (new_entries[index].pipeline)
+		{
+			index = (index + 1) & (new_capacity - 1);
+		}
+
+		new_entries[index] = *old;
+	}
+
+	spel_memory_free(cache->entries);
+	cache->entries = new_entries;
+	cache->capacity = new_capacity;
+}
+
+spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get(
+	spel_gfx_pipeline_cache* cache, uint64_t hash)
+{
+	if (cache->capacity == 0)
+	{
+		return NULL;
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_pipeline_cache_entry* e = &cache->entries[index];
+
+		if (!e->pipeline)
+		{
+			return NULL; // not found
+		}
+
+		if (e->hash == hash)
+		{
+			return e->pipeline;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
+spel_hidden void spel_gfx_pipeline_cache_insert(spel_gfx_pipeline_cache* cache,
+	uint64_t hash, spel_gfx_pipeline pipeline)
+{
+	if (cache->capacity == 0 || cache->count * 10 >= cache->capacity * 7)
+	{
+		spel_gfx_pipeline_cache_grow(cache);
+	}
+
+	uint32_t mask = cache->capacity - 1;
+	uint32_t index = (uint32_t)hash & mask;
+
+	for (;;)
+	{
+		spel_gfx_pipeline_cache_entry* e = &cache->entries[index];
+
+		if (!e->pipeline)
+		{
+			e->hash = hash;
+			e->pipeline = pipeline;
+			cache->count++;
+			return;
+		}
+
+		index = (index + 1) & mask;
+	}
+}
+
+spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
+	spel_gfx_pipeline_cache* cache, uint64_t hash, bool* cached)
+{
+	if (cache->capacity == 0 || cache->count * 10 >= cache->capacity * 7)
+	{
+		spel_gfx_pipeline_cache_grow(cache);
 	}
 
 	uint32_t mask = cache->capacity - 1;
@@ -481,14 +542,20 @@ spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 
 		if (e->pipeline == NULL)
 		{
+			spel_gfx_pipeline new =
+				spel_memory_malloc(sizeof(*new), SPEL_MEM_TAG_GFX);
+			memset(new, 0, sizeof(*new));
+
 			e->hash = hash;
-			e->pipeline = pipeline;
+			e->pipeline = new;
 			cache->count++;
-			return pipeline;
+			*cached = false;
+			return new;
 		}
 
 		if (e->hash == hash)
 		{
+			*cached = true;
 			return e->pipeline;
 		}
 

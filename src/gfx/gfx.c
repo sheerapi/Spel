@@ -82,6 +82,8 @@ spel_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 	ctx->tracked_fbo_cap = 2;
 	ctx->tracked_fbo_count = 0;
 
+	ctx->canvas_ctx = NULL;
+
 	ctx->tracked_fbos = (spel_gfx_framebuffer*)spel_memory_malloc(
 		ctx->tracked_fbo_cap * sizeof(*ctx->tracked_fbos), SPEL_MEM_TAG_GFX);
 
@@ -92,6 +94,11 @@ spel_api spel_gfx_context spel_gfx_context_create(spel_gfx_context_desc* desc)
 
 spel_api void spel_gfx_context_destroy(spel_gfx_context ctx)
 {
+	if (ctx->canvas_ctx != NULL)
+	{
+		spel_canvas_ctx_destroy(ctx->canvas_ctx);
+	}
+
 	ctx->vt->ctx_destroy(ctx);
 	spel_memory_free(ctx);
 }
@@ -103,6 +110,7 @@ spel_api void spel_gfx_frame_begin(spel_gfx_context ctx)
 
 spel_api void spel_gfx_frame_present(spel_gfx_context ctx)
 {
+	spel_canvas_ctx_flush(ctx->canvas_ctx);
 	ctx->vt->frame_end(ctx);
 }
 
@@ -315,7 +323,6 @@ spel_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount
 spel_api spel_gfx_cmdlist spel_gfx_cmdlist_default(spel_gfx_context ctx)
 {
 	spel_gfx_cmdlist cmdlist = ctx->cmdlist;
-	spel_gfx_cmd_begin_pass(cmdlist, spel_gfx_render_pass_default(ctx));
 	return cmdlist;
 }
 

@@ -176,6 +176,7 @@ spel_color_declare(gray);
 spel_color_declare(dark_gray);
 spel_color_declare(light_gray);
 spel_color_declare(transparent);
+spel_color_declare(sky);
 
 #define spel_color_rgba(r, g, b, a) ((spel_color){(r), (g), (b), (a)})
 #define spel_color_rgb(r, g, b) ((spel_color){(r), (g), (b), 255})
@@ -340,7 +341,7 @@ spel_api spel_vec4 spel_mat4_mul_vec4(spel_mat4 m, spel_vec4 v);
 spel_api spel_vec3 spel_mat4_mul_vec3(spel_mat4 m, spel_vec3 v, float w);
 
 spel_api spel_mat4 spel_mat4_transpose(spel_mat4 m);
-spel_api spel_mat4 spel_mat4nverse(spel_mat4 m);
+spel_api spel_mat4 spel_mat4_inverse(spel_mat4 m);
 spel_api float spel_mat4_determinant(spel_mat4 m);
 
 spel_api spel_mat4 spel_mat4_translate(float x, float y, float z);
@@ -379,7 +380,7 @@ spel_api spel_mat3 spel_mat3_zero(void);
 spel_api spel_mat3 spel_mat3_mul(spel_mat3 a, spel_mat3 b);
 spel_api spel_vec3 spel_mat3_mul_vec3(spel_mat3 m, spel_vec3 v);
 spel_api spel_mat3 spel_mat3_transpose(spel_mat3 m);
-spel_api spel_mat3 spel_mat3nverse(spel_mat3 m);
+spel_api spel_mat3 spel_mat3_inverse(spel_mat3 m);
 spel_api float spel_mat3_determinant(spel_mat3 m);
 spel_api spel_mat3 spel_mat3_from_mat4(spel_mat4 m);
 spel_api spel_mat3 spel_mat3_normal_matrix(spel_mat4 model);
@@ -390,9 +391,10 @@ spel_api spel_mat2 spel_mat2_zero(void);
 spel_api spel_mat2 spel_mat2_mul(spel_mat2 a, spel_mat2 b);
 spel_api spel_vec2 spel_mat2_mul_vec2(spel_mat2 m, spel_vec2 v);
 spel_api spel_mat2 spel_mat2_transpose(spel_mat2 m);
-spel_api spel_mat2 spel_mat2nverse(spel_mat2 m);
+spel_api spel_mat2 spel_mat2_inverse(spel_mat2 m);
 spel_api float spel_mat2_determinant(spel_mat2 m);
 spel_api spel_mat2 spel_mat2_rotate(float radians);
+spel_api spel_vec2 spel_mat3_transform_point(spel_mat3 m, spel_vec2 p);
 
 spel_api spel_quat spel_quat_identity(void);
 spel_api spel_quat spel_quat_from_axis_angle(spel_vec3 axis, float radians);

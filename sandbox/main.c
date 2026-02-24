@@ -13,6 +13,8 @@ spel_gfx_uniform_buffer ubuffer_frame;
 spel_gfx_uniform_buffer ubuffer_obj_cube;
 spel_gfx_uniform_buffer ubuffer_obj_plane;
 
+spel_canvas canvas;
+
 // we technically *could* make it one big buffer, but i dont know
 // how to do that yet
 spel_gfx_buffer vbuffer_plane;
@@ -185,6 +187,9 @@ void spel_load()
 
 	plane_data.model = spel_mat4_identity();
 
+	canvas = spel_canvas_create(spel.gfx, spel.window.width, spel.window.height,
+								SPEL_CANVAS_AUTO_RESIZE);
+
 	spel_memory_dump_terminal();
 }
 
@@ -243,7 +248,7 @@ void spel_draw()
 	spel_gfx_cmdlist cl = spel_gfx_cmdlist_default(spel.gfx);
 
 	spel_gfx_cmd_bind_pipeline(cl, pipeline);
-	spel_gfx_cmd_clear(cl, spel_color_cyan);
+	spel_gfx_cmd_clear(cl, spel_color_sky);
 
 	spel_gfx_cmd_uniform_block_update(cl, ubuffer_frame, &frame_data, sizeof(FrameData));
 	spel_gfx_cmd_bind_shader_buffer(cl, ubuffer_frame);
@@ -270,10 +275,15 @@ void spel_draw()
 
 	// submit it all
 	spel_gfx_cmdlist_submit(cl);
+
+	spel_canvas_begin(canvas);
+	spel_canvas_clear(spel_color_green);
+	spel_canvas_end(canvas);
 }
 
 void spel_quit()
 {
+	spel_canvas_destroy(canvas);
 	spel_gfx_pipeline_destroy(pipeline);
 	spel_gfx_texture_destroy(ground_texture);
 	spel_gfx_uniform_buffer_destroy(ubuffer_obj_cube);

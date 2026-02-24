@@ -22,6 +22,7 @@ spel_color spel_color_gray = {128, 128, 128, 255};
 spel_color spel_color_dark_gray = {64, 64, 64, 255};
 spel_color spel_color_light_gray = {192, 192, 192, 255};
 spel_color spel_color_transparent = {0, 0, 0, 0};
+spel_color spel_color_sky = spel_color_hex(0x87ceeb);
 
 // ============================================================
 //  SCALAR MATH
@@ -2081,4 +2082,12 @@ float spel_noise_fbm(float x, float y, int octaves, float lacunarity, float gain
 		frequency *= lacunarity;
 	}
 	return value;
+}
+
+spel_vec2 spel_mat3_transform_point(spel_mat3 m, spel_vec2 p)
+{
+	return (spel_vec2){
+		m.m[0] * p.x + m.m[1] * p.y + m.m[2],
+		m.m[4] * p.x + m.m[5] * p.y + m.m[6],
+	};
 }

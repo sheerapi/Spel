@@ -452,6 +452,11 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 
 	glCmd->current_pass = pass;
 
+	if (pass->desc.name)
+	{
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, pass->desc.name);
+	}
+
 	GLuint fbo = pass->desc.framebuffer ? *(GLuint*)pass->desc.framebuffer->data
 										: 0; // 0 = default framebuffer
 
@@ -543,11 +548,6 @@ void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_
 			break;
 		}
 	}
-
-	if (pass->desc.name)
-	{
-		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, pass->desc.name);
-	}
 }
 
 void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd* cmd)
@@ -613,4 +613,5 @@ void exec_cmd_end_render_pass(spel_gfx_cmdlist cl, spel_gfx_end_render_pass_cmd*
 
 	// Reset target height to default framebuffer dimensions.
 	glCmd->target_height = cl->ctx->fb_height;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

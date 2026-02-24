@@ -1,6 +1,7 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
 #include "dcimgui.h"
+#include "gfx/gfx_canvas.h"
 #include "gfx/gfx_framebuffer.h"
 #include "gfx_buffer.h"
 #include "gfx_commands.h"
@@ -196,82 +197,60 @@ typedef struct spel_gfx_render_pass_t
 	void* data;
 } spel_gfx_render_pass_t;
 
-// render graphs
-#define SPEL_RG_MAX_RESOURCES 64
-#define SPEL_RG_MAX_PASSES 32
-#define SPEL_RG_MAX_READS 8
-#define SPEL_RG_MAX_WRITES 4
-
-typedef struct spel_gfx_rg_resource_t
-{
-	char name[64];
-	spel_gfx_rg_resource_type type;
-	bool imported;
-
-	union
-	{
-		spel_gfx_texture_desc texture;
-		spel_gfx_buffer_desc buffer;
-	} desc;
-
-	union
-	{
-		spel_gfx_texture texture;
-		spel_gfx_buffer buffer;
-	};
-
-	int first_used_pass;
-	int last_used_pass;
-} spel_gfx_rg_resource_t;
-
-typedef struct spel_gfx_rg_resource_access
-{
-	spel_gfx_rg_resource resource;
-	spel_gfx_rg_access access;
-	spel_gfx_load_op load_op; // only for writes
-} spel_gfx_rg_resource_access;
-
-// callbacks for pass execution
-typedef void (*spel_gfx_rg_setup_fn)(spel_gfx_rg_pass, void*);
-typedef void (*spel_gfx_rg_execute_fn)(spel_gfx_cmdlist, spel_gfx_rg_pass, void*);
-
-typedef struct spel_gfx_rg_pass_t
-{
-	char name[64];
-
-	// declared resource accesses
-	spel_gfx_rg_resource_access reads[SPEL_RG_MAX_READS];
-	uint32_t read_count;
-	spel_gfx_rg_resource_access writes[SPEL_RG_MAX_WRITES];
-	uint32_t write_count;
-
-	// execution
-	spel_gfx_rg_setup_fn setup;
-	spel_gfx_rg_execute_fn execute;
-	void* user_data;
-
-	// computed during compile
-	bool culled;
-	int execution_order; // topological sort result
-} spel_gfx_rg_pass_t;
-
-typedef struct spel_gfx_rg_t
+// canvases
+typedef struct
 {
 	spel_gfx_context ctx;
 
-	spel_gfx_rg_resource resources;
-	uint8_t resource_cap;
-	uint8_t resource_count;
+	uint8_t canvas_count;
+	spel_canvas active;
+	spel_gfx_cmdlist command_list;
 
-	spel_gfx_rg_pass passes;
-	uint8_t pass_cap;
-	uint8_t pass_count;
+	spel_canvas default_canvas;
 
-	bool compiled;
-	spel_gfx_rg_pass sorted_passes;
-	uint8_t sorted_pass_cap;
-	uint8_t sorted_pass_count;
-} spel_gfx_rg_t;
+	// canvas state
+	spel_color color;
+	spel_gfx_blend_mode blend_mode;
+	spel_canvas_shader shader;
+
+	// transform stack
+	spel_mat3 transforms[32];
+	int transform_top;
+
+	// gfx resources
+	spel_gfx_buffer vbo;
+	spel_gfx_buffer ibo;
+	spel_gfx_pipeline pipeline;
+	spel_gfx_uniform_buffer ubuffer_frame;
+	spel_gfx_texture white_texture;
+
+	// cpu-side scratch
+	spel_canvas_vertex* verts;
+	uint32_t* indices;
+	int vert_count;
+	int index_count;
+
+	// current batch state
+	spel_gfx_texture batch_texture;
+	spel_canvas_shader batch_shader;
+	spel_gfx_blend_mode batch_blend;
+} spel_canvas_context;
+
+typedef struct spel_canvas_t
+{
+	spel_canvas_context* ctx;
+
+	spel_vec2 size;
+	uint8_t flags;
+
+	spel_gfx_texture color;
+	spel_gfx_texture depth;
+
+	spel_gfx_framebuffer framebuffer;
+	spel_gfx_render_pass pass;
+
+	bool is_default;
+} spel_canvas_t;
 
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
@@ -294,6 +273,8 @@ typedef struct spel_gfx_context_t
 	spel_gfx_framebuffer* tracked_fbos;
 	uint16_t tracked_fbo_count;
 	uint16_t tracked_fbo_cap;
+
+	spel_canvas_context* canvas_ctx;
 
 	// default data
 	spel_gfx_cmdlist cmdlist;
@@ -364,18 +345,22 @@ spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
 
 spel_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
-											  uint64_t hash, spel_gfx_pipeline pipeline);
+												uint64_t hash,
+												spel_gfx_pipeline pipeline);
 
 spel_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);
 
 spel_hidden extern void spel_gfx_shader_reflect(spel_gfx_shader shader,
-											  spel_gfx_shader_desc* desc);
+												spel_gfx_shader_desc* desc);
 
 spel_hidden extern void spel_gfx_pipeline_merge_reflections(spel_gfx_pipeline pipeline,
-														  spel_gfx_shader* shaders,
-														  uint32_t shaderCount);
+															spel_gfx_shader* shaders,
+															uint32_t shaderCount);
 
 spel_hidden extern void spel_gfx_shader_reflection_free(spel_gfx_shader shader);
+
+spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx);
+spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx);
 
 #ifdef DEBUG
 spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);

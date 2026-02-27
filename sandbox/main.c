@@ -112,7 +112,7 @@ uint32_t plane_indices[] = {0, 2, 1, 0, 3, 2};
 
 void spel_conf()
 {
-	spel.window.resizable = true;
+	spel.window.resizable = false;
 	spel.window.swapchain.msaa = 2;
 	spel.log.severity = SPEL_SEV_DEBUG;
 }
@@ -281,14 +281,25 @@ void spel_draw()
 	spel_canvas_begin(NULL);
 
 	spel_canvas_push();
+	spel_canvas_fill_mode_set(SPEL_CANVAS_STROKE);
+	spel_canvas_line_width_set(10);
 	spel_canvas_shader_set(frag_2d_shader);
 	spel_canvas_translate(spel_vec2(400, 300));
 	spel_canvas_rotate(45.0F);
 	spel_canvas_draw_rect(spel_rect(-50, -50, 100, 100));
+
+	spel_canvas_shader_set(NULL);
+
+	spel_canvas_draw_rect(spel_rect(-30, -30, 60, 60));
 	spel_canvas_pop();
 
-	spel_canvas_draw_image(spel_gfx_texture_checker_get(spel.gfx),
-						   spel_rect(100, 100, 256, 256));
+	spel_canvas_sampling_set(SPEL_GFX_SAMPLER_FILTER_NEAREST);
+
+	spel_canvas_draw_image_region(spel_gfx_texture_checker_get(spel.gfx),
+								  spel_rect(0, 0, 32, 32), spel_rect(100, 100, 100, 100));
+
+	spel_canvas_draw_circle(spel_vec2(225, 120), 20);
+	spel_canvas_draw_line(spel_vec2(250, 100), spel_vec2(300, 200));
 	spel_canvas_end();
 }
 

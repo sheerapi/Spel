@@ -1,6 +1,7 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
 #include "dcimgui.h"
+#include "canvas/canvas_internal.h"
 #include "gfx/gfx_canvas.h"
 #include "gfx/gfx_framebuffer.h"
 #include "gfx_buffer.h"
@@ -227,83 +228,6 @@ typedef struct spel_gfx_render_pass_t
 	void* data;
 } spel_gfx_render_pass_t;
 
-// canvases
-typedef struct
-{
-	spel_mat4 proj;
-} spel_canvas_frame_data;
-
-typedef struct
-{
-	spel_color color;
-	spel_gfx_pipeline_desc pipeline_desc;
-	spel_mat3 transform;
-} spel_canvas_state;
-
-typedef struct
-{
-	spel_gfx_context ctx;
-
-	uint8_t canvas_count;
-	spel_canvas active;
-	spel_gfx_cmdlist command_list;
-
-	spel_canvas default_canvas;
-
-	// canvas state
-	spel_color color;
-	spel_gfx_pipeline_desc pipeline_desc;
-	bool pipeline_dirty;
-
-	// transform stack
-	spel_mat3 transforms[32];
-	int transform_top;
-
-	spel_canvas_state states[32];
-	int state_top;
-
-	// gfx resources
-	spel_gfx_buffer vbo;
-	spel_gfx_buffer ibo;
-	spel_gfx_pipeline pipeline;
-	spel_gfx_uniform_buffer ubuffer_frame;
-	spel_gfx_texture white_texture;
-
-	spel_gfx_pipeline og_pipeline;
-
-	// cpu-side scratch
-	spel_canvas_vertex* verts;
-	uint32_t* indices;
-	int vert_count;
-	int index_count;
-
-	int vert_cap;
-	int index_cap;
-
-	// current batch state
-	spel_gfx_texture batch_texture;
-
-	// frame data
-	spel_canvas_frame_data frame_data;
-} spel_canvas_context;
-
-typedef struct spel_canvas_t
-{
-	spel_canvas_context* ctx;
-
-	char name[16];
-	bool is_default;
-
-	spel_vec2 size;
-	uint8_t flags;
-
-	spel_gfx_texture color;
-	spel_gfx_texture depth;
-
-	spel_gfx_framebuffer framebuffer;
-	spel_gfx_render_pass pass;
-} spel_canvas_t;
-
 // initialization
 typedef struct spel_gfx_vtable_t* spel_gfx_vtable;
 
@@ -400,11 +324,12 @@ spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 	spel_gfx_pipeline_cache* cache, uint64_t hash, bool* cached);
 spel_hidden extern spel_gfx_pipeline spel_gfx_pipeline_cache_get(
 	spel_gfx_pipeline_cache* cache, uint64_t hash);
-spel_hidden extern void spel_gfx_pipeline_cache_insert(
-	spel_gfx_pipeline_cache* cache, uint64_t hash, spel_gfx_pipeline pipeline);
+spel_hidden extern void spel_gfx_pipeline_cache_insert(spel_gfx_pipeline_cache* cache,
+													   uint64_t hash,
+													   spel_gfx_pipeline pipeline);
 
 spel_hidden void spel_gfx_pipeline_cache_remove(spel_gfx_pipeline_cache* cache,
-									uint64_t hash,
+												uint64_t hash,
 												spel_gfx_pipeline pipeline);
 
 spel_api extern bool spel_gfx_texture_validate(const spel_gfx_texture_desc* desc);

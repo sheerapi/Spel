@@ -469,8 +469,8 @@ static void spel_gfx_pipeline_cache_grow(spel_gfx_pipeline_cache* cache)
 	cache->capacity = new_capacity;
 }
 
-spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get(
-	spel_gfx_pipeline_cache* cache, uint64_t hash)
+spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get(spel_gfx_pipeline_cache* cache,
+														  uint64_t hash)
 {
 	if (cache->capacity == 0)
 	{
@@ -499,7 +499,7 @@ spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get(
 }
 
 spel_hidden void spel_gfx_pipeline_cache_insert(spel_gfx_pipeline_cache* cache,
-	uint64_t hash, spel_gfx_pipeline pipeline)
+												uint64_t hash, spel_gfx_pipeline pipeline)
 {
 	if (cache->capacity == 0 || cache->count * 10 >= cache->capacity * 7)
 	{
@@ -542,8 +542,7 @@ spel_hidden spel_gfx_pipeline spel_gfx_pipeline_cache_get_or_create(
 
 		if (e->pipeline == NULL)
 		{
-			spel_gfx_pipeline new =
-				spel_memory_malloc(sizeof(*new), SPEL_MEM_TAG_GFX);
+			spel_gfx_pipeline new = spel_memory_malloc(sizeof(*new), SPEL_MEM_TAG_GFX);
 			memset(new, 0, sizeof(*new));
 
 			e->hash = hash;
@@ -717,9 +716,10 @@ spel_api void spel_gfx_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer bu
 {
 	if (offset + size > buf->size)
 	{
-		spel_error(SPEL_ERR_INVALID_ARGUMENT,
-				   "buffer update overflow: size %zu at offset %zu exceeds buffer size %zu",
-				   size, offset, buf->size);
+		spel_error(
+			SPEL_ERR_INVALID_ARGUMENT,
+			"buffer update overflow: size %zu at offset %zu exceeds buffer size %zu",
+			size, offset, buf->size);
 		return;
 	}
 
@@ -1578,4 +1578,9 @@ spel_api spel_gfx_texture spel_gfx_texture_checker_create(spel_gfx_context ctx,
 		.data = checker_pixels,
 		.data_size = sizeof(checker_pixels)};
 	return spel_gfx_texture_create(ctx, &CHECKER_DATA);
+}
+
+spel_api spel_vec2 spel_gfx_texture_size(spel_gfx_texture texture)
+{
+	return spel_vec2(texture->width, texture->height);
 }

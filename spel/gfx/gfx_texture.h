@@ -55,6 +55,8 @@ spel_api void spel_gfx_texture_destroy(spel_gfx_texture texture);
 spel_api spel_gfx_texture spel_gfx_texture_white_get(spel_gfx_context ctx);
 spel_api spel_gfx_texture spel_gfx_texture_checker_get(spel_gfx_context ctx);
 
+spel_api spel_vec2 spel_gfx_texture_size(spel_gfx_texture texture);
+
 spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 												const spel_gfx_texture_load_desc* desc);
 

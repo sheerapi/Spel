@@ -186,9 +186,9 @@ spel_color_declare(sky);
 	((spel_color){((hex) >> 24) & 0xFF, ((hex) >> 16) & 0xFF, ((hex) >> 8) & 0xFF,       \
 				  ((hex)) & 0xFF})
 
-spel_api int spel_mathsnan(double x);
-spel_api int spel_mathsinf(double x);
-spel_api int spel_mathsfinite(double x);
+spel_api int spel_math_isnan(double x);
+spel_api int spel_math_isinf(double x);
+spel_api int spel_math_isfinite(double x);
 
 spel_api float spel_math_sqrt(float x);
 spel_api float spel_math_rsqrt(float x);
@@ -213,7 +213,7 @@ spel_api float spel_math_wrap(float x, float min, float max);
 spel_api float spel_math_snap(float x, float step);
 
 spel_api float spel_math_lerp_clamped(float a, float b, float t);
-spel_api float spel_mathnverse_lerp(float a, float b, float v);
+spel_api float spel_math_inverse_lerp(float a, float b, float v);
 spel_api float spel_math_remap(float v, float a0, float b0, float a1, float b1);
 spel_api float spel_math_smootherstep(float edge0, float edge1, float x);
 
@@ -226,6 +226,9 @@ spel_api int spel_maths_pow2(int x);
 spel_api int spel_math_gcd(int a, int b);
 spel_api int spel_math_lcm(int a, int b);
 spel_api float spel_math_approach(float current, float target, float step);
+
+spel_api float spel_math_maxf(float a, float b);
+spel_api float spel_math_minf(float a, float b);
 
 #define spel_vec2(x, y) ((spel_vec2){(x), (y)})
 #define spel_vec2_zero ((spel_vec2){0.0f, 0.0f})
@@ -407,7 +410,7 @@ spel_api spel_quat spel_quat_look_at(spel_vec3 forward, spel_vec3 up);
 spel_api spel_quat spel_quat_mul(spel_quat a, spel_quat b);
 spel_api spel_vec3 spel_quat_mul_vec3(spel_quat q, spel_vec3 v);
 spel_api spel_quat spel_quat_conjugate(spel_quat q);
-spel_api spel_quat spel_quatnverse(spel_quat q);
+spel_api spel_quat spel_quat_inverse(spel_quat q);
 spel_api float spel_quat_dot(spel_quat a, spel_quat b);
 spel_api float spel_quat_len(spel_quat q);
 spel_api float spel_quat_len_sq(spel_quat q);
@@ -429,8 +432,8 @@ spel_api spel_rect spel_rect_from_points(int x0, int y0, int x1, int y1);
 
 spel_api int spel_rect_contains_point(spel_rect r, int x, int y);
 spel_api int spel_rect_contains_rect(spel_rect outer, spel_rect inner);
-spel_api int spel_rectntersects(spel_rect a, spel_rect b);
-spel_api spel_rect spel_rectntersection(spel_rect a, spel_rect b);
+spel_api int spel_rect_intersects(spel_rect a, spel_rect b);
+spel_api spel_rect spel_rect_intersection(spel_rect a, spel_rect b);
 spel_api spel_rect spel_rect_union(spel_rect a, spel_rect b);
 spel_api spel_rect spel_rect_expand(spel_rect r, int amount);
 spel_api spel_rect spel_rect_shrink(spel_rect r, int amount);
@@ -452,7 +455,7 @@ spel_api spel_vec3 spel_aabb_extents(spel_aabb b);
 spel_api spel_vec3 spel_aabb_size(spel_aabb b);
 
 spel_api int spel_aabb_contains_point(spel_aabb b, spel_vec3 p);
-spel_api int spel_aabbntersects(spel_aabb a, spel_aabb b);
+spel_api int spel_aabb_intersects(spel_aabb a, spel_aabb b);
 spel_api spel_aabb spel_aabb_union(spel_aabb a, spel_aabb b);
 spel_api spel_aabb spel_aabb_expand(spel_aabb b, spel_vec3 amount);
 spel_api spel_aabb spel_aabb_transform(spel_aabb b, spel_mat4 m);
@@ -462,12 +465,12 @@ spel_api int spel_circlentersects_circle(spel_circle a, spel_circle b);
 spel_api int spel_circlentersects_rect(spel_circle c, spel_rect r);
 
 spel_api spel_vec3 spel_ray_at(spel_ray ray, float t);
-spel_api int spel_rayntersects_aabb(spel_ray ray, spel_aabb box, float* outT);
-spel_api int spel_rayntersects_plane(spel_ray ray, spel_plane plane, float* outT);
-spel_api int spel_rayntersects_sphere(spel_ray ray, spel_vec3 center, float radius,
-									  float* outT);
-spel_api int spel_rayntersects_triangle(spel_ray ray, spel_vec3 v0, spel_vec3 v1,
-										spel_vec3 v2, float* outT);
+spel_api int spel_ray_intersects_aabb(spel_ray ray, spel_aabb box, float* outT);
+spel_api int spel_ray_intersects_plane(spel_ray ray, spel_plane plane, float* outT);
+spel_api int spel_ray_intersects_sphere(spel_ray ray, spel_vec3 center, float radius,
+										float* outT);
+spel_api int spel_ray_intersects_triangle(spel_ray ray, spel_vec3 v0, spel_vec3 v1,
+										  spel_vec3 v2, float* outT);
 
 spel_api spel_plane spel_plane_make(spel_vec3 normal, spel_vec3 point);
 spel_api float spel_plane_dist_to_point(spel_plane p, spel_vec3 point);
@@ -477,7 +480,7 @@ spel_api int spel_plane_side(spel_plane p, spel_vec3 point);
 spel_api spel_color spel_color_hsl(int h, float s, float l, uint8_t a);
 spel_api spel_color spel_color_hsv(int h, float s, float v, uint8_t a);
 spel_api spel_color spel_color_mix(spel_color a, spel_color b, float t);
-spel_api spel_color spel_colornvert(spel_color c);
+spel_api spel_color spel_color_invert(spel_color c);
 spel_api spel_color spel_color_alpha(spel_color c, uint8_t a);
 spel_api spel_color spel_color_darken(spel_color c, float amount);
 spel_api spel_color spel_color_lighten(spel_color c, float amount);
@@ -495,45 +498,45 @@ spel_api float* spel_color_array(spel_color c);
 
 spel_api float spel_ease_linear(float t);
 
-spel_api float spel_easen_sine(float t);
+spel_api float spel_ease_in_sine(float t);
 spel_api float spel_ease_out_sine(float t);
-spel_api float spel_easen_out_sine(float t);
+spel_api float spel_ease_in_out_sine(float t);
 
-spel_api float spel_easen_quad(float t);
+spel_api float spel_ease_in_quad(float t);
 spel_api float spel_ease_out_quad(float t);
-spel_api float spel_easen_out_quad(float t);
+spel_api float spel_ease_in_out_quad(float t);
 
-spel_api float spel_easen_cubic(float t);
+spel_api float spel_ease_in_cubic(float t);
 spel_api float spel_ease_out_cubic(float t);
-spel_api float spel_easen_out_cubic(float t);
+spel_api float spel_ease_in_out_cubic(float t);
 
-spel_api float spel_easen_quart(float t);
+spel_api float spel_ease_in_quart(float t);
 spel_api float spel_ease_out_quart(float t);
-spel_api float spel_easen_out_quart(float t);
+spel_api float spel_ease_in_out_quart(float t);
 
-spel_api float spel_easen_quint(float t);
+spel_api float spel_ease_in_quint(float t);
 spel_api float spel_ease_out_quint(float t);
-spel_api float spel_easen_out_quint(float t);
+spel_api float spel_ease_in_out_quint(float t);
 
-spel_api float spel_easen_expo(float t);
+spel_api float spel_ease_in_expo(float t);
 spel_api float spel_ease_out_expo(float t);
-spel_api float spel_easen_out_expo(float t);
+spel_api float spel_ease_in_out_expo(float t);
 
-spel_api float spel_easen_circ(float t);
+spel_api float spel_ease_in_circ(float t);
 spel_api float spel_ease_out_circ(float t);
-spel_api float spel_easen_out_circ(float t);
+spel_api float spel_ease_in_out_circ(float t);
 
-spel_api float spel_easen_back(float t);
+spel_api float spel_ease_in_back(float t);
 spel_api float spel_ease_out_back(float t);
-spel_api float spel_easen_out_back(float t);
+spel_api float spel_ease_in_out_back(float t);
 
-spel_api float spel_easen_elastic(float t);
+spel_api float spel_ease_in_elastic(float t);
 spel_api float spel_ease_out_elastic(float t);
-spel_api float spel_easen_out_elastic(float t);
+spel_api float spel_ease_in_out_elastic(float t);
 
-spel_api float spel_easen_bounce(float t);
+spel_api float spel_ease_in_bounce(float t);
 spel_api float spel_ease_out_bounce(float t);
-spel_api float spel_easen_out_bounce(float t);
+spel_api float spel_ease_in_out_bounce(float t);
 
 typedef struct
 {

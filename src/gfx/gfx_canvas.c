@@ -11,12 +11,6 @@
 
 #define SPEL_CANVAS_VBUFFER_SIZE 16384
 
-spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx);
-spel_hidden void canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx);
-spel_hidden spel_canvas_state canvas_snapshot_state(spel_canvas_context* ctx);
-spel_hidden void canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s);
-spel_hidden void canvas_ensure_capacity(int vertsNeeded, int indicesNeeded);
-
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags)
 {
@@ -124,6 +118,13 @@ spel_api void spel_canvas_begin(spel_canvas canvas)
 	canvas->ctx->pipeline_desc.cull_mode = SPEL_GFX_CULL_NONE;
 	canvas->ctx->pipeline = canvas->ctx->og_pipeline;
 	canvas->ctx->pipeline_dirty = false;
+	canvas->ctx->color = spel_color_white;
+
+	canvas->ctx->fill_paint.type = SPEL_CANVAS_PAINT_COLOR;
+	canvas->ctx->fill_paint.color = spel_color_white;
+
+	canvas->ctx->stroke_paint.type = SPEL_CANVAS_PAINT_COLOR;
+	canvas->ctx->stroke_paint.color = spel_color_white;
 }
 
 spel_api void spel_canvas_end()
@@ -209,10 +210,25 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 
 	ctx->line_width = 5.0F;
 	ctx->fill_mode = SPEL_CANVAS_FILL;
+
+	ctx->current_path = (spel_canvas_path){0};
+	ctx->current_path.closed = false;
+	ctx->current_path.cmd_capacity = 256;
+	ctx->current_path.point_capacity = 256;
+	ctx->miter_limit = 4;
+
+	ctx->current_path.cmds =
+		spel_memory_malloc(ctx->current_path.cmd_capacity, SPEL_MEM_TAG_GFX);
+
+	ctx->current_path.points =
+		spel_memory_malloc(ctx->current_path.point_capacity, SPEL_MEM_TAG_GFX);
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
+	spel_memory_free(ctx->current_path.cmds);
+	spel_memory_free(ctx->current_path.points);
+
 	spel_memory_free(ctx->verts);
 	spel_memory_free(ctx->indices);
 
@@ -261,7 +277,7 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 	ctx->index_count = 0;
 }
 
-spel_hidden void canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx)
+spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx)
 {
 	if (texture != ctx->batch_texture || ctx->pipeline_dirty || ctx->sampler_dirty)
 	{
@@ -359,7 +375,7 @@ void spel_canvas_push()
 	spel.gfx->canvas_ctx->transform_top++;
 	// also snapshot the rest of the draw state
 	spel.gfx->canvas_ctx->states[spel.gfx->canvas_ctx->state_top++] =
-		canvas_snapshot_state(spel.gfx->canvas_ctx);
+		spel_canvas_snapshot_state(spel.gfx->canvas_ctx);
 }
 
 void spel_canvas_pop()
@@ -367,11 +383,12 @@ void spel_canvas_pop()
 	spel_assert(spel.gfx->canvas_ctx->transform_top > 0, "transform stack underflow");
 	spel.gfx->canvas_ctx->transform_top--;
 	spel.gfx->canvas_ctx->state_top--;
-	canvas_state_restore(spel.gfx->canvas_ctx,
-						 spel.gfx->canvas_ctx->states[spel.gfx->canvas_ctx->state_top]);
+	spel_canvas_state_restore(
+		spel.gfx->canvas_ctx,
+		spel.gfx->canvas_ctx->states[spel.gfx->canvas_ctx->state_top]);
 }
 
-spel_canvas_state canvas_snapshot_state(spel_canvas_context* ctx)
+spel_canvas_state spel_canvas_snapshot_state(spel_canvas_context* ctx)
 {
 	return (spel_canvas_state){.color = ctx->color,
 							   .pipeline_desc = ctx->pipeline_desc,
@@ -379,10 +396,11 @@ spel_canvas_state canvas_snapshot_state(spel_canvas_context* ctx)
 							   .sampler_desc = ctx->sampler_desc,
 							   .line_width = ctx->line_width,
 							   .fill_mode = ctx->fill_mode,
-							   .stroke_color = ctx->stroke_color};
+							   .stroke_color = ctx->stroke_color,
+							   .miter_limit = ctx->miter_limit};
 }
 
-void canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
+void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 {
 	ctx->color = s.color;
 	ctx->pipeline_desc = s.pipeline_desc;
@@ -391,12 +409,13 @@ void canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 	ctx->line_width = s.line_width;
 	ctx->fill_mode = s.fill_mode;
 	ctx->stroke_color = s.stroke_color;
+	ctx->miter_limit = s.miter_limit;
 
 	ctx->pipeline_dirty = true;
 	ctx->sampler_dirty = true;
 }
 
-void canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
+void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 {
 	spel_assert(spel.gfx->canvas_ctx->vert_count + vertsNeeded <=
 					spel.gfx->canvas_ctx->vert_cap,
@@ -416,8 +435,8 @@ void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	canvas_check_batch(ctx->white_texture, ctx);
-	canvas_ensure_capacity(4, 6);
+	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_ensure_capacity(4, 6);
 
 	float dx = end.x - start.x;
 	float dy = end.y - start.y;
@@ -466,8 +485,8 @@ void spel_canvas_draw_rect(spel_rect rect)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	canvas_check_batch(ctx->white_texture, ctx);
-	canvas_ensure_capacity(4, 6);
+	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_ensure_capacity(4, 6);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
 	int base = ctx->vert_count;
@@ -498,8 +517,8 @@ void spel_canvas_draw_image(spel_gfx_texture tex, spel_rect dst)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	canvas_check_batch(tex, ctx);
-	canvas_ensure_capacity(4, 6);
+	spel_canvas_check_batch(tex, ctx);
+	spel_canvas_ensure_capacity(4, 6);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
 	int base = ctx->vert_count;
@@ -531,8 +550,8 @@ void spel_canvas_draw_image_region(spel_gfx_texture tex, spel_rect src, spel_rec
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	canvas_check_batch(tex, ctx);
-	canvas_ensure_capacity(4, 6);
+	spel_canvas_check_batch(tex, ctx);
+	spel_canvas_ensure_capacity(4, 6);
 
 	float tex_w = spel_gfx_texture_size(tex).x;
 	float tex_h = spel_gfx_texture_size(tex).y;
@@ -580,8 +599,8 @@ void spel_canvas_draw_circle(spel_vec2 center, float radius)
 	{
 		segments = 64;
 	}
-	canvas_check_batch(ctx->white_texture, ctx);
-	canvas_ensure_capacity(segments + 1, segments * 3);
+	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_ensure_capacity(segments + 1, segments * 3);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
 	int base = ctx->vert_count;

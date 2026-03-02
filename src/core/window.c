@@ -30,7 +30,7 @@ spel_hidden void spel_window_create()
 
 	SDL_SetWindowFullscreen(spel.window.handle, spel.window.fullscreen);
 	SDL_SetWindowResizable(spel.window.handle, spel.window.resizable);
-	SDL_SetWindowBordered(spel.window.handle, spel.window.borderless);
+	SDL_SetWindowBordered(spel.window.handle, !spel.window.borderless);
 
 	spel.window.display = SDL_GetDisplayForWindow(spel.window.handle);
 

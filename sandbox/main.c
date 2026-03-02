@@ -2,6 +2,7 @@
 #include "core/log.h"
 #include "core/memory.h"
 #include "core/window.h"
+#include "gfx/canvas/canvas.h"
 #include "gfx/gfx.h"
 #include "input/input.h"
 #include <math.h>
@@ -281,7 +282,6 @@ void spel_draw()
 	spel_canvas_begin(NULL);
 
 	spel_canvas_push();
-	spel_canvas_fill_mode_set(SPEL_CANVAS_STROKE);
 	spel_canvas_line_width_set(10);
 	spel_canvas_shader_set(frag_2d_shader);
 	spel_canvas_translate(spel_vec2(400, 300));
@@ -300,6 +300,15 @@ void spel_draw()
 
 	spel_canvas_draw_circle(spel_vec2(225, 120), 20);
 	spel_canvas_draw_line(spel_vec2(250, 100), spel_vec2(300, 200));
+
+	spel_canvas_path_begin();
+	spel_canvas_path_moveto(spel_vec2(100, 100));
+	spel_canvas_path_lineto(spel_vec2(200, 100));
+	spel_canvas_path_lineto(spel_vec2(150, 200));
+	spel_canvas_path_close();
+
+	spel_canvas_path_fill();
+	
 	spel_canvas_end();
 }
 

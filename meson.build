@@ -33,6 +33,8 @@ sources = [
     'src/input/input.c',
     'src/gfx/gfx_canvas.c',
 
+    'src/gfx/canvas/canvas_path.c',
+
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
     'src/gfx/backends/gl/gfx_buffer_gl.c',
@@ -47,6 +49,14 @@ sources = [
     'src/utils/internal/execinfo.c',
     'src/utils/internal/stacktraverse.c',
     'src/utils/internal/spirv_reflect.c',
+
+    'src/utils/internal/libtess2/bucketalloc.c',
+    'src/utils/internal/libtess2/dict.c',
+    'src/utils/internal/libtess2/geom.c',
+    'src/utils/internal/libtess2/mesh.c',
+    'src/utils/internal/libtess2/priorityq.c',
+    'src/utils/internal/libtess2/sweep.c',
+    'src/utils/internal/libtess2/tess.c',
 ]
 
 shaders = ['shaders/spel_internal_2d.glsl', 'shaders/spel_internal_fullscreen.glsl', 'shaders/spel_internal_imgui.glsl']

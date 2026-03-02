@@ -2091,3 +2091,13 @@ spel_vec2 spel_mat3_transform_point(spel_mat3 m, spel_vec2 p)
 		m.m[1] * p.x + m.m[4] * p.y + m.m[7],
 	};
 }
+
+spel_api float spel_math_maxf(float a, float b)
+{
+	return a < b ? b : a;
+}
+
+spel_api float spel_math_minf(float a, float b)
+{
+	return a > b ? b : a;
+}

@@ -381,8 +381,6 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 	spel_canvas_stroke_scratch_ensure(n);
 	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, spel.gfx->canvas_ctx);
 
-	int strip_base = spel.gfx->canvas_ctx->vert_count;
-
 	spel_canvas_stroke_basic(path, w, color, spel.gfx->canvas_ctx->stroke_point_bases,
 							 spel.gfx->canvas_ctx->stroke_is_double);
 
@@ -891,7 +889,6 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		return;
 
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
-	bool is_miter = spel.gfx->canvas_ctx->join_type == SPEL_CANVAS_JOIN_MITER;
 
 	// first pass - figure out vert counts and total capacity needed
 	int total_verts = 0;

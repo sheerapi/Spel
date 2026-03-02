@@ -4,6 +4,7 @@
 
 typedef struct spel_canvas_t* spel_canvas;
 typedef struct spel_canvas_shader_t* spel_canvas_shader;
+typedef struct spel_canvas_paint_t spel_canvas_paint;
 
 typedef struct
 {

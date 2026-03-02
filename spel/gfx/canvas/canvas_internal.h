@@ -84,7 +84,7 @@ typedef enum
 } spel_canvas_paint_type;
 
 // composite image + gradient / custom shader
-typedef struct
+typedef struct spel_canvas_paint_t
 {
 	spel_canvas_paint_type type;
 
@@ -112,7 +112,20 @@ typedef struct
 		spel_color color;
 		spel_canvas_shader shader;
 	};
-} spel_canvas_paint;
+} spel_canvas_paint_t;
+
+typedef struct
+{
+	int32_t paint_type;
+	float pad0, pad1, pad2;
+	spel_vec4 inner_color;
+	spel_vec4 outer_color;
+	spel_vec2 paint_start;
+	spel_vec2 paint_end;
+	float radius_inner;
+	float radius_outer;
+	float pad3, pad4;
+} spel_canvas_paint_data;
 
 typedef struct
 {
@@ -121,8 +134,19 @@ typedef struct
 
 typedef struct
 {
-	spel_color color;
-	spel_color stroke_color;
+	spel_color start;
+	spel_color end;
+	bool vertical;
+} spel_canvas_gradient_simple;
+
+typedef struct
+{
+	spel_canvas_paint_type simple_paint;
+	union
+	{
+		spel_color color;
+		spel_canvas_gradient_simple gradient;
+	};
 	spel_gfx_pipeline_desc pipeline_desc;
 	spel_mat3 transform;
 	spel_gfx_sampler_desc sampler_desc;
@@ -131,6 +155,9 @@ typedef struct
 	spel_canvas_fill_mode fill_mode;
 	spel_canvas_join_type join_type;
 	spel_canvas_cap_type cap_type;
+
+	spel_canvas_paint fill_paint;
+	spel_canvas_paint stroke_paint;
 } spel_canvas_state;
 
 typedef struct
@@ -153,8 +180,13 @@ typedef struct
 	spel_canvas default_canvas;
 
 	// canvas state
-	spel_color color;
-	spel_color stroke_color;
+	spel_canvas_paint_type simple_paint;
+	union
+	{
+		spel_color color;
+		spel_canvas_gradient_simple gradient;
+	};
+
 	float line_width;
 	float miter_limit;
 	spel_gfx_pipeline_desc pipeline_desc;

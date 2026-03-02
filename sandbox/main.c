@@ -281,6 +281,8 @@ void spel_draw()
 	spel_gfx_cmdlist_submit(cl);
 
 	spel_canvas_begin(NULL);
+	spel_canvas_color_set(spel_color_red);
+	spel_canvas_stroke_color_set(spel_color_blue);
 
 	spel_canvas_path_begin();
 	// 5-pointed star via inner/outer radius points
@@ -300,8 +302,7 @@ void spel_draw()
 			spel_canvas_path_lineto(spel_vec2(x, y));
 	}
 	spel_canvas_path_close();
-
-	spel_canvas_path_stroke();
+	spel_canvas_path_fill();
 
 	spel_canvas_path_begin();
 	spel_canvas_path_moveto(spel_vec2(100, 100));
@@ -311,7 +312,7 @@ void spel_draw()
 	spel_canvas_path_lineto(spel_vec2(150, 300));
 	spel_canvas_path_lineto(spel_vec2(100, 300));
 	spel_canvas_path_close();
-	spel_canvas_path_stroke();
+	spel_canvas_path_fill_stroke();
 
 	spel_canvas_path_begin();
 	spel_canvas_path_moveto(spel_vec2(400, 400));
@@ -324,13 +325,21 @@ void spel_draw()
 							  spel_vec2(700, 400));
 	spel_canvas_path_stroke();
 
+	spel_canvas_gradient_set(spel_color_red, spel_color_blue, false);
+	spel_canvas_draw_rect(spel_rect(50, 450, 100, 100));
+
+	spel_canvas_draw_image(spel_gfx_texture_checker_get(spel.gfx),
+						   spel_rect(150, 450, 128, 128));
+
+	spel_canvas_draw_line(spel_vec2(400, 100), spel_vec2(500, 200));
+
 	spel_canvas_end();
 }
 
 void spel_quit()
 {
 	spel_memory_dump_terminal();
-	
+
 	spel_gfx_shader_destroy(frag_2d_shader);
 	spel_gfx_shader_destroy(vert_shader);
 	spel_gfx_shader_destroy(frag_shader);

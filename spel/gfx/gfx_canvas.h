@@ -20,8 +20,19 @@ void spel_canvas_end();
 
 void spel_canvas_clear(spel_color color);
 
-void spel_canvas_color_set(spel_color color); // sets both fill and stroke color
+/// sets both fill and stroke color
+/// affects simple and path rendering variants
+void spel_canvas_color_set(spel_color color);
+
+/// sets both fill and stroke gradients
+/// affects simple and path rendering variants
+void spel_canvas_gradient_set(spel_color start, spel_color end,
+							  bool vertical);
+
+/// affects simple and path rendering variants
 void spel_canvas_fill_color_set(spel_color color);
+
+/// affects simple and path rendering variants
 void spel_canvas_stroke_color_set(spel_color color);
 void spel_canvas_shader_set(spel_gfx_shader shader);
 void spel_canvas_sampling_set(spel_gfx_sampler_filter filter);

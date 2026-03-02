@@ -736,8 +736,8 @@ spel_api void spel_gfx_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer bu
 	cmd->buf = buf;
 	cmd->offset = offset;
 	cmd->size = payload_size;
-	cmd->data = cmd + 1; // payload packed immediately after the command
-	memcpy((void*)cmd->data, data, payload_size);
+	cmd->data_offset = (uint32_t)sizeof(*cmd);
+	memcpy(((uint8_t*)cmd) + cmd->data_offset, data, payload_size);
 }
 
 void spel_gfx_context_default_data(spel_gfx_context ctx)
@@ -1303,9 +1303,9 @@ spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl,
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->buffer = buf;
 	cmd->handle = handle;
-	cmd->data = cmd + 1; // payload is packed immediately after the command
 	cmd->size = payload_size;
-	memcpy((void*)cmd->data, data, payload_size);
+	cmd->data_offset = (uint32_t)sizeof(*cmd);
+	memcpy(((uint8_t*)cmd) + cmd->data_offset, data, payload_size);
 }
 
 spel_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
@@ -1539,9 +1539,9 @@ spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
 	cmd->buffer = buf;
 	cmd->handle = handle;
-	cmd->data = cmd + 1; // payload is packed immediately after the command
 	cmd->size = payload_size;
-	memcpy((void*)cmd->data, data, payload_size);
+	cmd->data_offset = (uint32_t)sizeof(*cmd);
+	memcpy(((uint8_t*)cmd) + cmd->data_offset, data, payload_size);
 }
 
 spel_api spel_gfx_texture spel_gfx_texture_checker_create(spel_gfx_context ctx,

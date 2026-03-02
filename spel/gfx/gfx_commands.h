@@ -127,7 +127,7 @@ typedef struct spel_gfx_buffer_update_cmd
 	spel_gfx_buffer buf;
 	size_t offset;
 	size_t size;
-	const void* data;
+	uint32_t data_offset; // offset from start of this cmd to inline payload
 } spel_gfx_buffer_update_cmd;
 
 typedef struct spel_gfx_uniform_update_cmd
@@ -135,8 +135,8 @@ typedef struct spel_gfx_uniform_update_cmd
 	spel_gfx_cmd_header hdr;
 	spel_gfx_uniform_buffer buffer;
 	spel_gfx_uniform handle;
-	const void* data;
 	size_t size;
+	uint32_t data_offset; // offset from start of this cmd to inline payload
 } spel_gfx_uniform_update_cmd;
 
 typedef struct spel_gfx_begin_render_pass_cmd

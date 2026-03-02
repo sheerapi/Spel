@@ -4,6 +4,7 @@
 #include "../gfx_texture.h"
 #include "../gfx_uniform.h"
 #include "canvas_types.h"
+#include "utils/internal/tesselator.h"
 #include "utils/math.h"
 
 // paths
@@ -41,7 +42,6 @@ typedef struct
 typedef struct
 {
 	uint16_t flags;
-	uint8_t size;
 	spel_vec2 position;
 	spel_vec2 direction;	   // direction to next point, computed after tessellation
 	float len;				   // length to next point
@@ -63,8 +63,7 @@ typedef struct
 	uint32_t cmd_capacity;
 	uint32_t cmd_count;
 
-	uint8_t* points;
-	uint32_t point_offset;
+	spel_path_point* points;
 	uint32_t point_capacity;
 	uint32_t point_count;
 
@@ -130,6 +129,8 @@ typedef struct
 	float line_width;
 	float miter_limit;
 	spel_canvas_fill_mode fill_mode;
+	spel_canvas_join_type join_type;
+	spel_canvas_cap_type cap_type;
 } spel_canvas_state;
 
 typedef struct
@@ -139,6 +140,15 @@ typedef struct
 	uint8_t canvas_count;
 	spel_canvas active;
 	spel_gfx_cmdlist command_list;
+
+	// scratch buffers
+	int* ear_indices;
+	bool* ear_active;
+	uint32_t ear_cap;
+
+	int* stroke_point_bases;
+	bool* stroke_is_double;
+	int stroke_scratch_capacity;
 
 	spel_canvas default_canvas;
 
@@ -152,6 +162,8 @@ typedef struct
 	bool pipeline_dirty;
 	bool sampler_dirty;
 	spel_canvas_fill_mode fill_mode;
+	spel_canvas_join_type join_type;
+	spel_canvas_cap_type cap_type;
 
 	spel_canvas_paint fill_paint;
 	spel_canvas_paint stroke_paint;
@@ -159,10 +171,10 @@ typedef struct
 	spel_canvas_path current_path;
 
 	// transform stack
-	spel_mat3 transforms[32];
+	spel_mat3 transforms[24];
 	int transform_top;
 
-	spel_canvas_state states[32];
+	spel_canvas_state states[24];
 	int state_top;
 
 	// gfx resources
@@ -220,12 +232,32 @@ void spel_canvas_path_compute_normals();
 void spel_canvas_path_tessellate_bezier(spel_vec2 start, spel_vec2 control1,
 										spel_vec2 control2, spel_vec2 end, int depth);
 
-void spel_canvas_fill_path(spel_canvas_paint paint);
-void spel_canvas_stroke_path(spel_canvas_paint paint, float width);
+void spel_canvas_fill_path(spel_canvas_paint* paint);
+void spel_canvas_stroke_path(spel_canvas_paint* paint, float width);
 bool spel_canvas_path_convex();
 
-void spel_canvas_fill_path_convex(spel_canvas_paint paint);
-void spel_canvas_fill_path_concave(spel_canvas_paint paint);
+void spel_canvas_fill_path_convex(spel_canvas_paint* paint);
+void spel_canvas_fill_path_concave(spel_canvas_paint* paint);
+
+// path stroking
+void spel_canvas_cap_round(spel_path_point* p, float w, spel_color color, bool start);
+void spel_canvas_cap_square(spel_path_point* p, float w, spel_color color, bool start);
+void spel_canvas_stroke_push_cap_verts(spel_path_point* p, float w, float ox, float oy,
+									   spel_color color);
+void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
+							  int* outPointBases, bool* outIsDouble);
+void spel_canvas_join_bevel(spel_path_point* p0, spel_path_point* p1, float w,
+							spel_color color);
+void spel_canvas_join_miter(spel_path_point* p0, spel_path_point* p1, float w,
+							float miterLimit, spel_color color);
+void spel_canvas_join_round(spel_path_point* p0, spel_path_point* p1, float w,
+							spel_color color);
+void spel_canvas_cap_round_connected(spel_path_point* p, float w, spel_color color,
+									 bool start, int stripEndpointBase);
+void spel_canvas_join_bevel_connected(spel_path_point* p0, spel_path_point* p1, float w,
+									  spel_color color, int vbase);
+void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, float w,
+									  spel_color color, int vbase);
 
 spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx);
 spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,

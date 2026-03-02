@@ -35,4 +35,18 @@ typedef enum
 	SPEL_CANVAS_AUTO_RESIZE = 1 << 3 // the canvas should match the window size
 } spel_canvas_flags;
 
+typedef enum
+{
+	SPEL_CANVAS_JOIN_MITER,
+	SPEL_CANVAS_JOIN_BEVEL,
+	SPEL_CANVAS_JOIN_ROUND
+} spel_canvas_join_type;
+
+typedef enum
+{
+	SPEL_CANVAS_CAP_SQUARE,
+	SPEL_CANVAS_CAP_BUTT,
+	SPEL_CANVAS_CAP_ROUND
+} spel_canvas_cap_type;
+
 #endif

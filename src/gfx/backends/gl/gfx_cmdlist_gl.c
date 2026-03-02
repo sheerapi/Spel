@@ -451,6 +451,8 @@ void exec_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 
 void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* cmd)
 {
+	const void* data = (const uint8_t*)cmd + cmd->data_offset;
+
 	spel_assert(cmd->size <= (size_t)(cmd->handle.size * cmd->handle.count),
 			  "data exceeds uniform handle size, expected %d got %d",
 			  (size_t)(cmd->handle.size * cmd->handle.count), cmd->size);
@@ -458,15 +460,16 @@ void exec_cmd_uniform_update(spel_gfx_cmdlist cl, spel_gfx_uniform_update_cmd* c
 	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)cmd->buffer.buffer->data;
 	if (glBuf->mirror)
 	{
-		memcpy((uint8_t*)glBuf->mirror + cmd->handle.offset, cmd->data, cmd->size);
+		memcpy((uint8_t*)glBuf->mirror + cmd->handle.offset, data, cmd->size);
 	}
 
-	glNamedBufferSubData(glBuf->buffer, cmd->handle.offset, cmd->size, cmd->data);
+	glNamedBufferSubData(glBuf->buffer, cmd->handle.offset, cmd->size, data);
 }
 
 void exec_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer_update_cmd* cmd)
 {
 	spel_gfx_gl_buffer* glBuf = (spel_gfx_gl_buffer*)cmd->buf->data;
+	const void* data = (const uint8_t*)cmd + cmd->data_offset;
 
 	if (cmd->offset + cmd->size > cmd->buf->size)
 	{
@@ -479,11 +482,11 @@ void exec_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer_update_cmd* cmd
 	// Keep CPU mirror in sync when present.
 	if (glBuf->mirror && cmd->offset + cmd->size <= cmd->buf->size)
 	{
-		memcpy((uint8_t*)glBuf->mirror + cmd->offset, cmd->data, cmd->size);
+		memcpy((uint8_t*)glBuf->mirror + cmd->offset, data, cmd->size);
 	}
 
 	glNamedBufferSubData(glBuf->buffer, (GLintptr)cmd->offset, (GLsizeiptr)cmd->size,
-						 cmd->data);
+						 data);
 }
 
 void exec_cmd_begin_render_pass(spel_gfx_cmdlist cl, spel_gfx_begin_render_pass_cmd* cmd)

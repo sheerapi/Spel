@@ -3,8 +3,11 @@
 #include "core/memory.h"
 #include "core/window.h"
 #include "gfx/canvas/canvas.h"
+#include "gfx/canvas/canvas_internal.h"
 #include "gfx/gfx.h"
+#include "gfx/gfx_internal.h"
 #include "input/input.h"
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 
@@ -192,8 +195,6 @@ void spel_load()
 	cam.radius = 5.0F;
 
 	plane_data.model = spel_mat4_identity();
-
-	spel_memory_dump_terminal();
 }
 
 void spel_update(double delta)
@@ -281,39 +282,55 @@ void spel_draw()
 
 	spel_canvas_begin(NULL);
 
-	spel_canvas_push();
-	spel_canvas_line_width_set(10);
-	spel_canvas_shader_set(frag_2d_shader);
-	spel_canvas_translate(spel_vec2(400, 300));
-	spel_canvas_rotate(45.0F);
-	spel_canvas_draw_rect(spel_rect(-50, -50, 100, 100));
+	spel_canvas_path_begin();
+	// 5-pointed star via inner/outer radius points
+	float cx = 400, cy = 300;
+	float outer_r = 100, inner_r = 40;
 
-	spel_canvas_shader_set(NULL);
+	for (int i = 0; i < 10; i++)
+	{
+		float angle = (float)i / 10.0f * 2.0f * 3.14159f - 3.14159f * 0.5f;
+		float r = (i % 2 == 0) ? outer_r : inner_r;
+		float x = cx + cosf(angle) * r;
+		float y = cy + sinf(angle) * r;
 
-	spel_canvas_draw_rect(spel_rect(-30, -30, 60, 60));
-	spel_canvas_pop();
+		if (i == 0)
+			spel_canvas_path_moveto(spel_vec2(x, y));
+		else
+			spel_canvas_path_lineto(spel_vec2(x, y));
+	}
+	spel_canvas_path_close();
 
-	spel_canvas_sampling_set(SPEL_GFX_SAMPLER_FILTER_NEAREST);
-
-	spel_canvas_draw_image_region(spel_gfx_texture_checker_get(spel.gfx),
-								  spel_rect(0, 0, 32, 32), spel_rect(100, 100, 100, 100));
-
-	spel_canvas_draw_circle(spel_vec2(225, 120), 20);
-	spel_canvas_draw_line(spel_vec2(250, 100), spel_vec2(300, 200));
+	spel_canvas_path_stroke();
 
 	spel_canvas_path_begin();
 	spel_canvas_path_moveto(spel_vec2(100, 100));
 	spel_canvas_path_lineto(spel_vec2(200, 100));
-	spel_canvas_path_lineto(spel_vec2(150, 200));
+	spel_canvas_path_lineto(spel_vec2(200, 150));
+	spel_canvas_path_lineto(spel_vec2(150, 150));
+	spel_canvas_path_lineto(spel_vec2(150, 300));
+	spel_canvas_path_lineto(spel_vec2(100, 300));
 	spel_canvas_path_close();
+	spel_canvas_path_stroke();
 
-	spel_canvas_path_fill();
-	
+	spel_canvas_path_begin();
+	spel_canvas_path_moveto(spel_vec2(400, 400));
+	spel_canvas_path_lineto(spel_vec2(500, 500));
+	spel_canvas_path_stroke();
+
+	spel_canvas_path_begin();
+	spel_canvas_path_moveto(spel_vec2(500, 400));
+	spel_canvas_path_bezierto(spel_vec2(600, 385), spel_vec2(600, 385),
+							  spel_vec2(700, 400));
+	spel_canvas_path_stroke();
+
 	spel_canvas_end();
 }
 
 void spel_quit()
 {
+	spel_memory_dump_terminal();
+	
 	spel_gfx_shader_destroy(frag_2d_shader);
 	spel_gfx_shader_destroy(vert_shader);
 	spel_gfx_shader_destroy(frag_shader);

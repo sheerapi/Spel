@@ -214,18 +214,42 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ctx->current_path = (spel_canvas_path){0};
 	ctx->current_path.closed = false;
 	ctx->current_path.cmd_capacity = 256;
-	ctx->current_path.point_capacity = 256;
+	ctx->current_path.point_capacity = 8;
 	ctx->miter_limit = 4;
 
 	ctx->current_path.cmds =
 		spel_memory_malloc(ctx->current_path.cmd_capacity, SPEL_MEM_TAG_GFX);
 
-	ctx->current_path.points =
-		spel_memory_malloc(ctx->current_path.point_capacity, SPEL_MEM_TAG_GFX);
+	ctx->current_path.points = spel_memory_malloc(
+		ctx->current_path.point_capacity * sizeof(spel_path_point), SPEL_MEM_TAG_GFX);
+
+	ctx->ear_indices = NULL;
+	ctx->ear_active = NULL;
+	ctx->ear_cap = 0;
+
+	ctx->join_type = SPEL_CANVAS_JOIN_MITER;
+	ctx->cap_type = SPEL_CANVAS_CAP_SQUARE;
+	ctx->stroke_scratch_capacity = 0;
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
+	if (ctx->ear_active != NULL)
+	{
+		spel_memory_free(ctx->ear_active);
+	}
+
+	if (ctx->ear_indices != NULL)
+	{
+		spel_memory_free(ctx->ear_indices);
+	}
+
+	if (ctx->stroke_scratch_capacity != 0)
+	{
+		spel_memory_free(ctx->stroke_point_bases);
+		spel_memory_free(ctx->stroke_is_double);
+	}
+
 	spel_memory_free(ctx->current_path.cmds);
 	spel_memory_free(ctx->current_path.points);
 
@@ -277,7 +301,8 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 	ctx->index_count = 0;
 }
 
-spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_context* ctx)
+spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
+										 spel_canvas_context* ctx)
 {
 	if (texture != ctx->batch_texture || ctx->pipeline_dirty || ctx->sampler_dirty)
 	{
@@ -369,7 +394,7 @@ void spel_canvas_shader_set(spel_gfx_shader shader)
 
 void spel_canvas_push()
 {
-	spel_assert(spel.gfx->canvas_ctx->transform_top < 31, "transform stack overflow");
+	spel_assert(spel.gfx->canvas_ctx->transform_top < 23, "transform stack overflow");
 	spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top + 1] =
 		spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 	spel.gfx->canvas_ctx->transform_top++;
@@ -397,7 +422,9 @@ spel_canvas_state spel_canvas_snapshot_state(spel_canvas_context* ctx)
 							   .line_width = ctx->line_width,
 							   .fill_mode = ctx->fill_mode,
 							   .stroke_color = ctx->stroke_color,
-							   .miter_limit = ctx->miter_limit};
+							   .miter_limit = ctx->miter_limit,
+							   .join_type = ctx->join_type,
+							   .cap_type = ctx->cap_type};
 }
 
 void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
@@ -410,6 +437,8 @@ void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 	ctx->fill_mode = s.fill_mode;
 	ctx->stroke_color = s.stroke_color;
 	ctx->miter_limit = s.miter_limit;
+	ctx->join_type = s.join_type;
+	ctx->cap_type = s.cap_type;
 
 	ctx->pipeline_dirty = true;
 	ctx->sampler_dirty = true;

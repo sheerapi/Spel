@@ -4,7 +4,6 @@
 #include "../gfx_texture.h"
 #include "../gfx_uniform.h"
 #include "canvas_types.h"
-#include "utils/internal/tesselator.h"
 #include "utils/math.h"
 
 // paths
@@ -193,6 +192,7 @@ typedef struct
 	spel_gfx_sampler_desc sampler_desc;
 	bool pipeline_dirty;
 	bool sampler_dirty;
+	bool path_mode;
 	spel_canvas_fill_mode fill_mode;
 	spel_canvas_join_type join_type;
 	spel_canvas_cap_type cap_type;
@@ -217,7 +217,12 @@ typedef struct
 	spel_gfx_uniform_buffer ubuffer_frame;
 	spel_gfx_texture white_texture;
 
+	spel_canvas_paint_data paint_data;
+	spel_gfx_uniform_buffer paint_ubuffer;
+	spel_gfx_pipeline paint_pipeline;
+
 	spel_gfx_pipeline og_pipeline;
+	spel_gfx_pipeline og_paint_pipeline;
 
 	// cpu-side scratch
 	spel_canvas_vertex* verts;

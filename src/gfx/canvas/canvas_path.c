@@ -96,7 +96,6 @@ void spel_canvas_path_quadto(spel_vec2 control, spel_vec2 position)
 	spel.gfx->canvas_ctx->current_path.cursor = position;
 }
 
-// actual work
 void spel_canvas_path_fill()
 {
 	spel_assert(spel.gfx->canvas_ctx->current_path.closed,
@@ -225,7 +224,6 @@ void spel_canvas_path_compute_directions()
 		}
 	}
 
-	// for open paths, give the last point a direction so caps don't degenerate
 	if (!path->closed && n >= 2)
 	{
 		spel_path_point* plast = &path->points[n - 1];
@@ -331,7 +329,6 @@ void spel_canvas_path_tessellate_bezier(spel_vec2 start, spel_vec2 control1,
 									   spel_vec2(x23, y23), end, depth + 1);
 }
 
-// filling and stroking
 void spel_canvas_fill_path(spel_canvas_paint* paint)
 {
 	if (spel.gfx->canvas_ctx->current_path.point_count < 3)
@@ -384,7 +381,6 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 	spel_canvas_stroke_basic(path, w, color, spel.gfx->canvas_ctx->stroke_point_bases,
 							 spel.gfx->canvas_ctx->stroke_is_double);
 
-	// round cap start
 	if (!path->closed && spel.gfx->canvas_ctx->cap_type == SPEL_CANVAS_CAP_ROUND)
 	{
 		spel_canvas_cap_round_connected(&path->points[0], w, color, true,
@@ -393,7 +389,6 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 										spel.gfx->canvas_ctx->stroke_point_bases[n - 1]);
 	}
 
-	// joins
 	for (int i = 1; i < (path->closed ? n : n - 1); i++)
 	{
 		if (!spel.gfx->canvas_ctx->stroke_is_double[i])
@@ -409,7 +404,6 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 			spel_canvas_join_bevel_connected(p0, p1, w, color, vbase);
 	}
 
-	// wrap-around join for closed path
 	if (path->closed && spel.gfx->canvas_ctx->stroke_is_double[0])
 	{
 		spel_path_point* p0 = &path->points[n - 1];
@@ -439,7 +433,6 @@ void spel_canvas_fill_path_convex(spel_canvas_paint* paint)
 	int base = spel.gfx->canvas_ctx->vert_count;
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 
-	// push all points as vertices
 	for (size_t i = 0; i < path->point_count; i++)
 	{
 		spel_path_point* p = &path->points[i];
@@ -447,7 +440,7 @@ void spel_canvas_fill_path_convex(spel_canvas_paint* paint)
 		spel.gfx->canvas_ctx->verts[base + i] = (spel_canvas_vertex){
 			spel_mat3_transform_point(t, p->position), {0, 0}, paint->color};
 	}
-	// fan from first vertex
+
 	for (int i = 0; i < n - 2; i++)
 	{
 		spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count + (i * 3) + 0] =
@@ -639,15 +632,9 @@ void spel_canvas_cap_round_connected(spel_path_point* p, float w, spel_color col
 	spel_canvas_ensure_capacity(SEGS + 1, SEGS * 3);
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 
-	// the two strip endpoint verts are already in the buffer
-	// left vert = strip_endpoint_base + 0
-	// right vert = strip_endpoint_base + 1
-	// we just add the center and intermediate arc verts
-
 	int left_vert = stripEndpointBase + 0;
 	int right_vert = stripEndpointBase + 1;
 
-	// direction for the cap arc
 	float dir_x = start ? -p->direction.x : p->direction.x;
 	float dir_y = start ? -p->direction.y : p->direction.y;
 
@@ -657,12 +644,10 @@ void spel_canvas_cap_round_connected(spel_path_point* p, float w, spel_color col
 
 	int center_idx = spel.gfx->canvas_ctx->vert_count;
 
-	// center vert
 	spel.gfx->canvas_ctx->verts[center_idx] =
 		(spel_canvas_vertex){spel_mat3_transform_point(t, p->position), {0, 0}, color};
 	spel.gfx->canvas_ctx->vert_count++;
 
-	// intermediate arc verts (excluding the two endpoints which are strip verts)
 	int arc_base = spel.gfx->canvas_ctx->vert_count;
 	for (int i = 1; i < SEGS; i++)
 	{
@@ -675,14 +660,12 @@ void spel_canvas_cap_round_connected(spel_path_point* p, float w, spel_color col
 				color};
 	}
 
-	// first triangle connects center to left strip vert and first arc vert
 	uint32_t* idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
 	idx[0] = center_idx;
 	idx[1] = start ? left_vert : right_vert;
 	idx[2] = arc_base;
 	spel.gfx->canvas_ctx->index_count += 3;
 
-	// middle triangles
 	for (int i = 0; i < SEGS - 2; i++)
 	{
 		idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
@@ -692,7 +675,6 @@ void spel_canvas_cap_round_connected(spel_path_point* p, float w, spel_color col
 		spel.gfx->canvas_ctx->index_count += 3;
 	}
 
-	// last triangle connects last arc vert to right strip vert
 	idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
 	idx[0] = center_idx;
 	idx[1] = arc_base + SEGS - 2;
@@ -714,12 +696,11 @@ void spel_canvas_join_round(spel_path_point* p0, spel_path_point* p1, float w,
 	float a1 = left_turn ? atan2f(p1->direction.x, -p1->direction.y)
 						 : atan2f(-p1->direction.x, p1->direction.y);
 
-	// ensure correct sweep direction
 	if (left_turn)
 	{
 		while (a1 > a0)
 			a1 -= spel_tau;
-		// clamp to at most Pi sweep
+
 		if (a0 - a1 > spel_pi)
 			a1 += spel_tau;
 	}
@@ -727,14 +708,13 @@ void spel_canvas_join_round(spel_path_point* p0, spel_path_point* p1, float w,
 	{
 		while (a1 < a0)
 			a1 += spel_tau;
-		// clamp to at most Pi sweep
+
 		if (a1 - a0 > spel_pi)
 			a1 -= spel_tau;
 	}
 
 	int base = spel.gfx->canvas_ctx->vert_count;
 
-	// center at join point
 	spel.gfx->canvas_ctx->verts[base] =
 		(spel_canvas_vertex){spel_mat3_transform_point(t, p1->position), {0, 0}, color};
 	spel.gfx->canvas_ctx->vert_count++;
@@ -761,15 +741,12 @@ void spel_canvas_join_round(spel_path_point* p0, spel_path_point* p1, float w,
 void spel_canvas_join_bevel_connected(spel_path_point* p0, spel_path_point* p1, float w,
 									  spel_color color, int vbase)
 {
-	// incoming outer vert and outgoing outer vert are already in the buffer
-	// just need one triangle connecting them through the center
+
 	bool left_turn = (p1->flags & spel_point_left);
 
-	// outer verts depend on which side the join is on
 	int outer_in = left_turn ? vbase + 0 : vbase + 1;
 	int outer_out = left_turn ? vbase + 2 : vbase + 3;
 
-	// center vert
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 	spel_canvas_ensure_capacity(1, 3);
 	int center = spel.gfx->canvas_ctx->vert_count;
@@ -800,7 +777,6 @@ void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, 
 	spel.gfx->canvas_ctx->verts[center] =
 		(spel_canvas_vertex){spel_mat3_transform_point(t, p1->position), {0, 0}, color};
 
-	// arc angles
 	float a0 = left_turn ? atan2f(p0->direction.x, -p0->direction.y)
 						 : atan2f(-p0->direction.x, p0->direction.y);
 	float a1 = left_turn ? atan2f(p1->direction.x, -p1->direction.y)
@@ -821,8 +797,6 @@ void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, 
 			a1 -= spel_tau;
 	}
 
-	// first triangle: center -> outer_in -> first intermediate vert
-	// intermediate verts (excluding boundary verts which are already in buffer)
 	int arc_start = spel.gfx->canvas_ctx->vert_count;
 
 	for (int i = 1; i < SEGS; i++)
@@ -836,14 +810,12 @@ void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, 
 				color};
 	}
 
-	// stitch: center -> outer_in -> arc[0]
 	uint32_t* idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
 	idx[0] = center;
 	idx[1] = outer_in;
 	idx[2] = arc_start;
 	spel.gfx->canvas_ctx->index_count += 3;
 
-	// center -> arc[i] -> arc[i+1]
 	for (int i = 0; i < SEGS - 2; i++)
 	{
 		idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
@@ -853,7 +825,6 @@ void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, 
 		spel.gfx->canvas_ctx->index_count += 3;
 	}
 
-	// center -> arc[last] -> outer_out
 	idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
 	idx[0] = center;
 	idx[1] = arc_start + SEGS - 2;
@@ -868,7 +839,6 @@ static void canvas_push_vert(spel_mat3 t, float x, float y, spel_color color)
 			spel_mat3_transform_point(t, spel_vec2(x, y)), {0, 0}, color};
 }
 
-// helper to push a quad between two vert pairs
 static void canvas_push_quad(int v0, int v1, int v2, int v3)
 {
 	uint32_t* idx = &spel.gfx->canvas_ctx->indices[spel.gfx->canvas_ctx->index_count];
@@ -890,7 +860,6 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 
-	// first pass - figure out vert counts and total capacity needed
 	int total_verts = 0;
 	int total_indices = 0;
 
@@ -899,7 +868,6 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		spel_path_point* p = &path->points[i];
 		bool is_endpoint = !path->closed && (i == 0 || i == n - 1);
 
-		// endpoints and miter corners get 1 pair, round/bevel get 2 pairs
 		bool needs_double =
 			!is_endpoint && (spel.gfx->canvas_ctx->join_type == SPEL_CANVAS_JOIN_ROUND ||
 							 spel.gfx->canvas_ctx->join_type == SPEL_CANVAS_JOIN_BEVEL ||
@@ -910,13 +878,11 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		total_verts += needs_double ? 4 : 2;
 	}
 
-	// each segment is one quad = 6 indices
 	total_indices = (n - 1) * 6 + (path->closed ? 6 : 0);
 
 	spel_canvas_ensure_capacity(total_verts, total_indices);
 	int base = spel.gfx->canvas_ctx->vert_count;
 
-	// second pass - push verts
 	for (int i = 0; i < n; i++)
 	{
 		spel_path_point* p = &path->points[i];
@@ -924,7 +890,7 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 
 		if (is_endpoint)
 		{
-			// endpoint - use edge direction
+
 			spel_path_point* d = (i == 0) ? &path->points[0] : &path->points[n - 2];
 			float px = -d->direction.y * w;
 			float py = d->direction.x * w;
@@ -933,7 +899,7 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		}
 		else if (!outIsDouble[i])
 		{
-			// miter corner - single pair at miter intersection
+
 			float px = -p->miter_direction.y * w;
 			float py = p->miter_direction.x * w;
 			canvas_push_vert(t, p->position.x + px, p->position.y + py, color);
@@ -941,14 +907,12 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		}
 		else
 		{
-			// round/bevel corner - two pairs
+
 			spel_path_point* prev = &path->points[(i + n - 1) % n];
 
-			// incoming pair - perpendicular to incoming direction
 			float ipx = -prev->direction.y * w;
 			float ipy = prev->direction.x * w;
 
-			// outgoing pair - perpendicular to outgoing direction
 			float opx = -p->direction.y * w;
 			float opy = p->direction.x * w;
 
@@ -958,23 +922,19 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 			canvas_push_vert(t, p->position.x - opx, p->position.y - opy, color);
 		}
 
-		// adjust base-relative offsets
 		outPointBases[i] += base;
 	}
 
-	// square cap - offset endpoint verts
 	if (!path->closed && spel.gfx->canvas_ctx->cap_type == SPEL_CANVAS_CAP_SQUARE)
 	{
 		spel_path_point* p0 = &path->points[0];
 		spel_path_point* pn = &path->points[n - 2];
 
-		// start - push back
 		spel.gfx->canvas_ctx->verts[base + 0].position.x -= p0->direction.x * w;
 		spel.gfx->canvas_ctx->verts[base + 0].position.y -= p0->direction.y * w;
 		spel.gfx->canvas_ctx->verts[base + 1].position.x -= p0->direction.x * w;
 		spel.gfx->canvas_ctx->verts[base + 1].position.y -= p0->direction.y * w;
 
-		// end - push forward
 		int end_base = outPointBases[n - 1];
 		spel.gfx->canvas_ctx->verts[end_base + 0].position.x += pn->direction.x * w;
 		spel.gfx->canvas_ctx->verts[end_base + 0].position.y += pn->direction.y * w;
@@ -982,12 +942,11 @@ void spel_canvas_stroke_basic(spel_canvas_path* path, float w, spel_color color,
 		spel.gfx->canvas_ctx->verts[end_base + 1].position.y += pn->direction.y * w;
 	}
 
-	// third pass - stitch quads between consecutive points
 	for (int i = 0; i < n - 1; i++)
 	{
-		// end verts of point i - if double, use the outgoing pair (offset +2)
+
 		int seg_end = outPointBases[i] + (outIsDouble[i] ? 2 : 0);
-		// start verts of point i+1 - always the first pair
+
 		int seg_start = outPointBases[i + 1];
 
 		canvas_push_quad(seg_end, seg_end + 1, seg_start, seg_start + 1);
@@ -1008,12 +967,10 @@ void spel_canvas_join_bevel(spel_path_point* p0, spel_path_point* p1, float w,
 	spel_canvas_ensure_capacity(3, 3);
 	int base = spel.gfx->canvas_ctx->vert_count;
 
-	// which side needs the bevel triangle depends on turn direction
 	bool left_turn = (p1->flags & spel_point_left);
 
 	spel_vec2 center = p1->position;
 
-	// two outer points from each edge direction
 	spel_vec2 e0;
 	spel_vec2 e1;
 	if (left_turn)
@@ -1048,26 +1005,20 @@ void spel_canvas_join_miter(spel_path_point* p0, spel_path_point* p1, float w,
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
 
-	// edge directions
 	float dx0 = p0->direction.x;
 	float dy0 = p0->direction.y;
 	float dx1 = p1->direction.x;
 	float dy1 = p1->direction.y;
 
-	// outward normals depending on turn side
 	bool left_turn = (p1->flags & spel_point_left);
-	spel_vec2 n0 =
-		left_turn ? spel_vec2(-dy0, dx0) : spel_vec2(dy0, -dx0); // prev edge normal
-	spel_vec2 n1 =
-		left_turn ? spel_vec2(-dy1, dx1) : spel_vec2(dy1, -dx1); // next edge normal
+	spel_vec2 n0 = left_turn ? spel_vec2(-dy0, dx0) : spel_vec2(dy0, -dx0);
+	spel_vec2 n1 = left_turn ? spel_vec2(-dy1, dx1) : spel_vec2(dy1, -dx1);
 
-	// offset points on each edge
 	float ox0 = p1->position.x + n0.x * w;
 	float oy0 = p1->position.y + n0.y * w;
 	float ox1 = p1->position.x + n1.x * w;
 	float oy1 = p1->position.y + n1.y * w;
 
-	// line intersection of offset edges
 	float denom = (dx0 * dy1) - (dy0 * dx1);
 	bool bevel = false;
 	float mx = 0.0F;
@@ -1088,7 +1039,7 @@ void spel_canvas_join_miter(spel_path_point* p0, spel_path_point* p1, float w,
 	}
 	else
 	{
-		// nearly parallel - bevel
+
 		bevel = true;
 	}
 
@@ -1098,7 +1049,6 @@ void spel_canvas_join_miter(spel_path_point* p0, spel_path_point* p1, float w,
 		return;
 	}
 
-	// emit wedge triangle: prev offset -> miter tip -> next offset
 	spel_canvas_ensure_capacity(3, 3);
 	int base = ctx->vert_count;
 	ctx->verts[base + 0] = (spel_canvas_vertex){
@@ -1122,8 +1072,6 @@ void spel_canvas_stroke_push_cap_verts(spel_path_point* p, float w, float ox, fl
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 	int base = spel.gfx->canvas_ctx->vert_count;
 
-	// left and right of stroke at this point
-	// perpendicular to direction is (-dy, dx)
 	spel.gfx->canvas_ctx->verts[base + 0] = (spel_canvas_vertex){
 		spel_mat3_transform_point(
 			t, spel_vec2(p->position.x - p->direction.y * w + p->direction.x * ox,
@@ -1159,7 +1107,6 @@ void spel_canvas_cap_round(spel_path_point* p, float w, spel_color color, bool s
 
 	int base = spel.gfx->canvas_ctx->vert_count;
 
-	// center
 	spel.gfx->canvas_ctx->verts[base] =
 		(spel_canvas_vertex){spel_mat3_transform_point(t, p->position), {0, 0}, color};
 	spel.gfx->canvas_ctx->vert_count++;
@@ -1183,7 +1130,6 @@ void spel_canvas_cap_round(spel_path_point* p, float w, spel_color color, bool s
 	}
 }
 
-// utilities
 bool spel_canvas_path_convex()
 {
 	spel_canvas_path* path = &spel.gfx->canvas_ctx->current_path;

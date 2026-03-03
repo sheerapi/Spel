@@ -29,8 +29,7 @@ spel_gfx_buffer ibuffer_plane;
 spel_gfx_texture ground_texture;
 spel_gfx_sampler ground_sampler;
 
-spel_gfx_texture shadow_map;
-spel_gfx_pipeline shadow_pipeline;
+spel_canvas canvas;
 
 typedef struct
 {
@@ -195,6 +194,8 @@ void spel_load()
 	cam.radius = 5.0F;
 
 	plane_data.model = spel_mat4_identity();
+
+	canvas = spel_canvas_create(spel.gfx, 800, 600, 0);
 }
 
 void spel_update(double delta)
@@ -281,8 +282,10 @@ void spel_draw()
 	spel_gfx_cmdlist_submit(cl);
 
 	spel_canvas_begin(NULL);
-	spel_canvas_color_set(spel_color_red);
-	spel_canvas_stroke_color_set(spel_color_blue);
+	spel_canvas_clear(spel_color_black);
+	spel_canvas_draw_rect(spel_rect(0, 0, 100, 100));
+	spel_canvas_end();
+	spel_canvas_gradient_set(spel_color_red, spel_color_blue, false);
 
 	spel_canvas_path_begin();
 	// 5-pointed star via inner/outer radius points
@@ -325,7 +328,6 @@ void spel_draw()
 							  spel_vec2(700, 400));
 	spel_canvas_path_stroke();
 
-	spel_canvas_gradient_set(spel_color_red, spel_color_blue, false);
 	spel_canvas_draw_rect(spel_rect(50, 450, 100, 100));
 
 	spel_canvas_draw_image(spel_gfx_texture_checker_get(spel.gfx),
@@ -340,6 +342,7 @@ void spel_quit()
 {
 	spel_memory_dump_terminal();
 
+	spel_canvas_destroy(canvas);
 	spel_gfx_shader_destroy(frag_2d_shader);
 	spel_gfx_shader_destroy(vert_shader);
 	spel_gfx_shader_destroy(frag_shader);

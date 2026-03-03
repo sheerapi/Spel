@@ -256,7 +256,7 @@ typedef struct spel_gfx_context_t
 	spel_gfx_cmdlist cmdlist;
 	spel_gfx_pipeline_cache pipeline_cache;
 	spel_gfx_sampler_cache sampler_cache;
-	spel_gfx_shader shaders[3];
+	spel_gfx_shader shaders[4];
 
 	spel_gfx_sampler default_sampler;
 	spel_gfx_texture white_tex;

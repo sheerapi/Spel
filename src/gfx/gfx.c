@@ -107,6 +107,51 @@ spel_api void spel_gfx_context_destroy(spel_gfx_context ctx)
 		spel_canvas_ctx_destroy(ctx->canvas_ctx);
 	}
 
+	for (size_t i = 0; i < spel_array_size(ctx->shaders); i++)
+	{
+		if (ctx->shaders[i] == NULL)
+		{
+			continue;
+		}
+
+		ctx->shaders[i]->internal = false;
+		spel_gfx_shader_destroy(ctx->shaders[i]);
+	}
+
+	while (ctx->pipeline_cache.count)
+	{
+		for (uint32_t i = 0; i < ctx->pipeline_cache.capacity; ++i)
+		{
+			spel_gfx_pipeline_cache_entry* entry = &ctx->pipeline_cache.entries[i];
+			if (entry->pipeline)
+			{
+				spel_gfx_pipeline_destroy(entry->pipeline);
+				break;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < ctx->sampler_cache.capacity; ++i)
+	{
+		spel_gfx_sampler_cache_entry* entry = &ctx->sampler_cache.entries[i];
+		if (entry->sampler)
+		{
+			ctx->vt->sampler_destroy(entry->sampler);
+		}
+	}
+
+	ctx->white_tex->internal = false;
+	ctx->checkerboard->internal = false;
+
+	spel_gfx_texture_destroy(ctx->white_tex);
+	spel_gfx_texture_destroy(ctx->checkerboard);
+
+	spel_gfx_cmdlist_destroy(ctx->cmdlist);
+	spel_gfx_render_pass_destroy(ctx->default_pass);
+	spel_memory_free((void*)ctx->tracked_fbos);
+	spel_memory_free(ctx->pipeline_cache.entries);
+	spel_memory_free(ctx->sampler_cache.entries);
+
 	ctx->vt->ctx_destroy(ctx);
 	spel_memory_free(ctx);
 }

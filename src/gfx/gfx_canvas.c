@@ -8,6 +8,7 @@
 #include "gfx/gfx_internal.h"
 #include "gfx/gfx_pipeline.h"
 #include "gfx/gfx_types.h"
+#include "gfx_internal_shaders.h"
 #include <stdio.h>
 
 #define SPEL_CANVAS_VBUFFER_SIZE 16384
@@ -15,6 +16,11 @@
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags)
 {
+	if (spel.gfx->canvas_ctx == NULL)
+	{
+		spel_canvas_ctx_create(spel.gfx);
+	}
+
 	spel_canvas canvas = spel_memory_malloc(sizeof(*canvas), SPEL_MEM_TAG_GFX);
 
 	canvas->ctx = gfx->canvas_ctx;
@@ -119,6 +125,8 @@ spel_api void spel_canvas_begin(spel_canvas canvas)
 	canvas->ctx->pipeline_desc.cull_mode = SPEL_GFX_CULL_NONE;
 	canvas->ctx->pipeline = canvas->ctx->og_pipeline;
 	canvas->ctx->pipeline_dirty = false;
+
+	canvas->ctx->simple_paint = SPEL_CANVAS_PAINT_COLOR;
 	canvas->ctx->color = spel_color_white;
 
 	canvas->ctx->fill_paint.type = SPEL_CANVAS_PAINT_COLOR;
@@ -233,6 +241,19 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ctx->stroke_scratch_capacity = 0;
 
 	ctx->simple_paint = SPEL_CANVAS_PAINT_COLOR;
+	ctx->path_mode = false;
+	ctx->paint_data = (spel_canvas_paint_data){0};
+
+	spel_gfx_shader_desc canvas_frg_desc;
+	canvas_frg_desc.shader_source = SPEL_GFX_SHADER_STATIC;
+	canvas_frg_desc.source = spel_internal_canvas_frag_spv;
+	canvas_frg_desc.source_size = spel_internal_canvas_frag_spv_len;
+
+	gfx->shaders[3] = spel_gfx_shader_create(gfx, &canvas_frg_desc);
+	
+	pipeline_desc.fragment_shader = gfx->shaders[3];
+	ctx->og_paint_pipeline = spel_gfx_pipeline_create(gfx, &pipeline_desc);
+	ctx->paint_pipeline = ctx->og_paint_pipeline;
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
@@ -307,11 +328,13 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
 										 spel_canvas_context* ctx)
 {
-	if (texture != ctx->batch_texture || ctx->pipeline_dirty || ctx->sampler_dirty)
+	if (texture != ctx->batch_texture || ctx->pipeline_dirty || ctx->sampler_dirty ||
+		ctx->path_mode)
 	{
 		spel_canvas_ctx_flush(ctx);
 
 		ctx->batch_texture = texture;
+		ctx->path_mode = false;
 
 		if (ctx->pipeline_dirty)
 		{
@@ -355,6 +378,7 @@ void spel_canvas_gradient_set(spel_color start, spel_color end, bool vertical)
 	spel.gfx->canvas_ctx->stroke_paint.type = SPEL_CANVAS_PAINT_GRADIENT;
 	spel.gfx->canvas_ctx->stroke_paint.gradient.inner_color = start;
 	spel.gfx->canvas_ctx->stroke_paint.gradient.outer_color = start;
+	spel.gfx->canvas_ctx->stroke_paint.gradient.linear = true;
 }
 
 void spel_canvas_stroke_color_set(spel_color color)
@@ -514,10 +538,69 @@ void spel_canvas_sampling_set(spel_gfx_sampler_filter filter)
 
 void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end)
 {
-	spel_canvas_path_begin();
-	spel_canvas_path_moveto(start);
-	spel_canvas_path_lineto(end);
-	spel_canvas_path_stroke();
+	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
+
+	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_ensure_capacity(4, 6);
+
+	float dx = end.x - start.x;
+	float dy = end.y - start.y;
+	float len = sqrtf((dx * dx) + (dy * dy));
+	if (len < 0.0001F)
+	{
+		return; // degenerate line
+	}
+
+	// perpendicular normal
+	float nx = (-dy / len) * (ctx->line_width * 0.5F);
+	float ny = (dx / len) * (ctx->line_width * 0.5F);
+
+	spel_mat3 t = ctx->transforms[ctx->transform_top];
+	int base = ctx->vert_count;
+
+	static spel_color vert_colors[4];
+
+	if (ctx->simple_paint == SPEL_CANVAS_PAINT_GRADIENT)
+	{
+		vert_colors[0] = ctx->gradient.start;
+		vert_colors[1] = ctx->gradient.vertical ? ctx->gradient.start : ctx->gradient.end;
+		vert_colors[2] = ctx->gradient.end;
+		vert_colors[3] = ctx->gradient.vertical ? ctx->gradient.end : ctx->gradient.start;
+	}
+	else
+	{
+		vert_colors[0] = ctx->color;
+		vert_colors[1] = ctx->color;
+		vert_colors[2] = ctx->color;
+		vert_colors[3] = ctx->color;
+	}
+
+	ctx->verts[base + 0] = (spel_canvas_vertex){
+		spel_mat3_transform_point(t, spel_vec2(start.x + nx, start.y + ny)),
+		{0, 0},
+		vert_colors[0]};
+	ctx->verts[base + 1] = (spel_canvas_vertex){
+		spel_mat3_transform_point(t, spel_vec2(end.x + nx, end.y + ny)),
+		{1, 0},
+		vert_colors[1]};
+	ctx->verts[base + 2] = (spel_canvas_vertex){
+		spel_mat3_transform_point(t, spel_vec2(end.x - nx, end.y - ny)),
+		{1, 1},
+		vert_colors[2]};
+	ctx->verts[base + 3] = (spel_canvas_vertex){
+		spel_mat3_transform_point(t, spel_vec2(start.x - nx, start.y - ny)),
+		{0, 1},
+		vert_colors[3]};
+
+	ctx->indices[ctx->index_count + 0] = base + 0;
+	ctx->indices[ctx->index_count + 1] = base + 1;
+	ctx->indices[ctx->index_count + 2] = base + 2;
+	ctx->indices[ctx->index_count + 3] = base + 0;
+	ctx->indices[ctx->index_count + 4] = base + 2;
+	ctx->indices[ctx->index_count + 5] = base + 3;
+
+	ctx->vert_count += 4;
+	ctx->index_count += 6;
 }
 
 void spel_canvas_draw_rect(spel_rect rect)
@@ -553,10 +636,10 @@ void spel_canvas_draw_rect(spel_rect rect)
 		vert_colors[3] = ctx->color;
 	}
 
-	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {0, 0}, vert_colors[0]};
-	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {1, 0}, vert_colors[1]};
-	ctx->verts[base + 2] = (spel_canvas_vertex){br, {1, 1}, vert_colors[2]};
-	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {0, 1}, vert_colors[3]};
+	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {0, 1}, vert_colors[0]};
+	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {1, 1}, vert_colors[1]};
+	ctx->verts[base + 2] = (spel_canvas_vertex){br, {1, 0}, vert_colors[2]};
+	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {0, 0}, vert_colors[3]};
 
 	ctx->indices[ctx->index_count + 0] = base + 0;
 	ctx->indices[ctx->index_count + 1] = base + 1;
@@ -602,10 +685,10 @@ void spel_canvas_draw_image(spel_gfx_texture tex, spel_rect dst)
 		vert_colors[3] = ctx->color;
 	}
 
-	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {0, 0}, vert_colors[0]};
-	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {1, 0}, vert_colors[1]};
-	ctx->verts[base + 2] = (spel_canvas_vertex){br, {1, 1}, vert_colors[2]};
-	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {0, 1}, vert_colors[3]};
+	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {0, 1}, vert_colors[0]};
+	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {1, 1}, vert_colors[1]};
+	ctx->verts[base + 2] = (spel_canvas_vertex){br, {1, 0}, vert_colors[2]};
+	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {0, 0}, vert_colors[3]};
 
 	// same indices as draw_rect
 	ctx->indices[ctx->index_count + 0] = base + 0;
@@ -660,10 +743,10 @@ void spel_canvas_draw_image_region(spel_gfx_texture tex, spel_rect src, spel_rec
 		vert_colors[3] = ctx->color;
 	}
 
-	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {u0, v0}, vert_colors[0]};
-	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {u1, v0}, vert_colors[1]};
-	ctx->verts[base + 2] = (spel_canvas_vertex){br, {u1, v1}, vert_colors[2]};
-	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {u0, v1}, vert_colors[3]};
+	ctx->verts[base + 0] = (spel_canvas_vertex){tl, {u0, v1}, vert_colors[0]};
+	ctx->verts[base + 1] = (spel_canvas_vertex){tr, {u1, v1}, vert_colors[1]};
+	ctx->verts[base + 2] = (spel_canvas_vertex){br, {u1, v0}, vert_colors[2]};
+	ctx->verts[base + 3] = (spel_canvas_vertex){bl, {u0, v0}, vert_colors[3]};
 
 	ctx->indices[ctx->index_count + 0] = base + 0;
 	ctx->indices[ctx->index_count + 1] = base + 1;
@@ -720,4 +803,14 @@ void spel_canvas_draw_circle(spel_vec2 center, float radius)
 
 	ctx->vert_count += segments + 1;
 	ctx->index_count += segments * 3;
+}
+
+spel_api spel_gfx_texture spel_canvas_texture(spel_canvas canvas)
+{
+	return canvas->color;
+}
+
+spel_gfx_texture spel_canvas_depth_texture(spel_canvas canvas)
+{
+	return canvas->depth;
 }

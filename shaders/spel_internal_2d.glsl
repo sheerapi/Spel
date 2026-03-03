@@ -7,6 +7,7 @@ layout(location = 2) in vec4 in_color; // normalized u8 → vec4
 
 layout(location = 0) out vec2 v_uv;
 layout(location = 1) out vec4 v_color;
+layout(location = 2) out vec2 v_pos;
 
 layout(set = 0, binding = 0) uniform FrameData
 {
@@ -17,8 +18,7 @@ void main()
 {
 	v_uv = in_uv;
 	v_color = in_color;
-
-	// already in clip space for now
+	v_pos = in_pos;
 	gl_Position = proj * vec4(in_pos, 0.0, 1.0);
 }
 

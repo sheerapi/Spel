@@ -26,9 +26,9 @@ static std::string symbol_name(const std::string& name, const std::string& stage
 
 int main(int argc, char** argv)
 {
-	if (argc != 3)
+	if (argc != 4)
 	{
-		std::cerr << "usage: spv2h <manifest.json> <output.h>\n";
+		std::cerr << "usage: spv2h <manifest.json> <output.h> <output.c>\n";
 		return 1;
 	}
 
@@ -42,15 +42,32 @@ int main(int argc, char** argv)
 	json manifest;
 	mf >> manifest;
 
-	std::ofstream out(argv[2]);
-	if (!out)
+	std::ofstream header_out(argv[2]);
+	if (!header_out)
 	{
 		std::cerr << "Failed to open output header\n";
 		return 1;
 	}
 
-	out << "#ifndef SPEL_GFX_INTERNAL_SHADERS\n"
-		   "#define SPEL_GFX_INTERNAL_SHADERS\n\n";
+	std::ofstream source_out(argv[3]);
+	if (!source_out)
+	{
+		std::cerr << "Failed to open output source\n";
+		return 1;
+	}
+
+	std::string header_name = argv[2];
+	const auto slash = header_name.find_last_of("/\\");
+	if (slash != std::string::npos)
+	{
+		header_name = header_name.substr(slash + 1);
+	}
+
+	header_out << "#ifndef SPEL_GFX_INTERNAL_SHADERS\n"
+	              "#define SPEL_GFX_INTERNAL_SHADERS\n\n"
+                  "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n";
+
+	source_out << "#include \"" << header_name << "\"\n\n";
 
 	for (const auto& shader : manifest["shaders"])
 	{
@@ -61,24 +78,29 @@ int main(int argc, char** argv)
 		auto data = read_file(path);
 		auto sym = symbol_name(name, stage);
 
-		out << "static unsigned char " << sym << "[] = {\n    ";
+		header_out << "extern unsigned char " << sym << "[];\n";
+		header_out << "extern unsigned int " << sym << "_len;\n\n";
+
+		source_out << "unsigned char " << sym << "[] = {\n    ";
 
 		for (size_t i = 0; i < data.size(); ++i)
 		{
-			out << "0x" << std::hex << std::uppercase << (data[i] >> 4) << (data[i] & 0xF)
-				<< std::dec;
+			source_out << "0x" << std::hex << std::uppercase << (data[i] >> 4)
+				  << (data[i] & 0xF) << std::dec;
 
 			if (i + 1 != data.size())
-				out << ", ";
+				source_out << ", ";
 
 			if ((i + 1) % 12 == 0)
-				out << "\n    ";
+				source_out << "\n    ";
 		}
 
-		out << "\n};\n";
-		out << "static unsigned int " << sym << "_len = " << data.size() << ";\n\n";
+		source_out << "\n};\n";
+		source_out << "unsigned int " << sym << "_len = " << data.size()
+			   << ";\n\n";
 	}
 
-	out << "#endif // SPEL_GFX_INTERNAL_SHADERS\n";
+	header_out << "#ifdef __cplusplus\n}\n#endif\n\n"
+			   "#endif // SPEL_GFX_INTERNAL_SHADERS\n";
 	return 0;
 }

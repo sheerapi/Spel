@@ -34,6 +34,7 @@ sources = [
     'src/gfx/gfx_canvas.c',
 
     'src/gfx/canvas/canvas_path.c',
+    'src/gfx/canvas/canvas_internal_fonts.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
@@ -191,6 +192,10 @@ cmake_args.add_cmake_defines(
     {
         'ENABLE_GLSLANG_BINARIES': false,
         'CMAKE_BUILD_TYPE': 'MinSizeRel',
+        'MSDF_ATLAS_USE_SKIA': false,
+        'MSDF_ATLAS_USE_VCPKG': false,
+        'MSDF_ATLAS_BUILD_STANDALONE': false,
+        'MSDF_ATLAS_NO_ARTERY_FONT': true,
     },
 )
 
@@ -220,6 +225,23 @@ spv2h = executable(
     cpp_args: [rel_compile_args],
 )
 
+executable(
+    'spel-fontgen',
+    sources: [
+        'tools/fontgen/fontgen.cpp',
+        'tools/fontgen/fontgen_grid.cpp',
+        'tools/fontgen/fontgen_bmfont.cpp',
+    ],
+    dependencies: cmake.subproject('msdf_atlas_gen', options: cmake_args).dependency('msdf-atlas-gen'),
+    cpp_args: [rel_compile_args],
+)
+
+executable(
+    'spel-ttf2png',
+    sources: ['tools/ttf2png.cpp'],
+    cpp_args: [rel_compile_args],
+)
+
 compile_shaders = custom_target(
     'compile_shaders',
     input: shaders,
@@ -228,10 +250,10 @@ compile_shaders = custom_target(
     console: false,
 )
 
-shader_header = custom_target(
+shader_sources = custom_target(
     input: compile_shaders,
-    command: [spv2h, '@INPUT@', '@OUTPUT@'],
-    output: 'gfx_internal_shaders.h',
+    command: [spv2h, '@INPUT@', '@OUTPUT0@', '@OUTPUT1@'],
+    output: ['gfx_internal_shaders.h', 'gfx_internal_shaders.c'],
 )
 
 executable(
@@ -245,7 +267,7 @@ dependencies = [dependency('sdl3'), m_dep, dependency('imgui')]
 
 spel_lib = library(
     'spel',
-    sources: [sources, shader_header],
+    sources: [sources, shader_sources],
     include_directories: include_directories('spel'),
     dependencies: dependencies,
 )

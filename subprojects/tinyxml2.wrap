@@ -1,0 +1,10 @@
+[wrap-file]
+directory = tinyxml2-11.0.0
+source_url = https://github.com/leethomason/tinyxml2/archive/11.0.0.tar.gz
+source_filename = tinyxml2-11.0.0.tar.gz
+source_hash = 5556deb5081fb246ee92afae73efd943c889cef0cafea92b0b82422d6a18f289
+source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/tinyxml2_11.0.0-2/tinyxml2-11.0.0.tar.gz
+wrapdb_version = 11.0.0-2
+
+[provide]
+tinyxml2 = dep_tinyxml2

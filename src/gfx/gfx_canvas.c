@@ -763,10 +763,10 @@ void spel_canvas_draw_circle(spel_vec2 center, float radius)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	int segments = (int)(radius);
+	int segments = (int)(radius * 1.5F);
 	if (segments < 8)
 	{
-		segments = 8;
+		segments = 12;
 	}
 	if (segments > 64)
 	{

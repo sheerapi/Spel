@@ -676,12 +676,6 @@ spel_api spel_action spel_input_action_create(const char* name, spel_action_type
 	return action;
 }
 
-spel_api void spel_input_action_destroy(spel_action action)
-{
-	spel.input->action_count--;
-	spel_memory_free(action);
-}
-
 spel_api void spel_input_action_bind_key(spel_action action, spel_key key)
 {
 	spel_action_binding* binding = &action->bindings[action->binding_count++];

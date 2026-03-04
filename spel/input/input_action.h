@@ -14,7 +14,6 @@ typedef enum
 } spel_action_type;
 
 spel_api spel_action spel_input_action_create(const char* name, spel_action_type type);
-spel_api void spel_input_action_destroy(spel_action action);
 
 spel_api void spel_input_action_bind_key(spel_action action, spel_key key);
 spel_api void spel_input_action_bind_axis(spel_action action, spel_key neg, spel_key pos);

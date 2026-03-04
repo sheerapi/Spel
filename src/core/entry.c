@@ -18,8 +18,9 @@ spel_api spel_context spel = {
 			   .width = 800,
 			   .height = 600,
 			   .borderless = false,
-			   .swapchain = {.vsync = 1, .depth = 16, .stencil = 0, .msaa = 0},
-			   .resizable = true}};
+			   .swapchain = {.vsync = 1, .depth = 16, .stencil = 0, .msaa = 1},
+			   .resizable = false},
+	.log = {.severity = SPEL_SEV_DEBUG}};
 
 #ifdef SP_WEAK_LINK
 int main(int argc, const char** argv)
@@ -91,7 +92,6 @@ spel_api int spel_app_run(spel_app_desc* app)
 
 	spel.window.swapchain.vsync = 1; // vsync on by default
 	spel.log.function = NULL;
-	spel.log.severity = SPEL_SEV_TRACE;
 
 	spel.window.x = 0;
 	spel.window.y = 0;
@@ -124,8 +124,8 @@ spel_api int spel_app_run(spel_app_desc* app)
 
 	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
-		spel_panic(SPEL_ERR_WINDOWING_FAILED, "failed to initialize windowing backend: %s",
-				 SDL_GetError());
+		spel_panic(SPEL_ERR_WINDOWING_FAILED,
+				   "failed to initialize windowing backend: %s", SDL_GetError());
 		return -1;
 	}
 

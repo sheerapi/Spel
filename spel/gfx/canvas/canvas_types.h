@@ -3,6 +3,7 @@
 #include "utils/math.h"
 
 typedef struct spel_canvas_t* spel_canvas;
+typedef struct spel_font_t* spel_font;
 typedef struct spel_canvas_shader_t* spel_canvas_shader;
 typedef struct spel_canvas_paint_t spel_canvas_paint;
 
@@ -49,5 +50,16 @@ typedef enum
 	SPEL_CANVAS_CAP_BUTT,
 	SPEL_CANVAS_CAP_ROUND
 } spel_canvas_cap_type;
+
+typedef enum
+{
+	SPEL_CANVAS_ALIGN_LEFT,
+	SPEL_CANVAS_ALIGN_CENTER,
+	SPEL_CANVAS_ALIGN_RIGHT,
+
+	SPEL_CANVAS_ALIGN_TOP = 0,
+	SPEL_CANVAS_ALIGN_MIDDLE,
+	SPEL_CANVAS_ALIGN_BOTTOM
+} spel_canvas_text_align;
 
 #endif

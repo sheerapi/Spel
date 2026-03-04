@@ -5,9 +5,16 @@
 #include "gfx/gfx_types.h"
 #include "utils/math.h"
 
+// we really should move this to the canvas folder later
+
+// object creation
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags);
 spel_api void spel_canvas_destroy(spel_canvas canvas);
+
+spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
+									size_t dataSize);
+spel_api void spel_font_destroy(spel_font font);
 
 spel_api spel_gfx_texture spel_canvas_texture(spel_canvas canvas);
 spel_gfx_texture spel_canvas_depth_texture(spel_canvas canvas);
@@ -26,8 +33,7 @@ void spel_canvas_color_set(spel_color color);
 
 /// sets both fill and stroke gradients
 /// affects simple and path rendering variants
-void spel_canvas_gradient_set(spel_color start, spel_color end,
-							  bool vertical);
+void spel_canvas_gradient_set(spel_color start, spel_color end, bool vertical);
 
 /// affects simple and path rendering variants
 void spel_canvas_fill_color_set(spel_color color);
@@ -51,5 +57,7 @@ void spel_canvas_draw_image(spel_gfx_texture tex, spel_rect dst);
 void spel_canvas_draw_image_region(spel_gfx_texture tex, spel_rect src, spel_rect dst);
 void spel_canvas_draw_circle(spel_vec2 center, float radius);
 void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end);
+void spel_canvas_draw_text(const char* text, spel_vec2 position);
+void spel_canvas_draw_text_wrapped(const char* text, spel_vec2 position, float maxWidth);
 
 #endif

@@ -3,6 +3,7 @@
 #include "core/memory.h"
 #include "core/types.h"
 #include "gfx/canvas/canvas_internal.h"
+#include "gfx/canvas/canvas_internal_fonts.h"
 #include "gfx/canvas/canvas_path.h"
 #include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_internal.h"
@@ -250,14 +251,29 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	canvas_frg_desc.source_size = spel_internal_canvas_frag_spv_len;
 
 	gfx->shaders[3] = spel_gfx_shader_create(gfx, &canvas_frg_desc);
-	
+
 	pipeline_desc.fragment_shader = gfx->shaders[3];
 	ctx->og_paint_pipeline = spel_gfx_pipeline_create(gfx, &pipeline_desc);
 	ctx->paint_pipeline = ctx->og_paint_pipeline;
+
+	ctx->font_size = 16;
+	ctx->text_align = SPEL_CANVAS_ALIGN_LEFT;
+	ctx->geist = spel_font_create(gfx, spel_font_geist_spfn, spel_font_geist_spfn_len);
+	ctx->vga = spel_font_create(gfx, spel_font_vga_spfn, spel_font_vga_spfn_len);
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
+	if (ctx->geist != NULL)
+	{
+		spel_font_destroy(ctx->geist);
+	}
+
+	if (ctx->vga != NULL)
+	{
+		spel_font_destroy(ctx->vga);
+	}
+
 	if (ctx->ear_active != NULL)
 	{
 		spel_memory_free(ctx->ear_active);
@@ -338,7 +354,6 @@ spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
 
 		if (ctx->pipeline_dirty)
 		{
-
 			ctx->pipeline = spel_gfx_pipeline_create(ctx->ctx, &ctx->pipeline_desc);
 			ctx->pipeline_dirty = false;
 		}
@@ -449,7 +464,7 @@ void spel_canvas_shader_set(spel_gfx_shader shader)
 
 void spel_canvas_push()
 {
-	spel_assert(spel.gfx->canvas_ctx->transform_top < 23, "transform stack overflow");
+	spel_assert(spel.gfx->canvas_ctx->transform_top < 15, "transform stack overflow");
 	spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top + 1] =
 		spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 	spel.gfx->canvas_ctx->transform_top++;
@@ -480,7 +495,10 @@ spel_canvas_state spel_canvas_snapshot_state(spel_canvas_context* ctx)
 							.miter_limit = ctx->miter_limit,
 							.join_type = ctx->join_type,
 							.cap_type = ctx->cap_type,
-							.fill_paint = ctx->fill_paint};
+							.fill_paint = ctx->fill_paint,
+							.font = ctx->font,
+							.font_size = ctx->font_size,
+							.text_align = ctx->text_align};
 
 	if (ctx->simple_paint == SPEL_CANVAS_PAINT_COLOR)
 	{
@@ -506,6 +524,9 @@ void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 	ctx->stroke_paint = s.stroke_paint;
 	ctx->join_type = s.join_type;
 	ctx->cap_type = s.cap_type;
+	ctx->font = s.font;
+	ctx->font_size = s.font_size;
+	ctx->text_align = s.text_align;
 
 	if (s.simple_paint == SPEL_CANVAS_PAINT_COLOR)
 	{
@@ -522,12 +543,30 @@ void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 
 void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 {
-	spel_assert(spel.gfx->canvas_ctx->vert_count + vertsNeeded <=
-					spel.gfx->canvas_ctx->vert_cap,
-				"canvas vertex buffer overflow");
-	spel_assert(spel.gfx->canvas_ctx->index_count + indicesNeeded <=
-					spel.gfx->canvas_ctx->index_cap,
-				"canvas index buffer overflow");
+	if (spel.gfx->canvas_ctx->vert_count + vertsNeeded <=
+			spel.gfx->canvas_ctx->vert_cap &&
+		spel.gfx->canvas_ctx->index_count + indicesNeeded <=
+			spel.gfx->canvas_ctx->index_cap)
+	{
+		return;
+	}
+
+	int required = spel.gfx->canvas_ctx->vert_count + vertsNeeded;
+
+	int new_cap = spel.gfx->canvas_ctx->vert_cap * 2;
+	while (new_cap < required)
+	{
+		new_cap *= 2;
+	}
+
+	spel.gfx->canvas_ctx->verts =
+		spel_memory_realloc(spel.gfx->canvas_ctx->verts, new_cap, SPEL_MEM_TAG_GFX);
+
+	spel.gfx->canvas_ctx->indices = spel_memory_realloc(
+		spel.gfx->canvas_ctx->indices, (new_cap * 3 / 2), SPEL_MEM_TAG_GFX);
+
+	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->vbo, new_cap, true);
+	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->ibo, (new_cap * 3 / 2), true);
 }
 
 void spel_canvas_sampling_set(spel_gfx_sampler_filter filter)

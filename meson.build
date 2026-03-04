@@ -31,10 +31,11 @@ sources = [
     'src/gfx/gfx_shader_reflect.c',
     'src/extras/spel_imgui.c',
     'src/input/input.c',
-    'src/gfx/gfx_canvas.c',
 
+    'src/gfx/gfx_canvas.c',
     'src/gfx/canvas/canvas_path.c',
     'src/gfx/canvas/canvas_internal_fonts.c',
+    'src/gfx/canvas/canvas_font.c',
 
     'src/gfx/backends/gl/gfx_context_gl.c',
     'src/gfx/backends/gl/gfx_cmdlist_gl.c',
@@ -57,6 +58,7 @@ shaders = [
     'shaders/spel_internal_fullscreen.glsl',
     'shaders/spel_internal_imgui.glsl',
     'shaders/spel_internal_canvas.glsl',
+    'shaders/spel_internal_text.glsl'
 ]
 
 cc = meson.get_compiler('c')

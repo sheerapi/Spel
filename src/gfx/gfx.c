@@ -993,6 +993,97 @@ spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char
 	return out;
 }
 
+spel_api spel_gfx_texture
+spel_gfx_texture_load_data(spel_gfx_context ctx, const char* data, size_t dataSize,
+						   const spel_gfx_texture_load_desc* desc)
+{
+	int w;
+	int h;
+	int comp;
+	stbi_uc* pixels = stbi_load_from_memory((uint8_t*)data, (int)dataSize, &w, &h, &comp, 0);
+	if (!pixels)
+	{
+		return spel_gfx_texture_checker_get(ctx);
+	}
+
+	uint8_t* upload_pixels = pixels;
+	size_t upload_size = 0;
+
+	spel_gfx_texture_desc tex = {0};
+	tex.type = SPEL_GFX_TEXTURE_2D;
+	tex.width = w;
+	tex.height = h;
+	tex.depth = 1;
+	tex.mip_count =
+		desc->mip_count ? desc->mip_count : (1 + (uint32_t)floor(log2(fmax(w, h))));
+	tex.usage = desc->usage;
+
+	if (desc->format != SPEL_GFX_TEXTURE_FMT_UNKNOWN)
+	{
+		tex.format = desc->format;
+		upload_size = (size_t)w * h * comp;
+	}
+	else
+	{
+		if ((int)desc->srgb && comp < 3)
+		{
+			spel_error(SPEL_ERR_INVALID_ARGUMENT, "sRGB requested for non-RGB texture");
+			stbi_image_free(pixels);
+			return spel_gfx_texture_checker_get(ctx);
+		}
+
+		switch (comp)
+		{
+		case 1:
+			tex.format = SPEL_GFX_TEXTURE_FMT_R8_UNORM;
+			upload_size = (size_t)w * h;
+			break;
+
+		case 2:
+			tex.format = SPEL_GFX_TEXTURE_FMT_RG8_UNORM;
+			upload_size = (size_t)w * h * 2;
+			break;
+
+		case 3:
+			upload_pixels = rgb_to_rgba(pixels, w * h);
+			upload_size = (size_t)w * h * 4;
+			stbi_image_free(pixels);
+			pixels = NULL;
+
+			tex.format = (int)desc->srgb ? SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB
+										 : SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM;
+			break;
+
+		case 4:
+			tex.format = (int)desc->srgb ? SPEL_GFX_TEXTURE_FMT_RGBA8_SRGB
+										 : SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM;
+			upload_size = (size_t)w * h * 4;
+			break;
+
+		default:
+			stbi_image_free(pixels);
+			return spel_gfx_texture_checker_get(ctx);
+		}
+	}
+
+	tex.data = upload_pixels;
+	tex.data_size = upload_size;
+
+	spel_gfx_texture out = spel_gfx_texture_create(ctx, &tex);
+
+	if (upload_pixels && upload_pixels != pixels)
+	{
+		spel_memory_free(upload_pixels);
+	}
+
+	if (pixels)
+	{
+		stbi_image_free(pixels);
+	}
+
+	return out;
+}
+
 spel_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 													  const char* path)
 {

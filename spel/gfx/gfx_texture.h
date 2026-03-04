@@ -60,6 +60,9 @@ spel_api spel_vec2 spel_gfx_texture_size(spel_gfx_texture texture);
 spel_api spel_gfx_texture spel_gfx_texture_load(spel_gfx_context ctx, const char* path,
 												const spel_gfx_texture_load_desc* desc);
 
+spel_api spel_gfx_texture spel_gfx_texture_load_data(spel_gfx_context ctx, const char* data, size_t dataSize,
+												const spel_gfx_texture_load_desc* desc);
+
 spel_api spel_gfx_texture spel_gfx_texture_load_color(spel_gfx_context ctx,
 													  const char* path);
 spel_api spel_gfx_texture spel_gfx_texture_load_linear(spel_gfx_context ctx,

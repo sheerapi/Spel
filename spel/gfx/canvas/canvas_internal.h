@@ -6,6 +6,70 @@
 #include "canvas_types.h"
 #include "utils/math.h"
 
+// fonts
+#define SPFN_MAGIC 0x4E465053
+#define SPFN_VERSION 1
+
+#define SPFN_TYPE_SDF 0
+#define SPFN_TYPE_MSDF 1
+#define SPFN_TYPE_BITMAP 2
+
+#pragma pack(push, 1)
+typedef struct
+{
+	uint32_t magic;
+	uint8_t version;
+	uint8_t channels;
+	uint8_t font_type;
+	uint16_t atlas_width;
+	uint16_t atlas_height;
+	uint16_t glyph_count;
+	uint32_t kerning_count;
+	uint32_t image_size;
+	float em_size;
+	float ascender;
+	float descender;
+	float line_height;
+	float sdf_range;
+	uint8_t padding[7];
+} spel_font_header;
+
+typedef struct
+{
+	uint32_t codepoint;
+	float uv_x, uv_y;
+	float uv_w, uv_h;
+	float plane_x, plane_y;
+	float plane_w, plane_h;
+	float advance;
+	uint16_t padding[4];
+} spel_font_glyph;
+
+typedef struct
+{
+	uint32_t codepoint_a;
+	uint32_t codepoint_b;
+	float advance;
+	uint8_t padding[4];
+} spel_font_kerning;
+
+#pragma pack(pop)
+
+typedef struct spel_font_t
+{
+	spel_font_header header;
+	spel_font_glyph* glyphs;
+	spel_font_kerning* kerning;
+	spel_gfx_texture atlas;
+	bool internal;
+	spel_gfx_context ctx;
+
+	int ascii_index[128];
+	uint32_t* ext_codepoints;
+	int* ext_indices;
+	int ext_count;
+} spel_font_t;
+
 // paths
 typedef enum
 {
@@ -157,6 +221,10 @@ typedef struct
 
 	spel_canvas_paint fill_paint;
 	spel_canvas_paint stroke_paint;
+
+	spel_font font;
+	float font_size;
+	uint8_t text_align;
 } spel_canvas_state;
 
 typedef struct
@@ -166,6 +234,10 @@ typedef struct
 	uint8_t canvas_count;
 	spel_canvas active;
 	spel_gfx_cmdlist command_list;
+
+	// default fonts
+	spel_font geist;
+	spel_font vga; // IBM VGA 8x16
 
 	// scratch buffers
 	int* ear_indices;
@@ -196,6 +268,9 @@ typedef struct
 	spel_canvas_fill_mode fill_mode;
 	spel_canvas_join_type join_type;
 	spel_canvas_cap_type cap_type;
+	spel_font font;
+	float font_size;
+	uint8_t text_align;
 
 	spel_canvas_paint fill_paint;
 	spel_canvas_paint stroke_paint;
@@ -203,10 +278,10 @@ typedef struct
 	spel_canvas_path current_path;
 
 	// transform stack
-	spel_mat3 transforms[24];
+	spel_mat3 transforms[16];
 	int transform_top;
 
-	spel_canvas_state states[24];
+	spel_canvas_state states[16];
 	int state_top;
 
 	// gfx resources

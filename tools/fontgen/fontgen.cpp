@@ -329,6 +329,7 @@ int main(int argc, char** argv)
 	header.channels = (uint8_t)channels;
 	header.atlas_width = (uint16_t)atlas_w;
 	header.atlas_height = (uint16_t)atlas_h;
+	header.font_type = SPFN_TYPE_MSDF;
 	header.glyph_count = (uint16_t)glyph_records.size();
 	header.kerning_count = (uint16_t)kerning_pairs.size();
 	header.em_size = cfg.em_size;

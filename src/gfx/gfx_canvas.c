@@ -884,6 +884,11 @@ spel_hidden void spel_canvas_mode_flush(spel_canvas_mode mode, spel_canvas_conte
 
 	case SPEL_CANVAS_TEXT:
 	{
+		// Lazy-create in case the buffer was not made during batch setup
+		if (ctx->font_ubuffer.buffer == NULL)
+		{
+			ctx->font_ubuffer = spel_gfx_uniform_buffer_create(ctx->pipeline, "DrawData");
+		}
 		spel_gfx_cmd_uniform_block_update(ctx->command_list, ctx->font_ubuffer,
 										  &ctx->font_data, sizeof(ctx->font_data), 0);
 		spel_gfx_cmd_bind_shader_buffer(ctx->command_list, ctx->font_ubuffer);

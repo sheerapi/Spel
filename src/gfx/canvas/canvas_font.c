@@ -4,6 +4,7 @@
 #include "gfx/gfx_canvas.h"
 #include "gfx/gfx_internal.h"
 #include "gfx_internal_shaders.h"
+#include "utils/internal/stb_image.h"
 #include <string.h>
 
 spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
@@ -55,6 +56,8 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		offset += font->header.kerning_count * sizeof(spel_font_kerning);
 	}
 
+	// Load atlas. For bitmap fonts we patch the pixel data so fully transparent pixels
+	// don't look like solid white quads (shader uses RGB==RGB check).
 	spel_gfx_texture_load_desc desc = {
 		.format = SPEL_GFX_TEXTURE_FMT_UNKNOWN,
 		.usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
@@ -62,8 +65,48 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		.srgb = false,
 	};
 
-	font->atlas = spel_gfx_texture_load_data(gfx, (char*)data + offset,
-											 font->header.image_size, &desc);
+	if (font->header.font_type == SPFN_TYPE_BITMAP && font->header.channels == 4)
+	{
+		int w, h, comp;
+		stbi_uc* pixels = stbi_load_from_memory((uint8_t*)data + offset,
+												(int)font->header.image_size, &w, &h, &comp, 4);
+		if (!pixels)
+		{
+			font->atlas = spel_gfx_texture_checker_get(gfx);
+		}
+		else
+		{
+			for (int i = 0; i < w * h; i++)
+			{
+				uint8_t* p = pixels + (i * 4);
+				if (p[3] == 0)
+				{
+					// break RGB equality so shader falls back to alpha (which is 0 here)
+					p[2] = 1;
+				}
+			}
+
+			spel_gfx_texture_desc tex = {
+				.type = SPEL_GFX_TEXTURE_2D,
+				.format = SPEL_GFX_TEXTURE_FMT_RGBA8_UNORM,
+				.usage = desc.usage,
+				.width = (uint32_t)w,
+				.height = (uint32_t)h,
+				.depth = 1,
+				.mip_count = desc.mip_count,
+				.data = pixels,
+				.data_size = (size_t)w * h * 4,
+			};
+
+			font->atlas = spel_gfx_texture_create(gfx, &tex);
+			stbi_image_free(pixels);
+		}
+	}
+	else
+	{
+		font->atlas = spel_gfx_texture_load_data(gfx, (char*)data + offset,
+												 font->header.image_size, &desc);
+	}
 
 	if (font->atlas == spel_gfx_texture_checker_get(gfx))
 	{
@@ -149,10 +192,23 @@ spel_api void spel_font_destroy(spel_font font)
 void spel_canvas_emit_glyph(spel_font font, const spel_font_glyph* g, float cx, float cy,
 							float scale, spel_color color)
 {
+	// Bitmap fonts are authored with Y-down uv/planes; MSDF fonts are Y-up.
+	bool y_up = font->header.font_type != SPFN_TYPE_BITMAP;
+
 	float x0 = cx + (g->plane_x * scale);
-	float y0 = cy - (g->plane_y + g->plane_h) * scale;
 	float x1 = x0 + (g->plane_w * scale);
-	float y1 = cy - (g->plane_y * scale);
+
+	float y0, y1;
+	if (y_up)
+	{
+		y0 = cy - (g->plane_y + g->plane_h) * scale;
+		y1 = cy - (g->plane_y * scale);
+	}
+	else
+	{
+		y0 = cy + (g->plane_y * scale);
+		y1 = y0 + (g->plane_h * scale);
+	}
 
 	float u0 = g->uv_x;
 	float v0 = g->uv_y;
@@ -170,10 +226,20 @@ void spel_canvas_emit_glyph(spel_font font, const spel_font_glyph* g, float cx, 
 	uint32_t base = spel.gfx->canvas_ctx->vert_count;
 
 	spel_canvas_vertex* verts = spel.gfx->canvas_ctx->verts + base;
-	verts[0] = (spel_canvas_vertex){p00, {u0, v1}, color};
-	verts[1] = (spel_canvas_vertex){p10, {u1, v1}, color};
-	verts[2] = (spel_canvas_vertex){p11, {u1, v0}, color};
-	verts[3] = (spel_canvas_vertex){p01, {u0, v0}, color};
+	if (y_up)
+	{
+		verts[0] = (spel_canvas_vertex){p00, {u0, v1}, color};
+		verts[1] = (spel_canvas_vertex){p10, {u1, v1}, color};
+		verts[2] = (spel_canvas_vertex){p11, {u1, v0}, color};
+		verts[3] = (spel_canvas_vertex){p01, {u0, v0}, color};
+	}
+	else
+	{
+		verts[0] = (spel_canvas_vertex){p00, {u0, v0}, color};
+		verts[1] = (spel_canvas_vertex){p10, {u1, v0}, color};
+		verts[2] = (spel_canvas_vertex){p11, {u1, v1}, color};
+		verts[3] = (spel_canvas_vertex){p01, {u0, v1}, color};
+	}
 
 	uint32_t* idx = spel.gfx->canvas_ctx->indices + spel.gfx->canvas_ctx->index_count;
 	idx[0] = base + 0;
@@ -387,6 +453,14 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 		// apply kerning
 		cx += spel_canvas_font_kerning(font, prev_cp, cp) * scale;
 
+		// missing glyph -> advance by a sensible default (half an em) and skip
+		if (g == NULL)
+		{
+			cx += 0.5f * scale;
+			prev_cp = cp;
+			continue;
+		}
+
 		// skip whitespace quads (no visible glyph) but still advance
 		if (g->uv_w > 0.0f && g->uv_h > 0.0f)
 		{
@@ -441,7 +515,10 @@ spel_vec2 spel_canvas_text_measure(const char* text)
 		}
 
 		const spel_font_glyph* g = spel_canvas_font_find_glyph(font, cp);
-		x += (g->advance + spel_canvas_font_kerning(font, prev_cp, cp)) * scale;
+		if (g)
+			x += (g->advance + spel_canvas_font_kerning(font, prev_cp, cp)) * scale;
+		else
+			x += 0.5f * scale;
 		prev_cp = cp;
 	}
 
@@ -476,7 +553,7 @@ float spel_canvas_font_kerning(const spel_font font, uint32_t cp_a, uint32_t cp_
 const spel_font_glyph* spel_canvas_font_find_glyph(const spel_font FONT,
 												   uint32_t codepoint)
 {
-	if (codepoint < 128 && FONT->ascii_index[codepoint] != 1)
+	if (codepoint < 128 && FONT->ascii_index[codepoint] >= 0)
 		return &FONT->glyphs[FONT->ascii_index[codepoint]];
 
 	// binary search
@@ -493,10 +570,7 @@ const spel_font_glyph* spel_canvas_font_find_glyph(const spel_font FONT,
 			return &FONT->glyphs[mid];
 	}
 
-	if (codepoint != 0xFFFD)
-		return spel_canvas_font_find_glyph(FONT, 0xFFFD);
-
-	return &FONT->glyphs[0];
+	return NULL;
 }
 
 uint32_t spel_canvas_font_utf8_next(const char** str)

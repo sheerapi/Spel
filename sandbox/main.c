@@ -53,7 +53,7 @@ void spel_draw()
 
 	spel_canvas_draw_circle(ball_pos, 10);
 
-	spel_canvas_draw_text_wrapped("Hello World! This is Spël, a game framework made in C inspired by LÖVE2D", spel_vec2(100, 200), 100);
+	spel_canvas_draw_text_wrapped("0 1", spel_vec2(100, 200), 100);
 
 	spel_canvas_end();
 }

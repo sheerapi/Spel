@@ -249,6 +249,7 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	canvas_frg_desc.shader_source = SPEL_GFX_SHADER_STATIC;
 	canvas_frg_desc.source = spel_internal_canvas_frag_spv;
 	canvas_frg_desc.source_size = spel_internal_canvas_frag_spv_len;
+	canvas_frg_desc.debug_name = "spel_internal_canvas_frag";
 
 	gfx->shaders[3] = spel_gfx_shader_create(gfx, &canvas_frg_desc);
 
@@ -260,10 +261,20 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ctx->text_align = SPEL_CANVAS_ALIGN_LEFT;
 	ctx->geist = spel_font_create(gfx, spel_font_geist_spfn, spel_font_geist_spfn_len);
 	ctx->vga = spel_font_create(gfx, spel_font_vga_spfn, spel_font_vga_spfn_len);
+
+	ctx->font = ctx->geist;
+	ctx->default_shader = true;
+
+	ctx->font_ubuffer.buffer = NULL;
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 {
+	if (ctx->font_ubuffer.buffer != NULL)
+	{
+		spel_gfx_uniform_buffer_destroy(ctx->font_ubuffer);
+	}
+
 	if (ctx->geist != NULL)
 	{
 		spel_font_destroy(ctx->geist);
@@ -329,6 +340,8 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 									  &ctx->frame_data, sizeof(ctx->frame_data), 0);
 	spel_gfx_cmd_bind_shader_buffer(ctx->command_list, ctx->ubuffer_frame);
 
+	spel_canvas_mode_flush(ctx->mode, ctx);
+
 	spel_gfx_cmd_bind_vertex(ctx->command_list, 0, ctx->vbo, 0);
 	spel_gfx_cmd_bind_index(ctx->command_list, ctx->ibo, SPEL_GFX_INDEX_U32, 0);
 	spel_gfx_cmd_bind_texture(ctx->command_list, 0, ctx->batch_texture);
@@ -341,16 +354,17 @@ spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx)
 	ctx->index_count = 0;
 }
 
-spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
+spel_hidden bool spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_mode mode,
 										 spel_canvas_context* ctx)
 {
 	if (texture != ctx->batch_texture || ctx->pipeline_dirty || ctx->sampler_dirty ||
-		ctx->path_mode)
+		ctx->path_mode || ctx->mode != mode)
 	{
 		spel_canvas_ctx_flush(ctx);
 
 		ctx->batch_texture = texture;
 		ctx->path_mode = false;
+		ctx->mode = mode;
 
 		if (ctx->pipeline_dirty)
 		{
@@ -363,7 +377,11 @@ spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
 			ctx->sampler = spel_gfx_sampler_get(ctx->ctx, &ctx->sampler_desc);
 			ctx->sampler_dirty = false;
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 void spel_canvas_color_set(spel_color color)
@@ -453,10 +471,12 @@ void spel_canvas_shader_set(spel_gfx_shader shader)
 	if (shader != NULL)
 	{
 		spel.gfx->canvas_ctx->pipeline_desc.fragment_shader = shader;
+		spel.gfx->canvas_ctx->default_shader = false;
 	}
 	else
 	{
 		spel.gfx->canvas_ctx->pipeline_desc.fragment_shader = spel.gfx->shaders[1];
+		spel.gfx->canvas_ctx->default_shader = true;
 	}
 
 	spel.gfx->canvas_ctx->pipeline_dirty = true;
@@ -579,7 +599,7 @@ void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_check_batch(ctx->white_texture, SPEL_CANVAS_SIMPLE, ctx);
 	spel_canvas_ensure_capacity(4, 6);
 
 	float dx = end.x - start.x;
@@ -646,7 +666,7 @@ void spel_canvas_draw_rect(spel_rect rect)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_check_batch(ctx->white_texture, SPEL_CANVAS_SIMPLE, ctx);
 	spel_canvas_ensure_capacity(4, 6);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
@@ -695,7 +715,7 @@ void spel_canvas_draw_image(spel_gfx_texture tex, spel_rect dst)
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	spel_canvas_check_batch(tex, ctx);
+	spel_canvas_check_batch(tex, SPEL_CANVAS_SIMPLE, ctx);
 	spel_canvas_ensure_capacity(4, 6);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
@@ -745,7 +765,7 @@ void spel_canvas_draw_image_region(spel_gfx_texture tex, spel_rect src, spel_rec
 {
 	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	spel_canvas_check_batch(tex, ctx);
+	spel_canvas_check_batch(tex, SPEL_CANVAS_SIMPLE, ctx);
 	spel_canvas_ensure_capacity(4, 6);
 
 	float tex_w = spel_gfx_texture_size(tex).x;
@@ -811,7 +831,7 @@ void spel_canvas_draw_circle(spel_vec2 center, float radius)
 	{
 		segments = 64;
 	}
-	spel_canvas_check_batch(ctx->white_texture, ctx);
+	spel_canvas_check_batch(ctx->white_texture, SPEL_CANVAS_SIMPLE, ctx);
 	spel_canvas_ensure_capacity(segments + 1, segments * 3);
 
 	spel_mat3 t = ctx->transforms[ctx->transform_top];
@@ -852,4 +872,22 @@ spel_api spel_gfx_texture spel_canvas_texture(spel_canvas canvas)
 spel_gfx_texture spel_canvas_depth_texture(spel_canvas canvas)
 {
 	return canvas->depth;
+}
+
+spel_hidden void spel_canvas_mode_flush(spel_canvas_mode mode, spel_canvas_context* ctx)
+{
+	switch (mode)
+	{
+	case SPEL_CANVAS_SIMPLE:
+	case SPEL_CANVAS_PATH:
+		break;
+
+	case SPEL_CANVAS_TEXT:
+	{
+		spel_gfx_cmd_uniform_block_update(ctx->command_list, ctx->font_ubuffer,
+										  &ctx->font_data, sizeof(ctx->font_data), 0);
+		spel_gfx_cmd_bind_shader_buffer(ctx->command_list, ctx->font_ubuffer);
+		break;
+	}
+	}
 }

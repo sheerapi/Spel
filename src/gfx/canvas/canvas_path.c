@@ -376,7 +376,7 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 	int n = path->point_count;
 
 	spel_canvas_stroke_scratch_ensure(n);
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
 
 	spel_canvas_stroke_basic(path, w, color, spel.gfx->canvas_ctx->stroke_point_bases,
 							 spel.gfx->canvas_ctx->stroke_is_double);
@@ -427,7 +427,8 @@ void spel_canvas_fill_path_convex(spel_canvas_paint* paint)
 		return;
 	}
 
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture,
+							SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
 	spel_canvas_ensure_capacity(n, (n - 2) * 3);
 
 	int base = spel.gfx->canvas_ctx->vert_count;
@@ -514,7 +515,7 @@ void spel_canvas_fill_path_concave(spel_canvas_paint* paint)
 		area += spel_vec2_cross(a->position, b->position);
 	}
 
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
 	spel_canvas_ensure_capacity(n, (n - 2) * 3);
 
 	int base = spel.gfx->canvas_ctx->vert_count;

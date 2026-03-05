@@ -180,13 +180,15 @@ int main(int argc, char** argv)
 
 	const double max_corner_angle = 3.0;
 	for (auto& g : glyphs)
+	{
 		g.edgeColoring(&msdfgen::edgeColoringInkTrap, max_corner_angle, 0);
+	}
 
 	msdf_atlas::TightAtlasPacker packer;
 	packer.setDimensions(cfg.atlas_size, cfg.atlas_size);
 	packer.setPixelRange(cfg.sdf_range);
 	packer.setMiterLimit(1.0);
-	packer.setOuterPixelPadding(msdf_atlas::Padding(1));
+	packer.setOuterPixelPadding(cfg.sdf_range);
 
 	int remaining = packer.pack(glyphs.data(), (int)glyphs.size());
 	if (remaining > 0)
@@ -353,6 +355,15 @@ int main(int argc, char** argv)
 	fwrite(image, image_size, 1, f);
 	fclose(f);
 
+	std::string png_path = cfg.output + ".png";
+	f = fopen(png_path.c_str(), "wb");
+	if (!f)
+	{
+		fprintf(stderr, "Failed to open output: %s\n", png_path.c_str());
+		return 1;
+	}
+	fwrite(image, image_size, 1, f);
+	fclose(f);
 	free(image);
 
 	printf("Wrote %s (%zu glyphs, %zu kerning pairs)\n", spfn_path.c_str(),

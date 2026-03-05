@@ -6,6 +6,13 @@
 #include "canvas_types.h"
 #include "utils/math.h"
 
+typedef enum
+{
+	SPEL_CANVAS_SIMPLE,
+	SPEL_CANVAS_PATH,
+	SPEL_CANVAS_TEXT
+} spel_canvas_mode;
+
 // fonts
 #define SPFN_MAGIC 0x4E465053
 #define SPFN_VERSION 1
@@ -13,6 +20,7 @@
 #define SPFN_TYPE_SDF 0
 #define SPFN_TYPE_MSDF 1
 #define SPFN_TYPE_BITMAP 2
+#define SPFN_TYPE_MTSDF 3
 
 #pragma pack(push, 1)
 typedef struct
@@ -69,6 +77,16 @@ typedef struct spel_font_t
 	int* ext_indices;
 	int ext_count;
 } spel_font_t;
+
+typedef struct
+{
+	int mode;
+
+	float sdf_smoothing;
+	float sdf_threshold;
+
+	float padding;
+} spel_canvas_font_data;
 
 // paths
 typedef enum
@@ -235,6 +253,9 @@ typedef struct
 	spel_canvas active;
 	spel_gfx_cmdlist command_list;
 
+	spel_canvas_mode mode;
+	bool default_shader; // whether the user is using a custom shader or the 2d one
+
 	// default fonts
 	spel_font geist;
 	spel_font vga; // IBM VGA 8x16
@@ -298,6 +319,9 @@ typedef struct
 
 	spel_gfx_pipeline og_pipeline;
 	spel_gfx_pipeline og_paint_pipeline;
+
+	spel_canvas_font_data font_data;
+	spel_gfx_uniform_buffer font_ubuffer;
 
 	// cpu-side scratch
 	spel_canvas_vertex* verts;
@@ -372,10 +396,20 @@ void spel_canvas_join_round_connected(spel_path_point* p0, spel_path_point* p1, 
 									  spel_color color, int vbase);
 
 spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx);
-spel_hidden void spel_canvas_check_batch(spel_gfx_texture texture,
+
+// we do whatever work we have to do (e.g: binding a pipeline) for specific modes
+// here
+spel_hidden void spel_canvas_mode_flush(spel_canvas_mode mode, spel_canvas_context* ctx);
+
+spel_hidden bool spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_mode mode,
 										 spel_canvas_context* ctx);
 spel_hidden spel_canvas_state spel_canvas_snapshot_state(spel_canvas_context* ctx);
 spel_hidden void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s);
 spel_hidden void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded);
+
+// fonts
+float spel_canvas_font_kerning(spel_font font, uint32_t cpA, uint32_t cpB);
+const spel_font_glyph* spel_canvas_font_find_glyph(spel_font font, uint32_t codepoint);
+uint32_t spel_canvas_font_utf8_next(const char** str);
 
 #endif

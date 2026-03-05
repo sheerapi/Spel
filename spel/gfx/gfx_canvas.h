@@ -60,4 +60,6 @@ void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end);
 void spel_canvas_draw_text(const char* text, spel_vec2 position);
 void spel_canvas_draw_text_wrapped(const char* text, spel_vec2 position, float maxWidth);
 
+spel_vec2 spel_canvas_text_measure(const char* text);
+
 #endif

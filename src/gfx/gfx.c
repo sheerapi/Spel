@@ -999,7 +999,8 @@ spel_gfx_texture_load_data(spel_gfx_context ctx, const char* data, size_t dataSi
 	int w;
 	int h;
 	int comp;
-	stbi_uc* pixels = stbi_load_from_memory((uint8_t*)data, (int)dataSize, &w, &h, &comp, 0);
+	stbi_uc* pixels =
+		stbi_load_from_memory((uint8_t*)data, (int)dataSize, &w, &h, &comp, 0);
 	if (!pixels)
 	{
 		return spel_gfx_texture_checker_get(ctx);
@@ -1276,13 +1277,19 @@ spel_api uint32_t spel_gfx_uniform_block_size(spel_gfx_pipeline pipeline,
 	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
 	{
 		spel_gfx_shader_block* block = &pipeline->reflection.uniforms[i];
-		return block->size;
+		if (block->location == handle.location)
+		{
+			return block->size;
+		}
 	}
 
 	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
 	{
 		spel_gfx_shader_block* block = &pipeline->reflection.storage[i];
-		return block->size;
+		if (block->location == handle.location)
+		{
+			return block->size;
+		}
 	}
 
 	return 0;
@@ -1605,6 +1612,11 @@ spel_hidden void spel_gfx_context_framebuffers_resize(spel_gfx_context ctx)
 {
 	for (size_t i = 0; i < ctx->tracked_fbo_count; i++)
 	{
+		if (ctx->tracked_fbos[i] == NULL)
+		{
+			continue;
+		}
+
 		spel_gfx_framebuffer_resize(ctx->tracked_fbos[i], ctx->fb_width, ctx->fb_height);
 	}
 }

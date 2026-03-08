@@ -28,7 +28,7 @@ typedef enum
 typedef struct spel_gfx_cmd_header
 {
 	spel_gfx_cmd_type type;
-	uint16_t size;
+	uint32_t size;
 } spel_gfx_cmd_header;
 
 typedef struct spel_gfx_clear_cmd

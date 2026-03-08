@@ -201,9 +201,9 @@ void spel_gfx_shader_patch_gl(spel_gfx_shader shader, spel_gfx_shader_desc* desc
 			spel_gfx_shader_block* block = &shader->reflection.storage[ssbo_idx++];
 			spvReflectChangeDescriptorBindingNumbers(
 				&module, binding,
-				(ssbo_idx) * (shader->reflection.uniforms[ubo_idx - 1].set + 1), 0);
+				(ssbo_idx) * (shader->reflection.storage[ssbo_idx - 1].set + 1), 0);
 			block->internal =
-				(ssbo_idx) * (shader->reflection.uniforms[ubo_idx - 1].set + 1);
+				(ssbo_idx) * (shader->reflection.storage[ssbo_idx - 1].set + 1);
 			break;
 		}
 		case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:

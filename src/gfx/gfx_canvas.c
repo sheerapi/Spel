@@ -17,9 +17,9 @@
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags)
 {
-	if (spel.gfx->canvas_ctx == NULL)
+	if (gfx->canvas_ctx == NULL)
 	{
-		spel_canvas_ctx_create(spel.gfx);
+		spel_canvas_ctx_create(gfx);
 	}
 
 	spel_canvas canvas = spel_memory_malloc(sizeof(*canvas), SPEL_MEM_TAG_GFX);
@@ -568,15 +568,15 @@ void spel_canvas_state_restore(spel_canvas_context* ctx, spel_canvas_state s)
 
 void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 {
-	if (spel.gfx->canvas_ctx->vert_count + vertsNeeded <=
+	if ((spel.gfx->canvas_ctx->vert_count + vertsNeeded) * sizeof(spel_canvas_vertex) <=
 			spel.gfx->canvas_ctx->vert_cap &&
-		spel.gfx->canvas_ctx->index_count + indicesNeeded <=
+		(spel.gfx->canvas_ctx->index_count + indicesNeeded) * sizeof(uint32_t) <=
 			spel.gfx->canvas_ctx->index_cap)
 	{
 		return;
 	}
 
-	int required = spel.gfx->canvas_ctx->vert_count + vertsNeeded;
+	int required = (spel.gfx->canvas_ctx->vert_count + vertsNeeded) * sizeof(spel_canvas_vertex);
 
 	int new_cap = spel.gfx->canvas_ctx->vert_cap * 2;
 	while (new_cap < required)
@@ -588,10 +588,13 @@ void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 		spel_memory_realloc(spel.gfx->canvas_ctx->verts, new_cap, SPEL_MEM_TAG_GFX);
 
 	spel.gfx->canvas_ctx->indices = spel_memory_realloc(
-		spel.gfx->canvas_ctx->indices, (new_cap * 3 / 2), SPEL_MEM_TAG_GFX);
+		spel.gfx->canvas_ctx->indices, (new_cap * 3) / 2, SPEL_MEM_TAG_GFX);
 
-	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->vbo, new_cap, true);
-	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->ibo, (new_cap * 3 / 2), true);
+	spel.gfx->canvas_ctx->vert_cap = new_cap;
+	spel.gfx->canvas_ctx->index_cap = (new_cap * 3) / 2;
+
+		spel_gfx_buffer_resize(spel.gfx->canvas_ctx->vbo, new_cap, true);
+	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->ibo, (new_cap * 3) / 2, true);
 }
 
 void spel_canvas_sampling_set(spel_gfx_sampler_filter filter)

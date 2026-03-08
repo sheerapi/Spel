@@ -73,18 +73,18 @@ const spel_api char* spel_log_sev_to_string(spel_severity severity);
 spel_api _Noreturn void spel_log_panic(spel_log_event evt);
 
 #define spel_panic(err, msg, ...)                                                        \
-	spel_log_panic(spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),            \
-												.code = (err),                           \
-												.message = NULL,                         \
-												.length = 0,                             \
-												.file = __FILE__,                        \
-												.line = __LINE__,                        \
-												.data = NULL,                            \
-												.data_type = SPEL_DATA_NONE,             \
-												.data_size = 0},                         \
-							msg, ##__VA_ARGS__))
+	spel_log_panic(spel_log_fmt(&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),        \
+													.code = (err),                       \
+													.message = NULL,                     \
+													.length = 0,                         \
+													.file = __FILE__,                    \
+													.line = __LINE__,                    \
+													.data = NULL,                        \
+													.data_type = SPEL_DATA_NONE,         \
+													.data_size = 0},                     \
+								msg, ##__VA_ARGS__))
 
-#define spel_log(sev, error, dataVal, dataType, dataSize, msg, ...)                        \
+#define spel_log(sev, error, dataVal, dataType, dataSize, msg, ...)                      \
 	spel_log_emit(spel_log_fmt(&(spel_log_event_t){.severity = (sev),                    \
 												   .code = (error),                      \
 												   .message = NULL,                      \
@@ -98,24 +98,25 @@ spel_api _Noreturn void spel_log_panic(spel_log_event evt);
 												   .wall_sec = spel_time_now_sec()},     \
 							   msg, ##__VA_ARGS__))
 
-#define spel_info(msg, ...)                                                                \
+#define spel_info(msg, ...)                                                              \
 	spel_log(SPEL_SEV_INFO, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define spel_warn(msg, ...)                                                                \
+#define spel_warn(msg, ...)                                                              \
 	spel_log(SPEL_SEV_WARN, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define spel_error(code, msg, ...)                                                         \
+#define spel_error(code, msg, ...)                                                       \
 	spel_log(SPEL_SEV_ERROR, code, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
-#define spel_trace(msg, ...)                                                               \
+#define spel_trace(msg, ...)                                                             \
 	spel_log(SPEL_SEV_TRACE, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
 
 #ifdef DEBUG
-#	define spel_debug(msg, ...)                                                           \
-		spel_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg, ##__VA_ARGS__)
+#	define spel_debug(msg, ...)                                                         \
+		spel_log(SPEL_SEV_DEBUG, SPEL_ERR_NONE, NULL, SPEL_DATA_NONE, 0, msg,            \
+				 ##__VA_ARGS__)
 #	define spel_assert(condition, msg, ...)                                             \
 		do                                                                               \
 		{                                                                                \
 			if (!(condition))                                                            \
 			{                                                                            \
-				spel_log_fmt(                                                            \
+				spel_log_panic(spel_log_fmt(                                             \
 					&(spel_log_event_t){.severity = (SPEL_SEV_FATAL),                    \
 										.code = (SPEL_ERR_ASSERTION_FAILED),             \
 										.message = "assertion failed: " #condition,      \
@@ -125,7 +126,7 @@ spel_api _Noreturn void spel_log_panic(spel_log_event evt);
 										.data = NULL,                                    \
 										.data_type = SPEL_DATA_NONE,                     \
 										.data_size = 0},                                 \
-					msg, ##__VA_ARGS__);                                                  \
+					msg, ##__VA_ARGS__));                                                \
 			}                                                                            \
 		} while (0)
 #else

@@ -69,7 +69,7 @@ enum
 	SPEL_EVENT_TEXT_INPUT_STOP = 0xc36e9d69475e3f58,
 
 	/// @event text:input.truncated
-	SPEL_EVENT_TEXT_INPUT_TRUNCATED = 0xc36e9d69475e3f58,
+	SPEL_EVENT_TEXT_INPUT_TRUNCATED = 0x2c40aea91f10476a,
 
 	/// @event text:input
 	SPEL_EVENT_TEXT_INPUT = 0xdc9c934a5fa460ee,

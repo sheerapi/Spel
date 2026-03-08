@@ -295,11 +295,11 @@ spel_hidden void spel_event_handle(void* event)
 		break;
 
 	case SDL_EVENT_WINDOW_MINIMIZED:
-		spel_event_emit(SPEL_EVENT_WINDOW_MAXIMIZED, NULL);
+		spel_event_emit(SPEL_EVENT_WINDOW_MINIMIZED, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_MAXIMIZED:
-		spel_event_emit(SPEL_EVENT_WINDOW_MINIMIZED, NULL);
+		spel_event_emit(SPEL_EVENT_WINDOW_MAXIMIZED, NULL);
 		break;
 
 	case SDL_EVENT_WINDOW_MOUSE_ENTER:

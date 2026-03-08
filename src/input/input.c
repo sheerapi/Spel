@@ -29,6 +29,8 @@ spel_api void spel_input_update()
 
 	spel.input->mouse_delta = (spel_vec2){0, 0};
 	spel.input->mouse_wheel = (spel_vec2){0, 0};
+
+	memset(spel.input->text_input, 0, 256);
 	spel.input->text_input_len = 0;
 
 	for (int i = 0; i < SPEL_MAX_CONTROLLERS; i++)
@@ -672,6 +674,7 @@ spel_api spel_action spel_input_action_create(const char* name, spel_action_type
 
 	spel_action action = &spel.input->actions[spel.input->action_count++];
 	action->type = type;
+	action->binding_count = 0;
 	strncpy(action->name, name, 48);
 	return action;
 }

@@ -108,7 +108,6 @@ spel_api void spel_memory_free(void* ptr)
 
 spel_api void* spel_memory_realloc(void* ptr, size_t newSize, spel_memory_tag tag)
 {
-
 	if (!ptr)
 	{
 		return spel_memory_malloc(newSize, tag);

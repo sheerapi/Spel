@@ -1,6 +1,5 @@
 #ifndef SPEL_GFX_INTERNAL
 #define SPEL_GFX_INTERNAL
-#include "dcimgui.h"
 #include "canvas/canvas_internal.h"
 #include "gfx/gfx_canvas.h"
 #include "gfx/gfx_framebuffer.h"
@@ -346,9 +345,7 @@ spel_hidden extern void spel_gfx_shader_reflection_free(spel_gfx_shader shader);
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx);
 spel_hidden void spel_canvas_ctx_flush(spel_canvas_context* ctx);
 
-#ifdef DEBUG
 spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage);
-#endif
 // initialization
 
 #endif

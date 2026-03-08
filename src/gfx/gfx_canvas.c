@@ -266,6 +266,9 @@ spel_hidden void spel_canvas_ctx_create(spel_gfx_context gfx)
 	ctx->default_shader = true;
 
 	ctx->font_ubuffer.buffer = NULL;
+
+	ctx->geist->internal = true;
+	ctx->vga->internal = true;
 }
 
 spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
@@ -277,11 +280,13 @@ spel_hidden void spel_canvas_ctx_destroy(spel_canvas_context* ctx)
 
 	if (ctx->geist != NULL)
 	{
+		ctx->geist->internal = false;
 		spel_font_destroy(ctx->geist);
 	}
 
 	if (ctx->vga != NULL)
 	{
+		ctx->vga->internal = false;
 		spel_font_destroy(ctx->vga);
 	}
 

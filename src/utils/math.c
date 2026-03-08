@@ -1309,7 +1309,7 @@ int spel_quat_nearly_eq(spel_quat a, spel_quat b, float eps)
 //  RECT
 // ============================================================
 
-spel_rect spel_rect_make(int x, int y, int w, int h)
+spel_rect spel_rect_create(int x, int y, int w, int h)
 {
 	return (spel_rect){x, y, w, h};
 }
@@ -1398,7 +1398,7 @@ int spel_rect_eq(spel_rect a, spel_rect b)
 //  AABB
 // ============================================================
 
-spel_aabb spel_aabb_make(spel_vec3 min, spel_vec3 max)
+spel_aabb spel_aabb_create(spel_vec3 min, spel_vec3 max)
 {
 	return (spel_aabb){min, max};
 }
@@ -1453,6 +1453,12 @@ spel_aabb spel_aabb_transform(spel_aabb b, spel_mat4 m)
 		mx = spel_vec3_max(mx, p);
 	}
 	return (spel_aabb){mn, mx};
+}
+
+spel_api int spel_aabb_intersects_circle(spel_aabb a, spel_circle circle)
+{
+	return spel_circle_intersects_rect(
+		circle, spel_rect(a.min.x, a.min.y, a.max.x - a.min.x, a.max.y - a.min.y));
 }
 
 // ============================================================
@@ -1580,7 +1586,7 @@ int spel_ray_intersects_triangle(spel_ray ray, spel_vec3 v0, spel_vec3 v1, spel_
 //  PLANE
 // ============================================================
 
-spel_plane spel_plane_make(spel_vec3 normal, spel_vec3 point)
+spel_plane spel_plane_create(spel_vec3 normal, spel_vec3 point)
 {
 	spel_vec3 n = spel_vec3_normalize(normal);
 	return (spel_plane){n, -spel_vec3_dot(n, point)};
@@ -1952,7 +1958,7 @@ float spel_ease_in_out_elastic(float t)
 //  RANDOM  (PCG32)
 // ============================================================
 
-spel_rng spel_rng_make(uint64_t seed)
+spel_rng spel_rng_create(uint64_t seed)
 {
 	return (spel_rng){seed + 1442695040888963407ULL};
 }

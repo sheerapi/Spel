@@ -29,7 +29,6 @@ sources = [
     'src/core/env_info.c',
     'src/utils/display.c',
     'src/gfx/gfx_shader_reflect.c',
-    'src/extras/spel_imgui.c',
     'src/input/input.c',
 
     'src/gfx/gfx_canvas.c',
@@ -82,6 +81,7 @@ if cc.get_id() != 'msvc'
         '-Wl,--strip-all',
         '-Wl,--exclude-libs,ALL',
         '-Wl,--no-as-needed',
+        '-Wl,-Map=output.map'
     ]
 else
     rel_compile_args += [
@@ -218,6 +218,7 @@ sh2spv = executable(
     sources: ['tools/sh2spv.cpp'],
     dependencies: sh2spv_deps,
     cpp_args: [rel_compile_args],
+    install: true
 )
 
 spv2h = executable(
@@ -225,6 +226,7 @@ spv2h = executable(
     sources: ['tools/spv2h.cpp'],
     dependencies: dependency('nlohmann_json'),
     cpp_args: [rel_compile_args],
+    install: true
 )
 
 executable(
@@ -234,6 +236,7 @@ executable(
         'tools/fontgen/fontgen_grid.cpp',
         'tools/fontgen/fontgen_bmfont.cpp',
     ],
+    install: true,
     dependencies: cmake.subproject('msdf_atlas_gen', options: cmake_args).dependency('msdf-atlas-gen'),
     cpp_args: [rel_compile_args],
 )
@@ -242,6 +245,7 @@ executable(
     'spel-ttf2png',
     sources: ['tools/ttf2png.cpp'],
     cpp_args: [rel_compile_args],
+    install: true
 )
 
 compile_shaders = custom_target(
@@ -262,16 +266,18 @@ executable(
     'spel-str2fnv',
     sources: ['tools/str2fnv.c'],
     cpp_args: [rel_compile_args],
+    install: true
 )
 
 # Spël
-dependencies = [dependency('sdl3'), m_dep, dependency('imgui')]
+dependencies = [dependency('sdl3'), m_dep]
 
 spel_lib = library(
     'spel',
     sources: [sources, shader_sources],
     include_directories: include_directories('spel'),
     dependencies: dependencies,
+    install: true
 )
 
 spel_dep = declare_dependency(
@@ -287,4 +293,18 @@ executable(
     sources: sandbox_src,
     dependencies: spel_dep,
     link_args: link_args,
+)
+
+# installation
+install_subdir(
+    'spel',
+    install_dir: get_option('includedir')
+)
+pkg = import('pkgconfig')
+pkg.generate(
+    spel_lib,
+    name:        'spel',
+    description: 'A 2D game framework',
+    version:     '0.1.0',
+    filebase:    'spel',
 )

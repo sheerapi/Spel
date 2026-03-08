@@ -84,13 +84,14 @@ spel_gfx_texture spel_gfx_texture_create_gl(spel_gfx_context ctx,
 		return NULL;
 	}
 
-	uint32_t depth = desc->depth == 0 ? 1 : desc->depth;
 	uint32_t max_mips = 1 + (uint32_t)floor(log2(fmax(desc->width, desc->height)));
 
 	uint32_t mip_count = desc->mip_count == 0 ? max_mips : desc->mip_count;
 #ifdef DEBUG
 	if (desc->data)
 	{
+		uint32_t depth = desc->depth == 0 ? 1 : desc->depth;
+		
 		size_t expected = (size_t)desc->width * (size_t)desc->height * (size_t)depth *
 						  (size_t)fmt->bytes_per_pixel;
 		spel_assert(desc->data_size >= expected, "i expected more data");

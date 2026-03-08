@@ -87,7 +87,9 @@ spel_api bool spel_args_has(const char* arg)
 
 spel_api int spel_app_run(spel_app_desc* app)
 {
+#ifdef DEBUG
 	uint64_t start_ns = spel_time_now_ns();
+#endif
 	spel_app_transform(app);
 
 	spel.window.swapchain.vsync = 1; // vsync on by default

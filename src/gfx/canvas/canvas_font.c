@@ -5,13 +5,14 @@
 #include "gfx/gfx_internal.h"
 #include "gfx_internal_shaders.h"
 #include "utils/internal/stb_image.h"
+#include <stdarg.h>
 #include <string.h>
 
 spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 									size_t dataSize)
 {
 	spel_font font = spel_memory_malloc(sizeof(*font), SPEL_MEM_TAG_GFX);
-	font->ctx = gfx; // not the canvas ctx due to recursive inclusion
+	font->ctx = gfx;
 
 	if (dataSize < sizeof(spel_font_header))
 	{
@@ -56,8 +57,6 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		offset += font->header.kerning_count * sizeof(spel_font_kerning);
 	}
 
-	// Load atlas. For bitmap fonts we patch the pixel data so fully transparent pixels
-	// don't look like solid white quads (shader uses RGB==RGB check).
 	spel_gfx_texture_load_desc desc = {
 		.format = SPEL_GFX_TEXTURE_FMT_UNKNOWN,
 		.usage = SPEL_GFX_TEXTURE_USAGE_SAMPLED,
@@ -68,8 +67,8 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 	if (font->header.font_type == SPFN_TYPE_BITMAP && font->header.channels == 4)
 	{
 		int w, h, comp;
-		stbi_uc* pixels = stbi_load_from_memory((uint8_t*)data + offset,
-												(int)font->header.image_size, &w, &h, &comp, 4);
+		stbi_uc* pixels = stbi_load_from_memory(
+			(uint8_t*)data + offset, (int)font->header.image_size, &w, &h, &comp, 4);
 		if (!pixels)
 		{
 			font->atlas = spel_gfx_texture_checker_get(gfx);
@@ -81,7 +80,7 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 				uint8_t* p = pixels + (i * 4);
 				if (p[3] == 0)
 				{
-					// break RGB equality so shader falls back to alpha (which is 0 here)
+
 					p[2] = 1;
 				}
 			}
@@ -171,6 +170,11 @@ fail:
 
 spel_api void spel_font_destroy(spel_font font)
 {
+	if (font->internal)
+	{
+		spel_error(SPEL_ERR_INVALID_RESOURCE, "you cant destroy an internal font!");
+	}
+
 	if (font->ext_count)
 	{
 		spel_memory_free(font->ext_codepoints);
@@ -192,7 +196,7 @@ spel_api void spel_font_destroy(spel_font font)
 void spel_canvas_emit_glyph(spel_font font, const spel_font_glyph* g, float cx, float cy,
 							float scale, spel_color color)
 {
-	// Bitmap fonts are authored with Y-down uv/planes; MSDF fonts are Y-up.
+
 	bool y_up = font->header.font_type != SPFN_TYPE_BITMAP;
 
 	float x0 = cx + (g->plane_x * scale);
@@ -215,7 +219,6 @@ void spel_canvas_emit_glyph(spel_font font, const spel_font_glyph* g, float cx, 
 	float u1 = g->uv_x + g->uv_w;
 	float v1 = g->uv_y + g->uv_h;
 
-	// apply canvas transform
 	spel_mat3 t = spel.gfx->canvas_ctx->transforms[spel.gfx->canvas_ctx->transform_top];
 
 	spel_vec2 p00 = spel_mat3_transform_point(t, (spel_vec2){x0, y0});
@@ -267,18 +270,14 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 		return;
 	}
 
-	// Glyph metrics are stored in "em" units (1 = design height), so scale is just pixels per em.
 	float scale = spel.gfx->canvas_ctx->font_size;
 	float line_h = font->header.line_height * scale;
 	spel_color col = spel.gfx->canvas_ctx->color;
 
-	// Compute per-draw smoothing based on rendered pixel height:
-	//   - sdf_range is the pixel distance encoded in the atlas at em_size.
-	//   - scale/em_size converts that range into current screen pixels.
-	//   - smoothing is half a pixel in the distance domain.
 	float px_range = font->header.sdf_range > 0.0f ? font->header.sdf_range : 1.0f;
-	float range_screen = px_range * (spel.gfx->canvas_ctx->font_size / font->header.em_size);
-	float smoothing = 0.5f / range_screen;
+	float range_screen =
+		px_range * (spel.gfx->canvas_ctx->font_size / font->header.em_size);
+	float smoothing = 0.75f / range_screen;
 	smoothing = spel_math_clamp(smoothing, 0.01f, 0.6f);
 
 	spel.gfx->canvas_ctx->font_data.sdf_smoothing = smoothing;
@@ -336,9 +335,6 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 
 		spel.gfx->canvas_ctx->sampler_desc.min = min;
 		spel.gfx->canvas_ctx->sampler_desc.mag = min;
-
-		spel.gfx->canvas_ctx->pipeline_dirty = true;
-		spel.gfx->canvas_ctx->sampler_dirty = true;
 	}
 
 	float align_offset_x = 0.0F;
@@ -346,7 +342,7 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 
 	if (needs_align)
 	{
-		// measure first line
+
 		float line_w = 0.0f;
 		const char* p = text;
 		uint32_t prev = 0;
@@ -354,7 +350,8 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 		{
 			uint32_t cp = spel_canvas_font_utf8_next(&p);
 			const spel_font_glyph* g = spel_canvas_font_find_glyph(font, cp);
-			line_w += (g->advance + spel_canvas_font_kerning(font, prev, cp)) * scale;
+			float adv = g ? g->advance : (font->header.line_height * 0.5f);
+			line_w += (adv + spel_canvas_font_kerning(font, prev, cp)) * scale;
 			prev = cp;
 		}
 		uint8_t halign = spel.gfx->canvas_ctx->text_align;
@@ -364,7 +361,6 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 			align_offset_x = -line_w;
 	}
 
-	// vertical alignment offset
 	float align_offset_y = 0.0f;
 	if (spel.gfx->canvas_ctx->text_align >= SPEL_CANVAS_ALIGN_TOP)
 	{
@@ -376,17 +372,15 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 			align_offset_y = -total.y;
 	}
 
-	// ── layout + emit ─────────────────────────────────────────────────────────
 	float cx = position.x + align_offset_x;
 	float cy = position.y + align_offset_y;
-	float line_x0 = cx; // remember line start for newlines + wrapping
+	float line_x0 = cx;
 
 	const char* p = text;
 	uint32_t prev_cp = 0;
 
 	while (*p)
 	{
-		// word wrap: find next word, check if it fits
 		if (maxWidth > 0.0f && *p != '\n')
 		{
 			const char* word_end = p;
@@ -396,8 +390,8 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 			{
 				uint32_t wcp = spel_canvas_font_utf8_next(&word_end);
 				const spel_font_glyph* wg = spel_canvas_font_find_glyph(font, wcp);
-				word_w +=
-					(wg->advance + spel_canvas_font_kerning(font, wc_prev, wcp)) * scale;
+				float adv = wg ? wg->advance : (font->header.line_height * 0.5f);
+				word_w += (adv + spel_canvas_font_kerning(font, wc_prev, wcp)) * scale;
 				wc_prev = wcp;
 			}
 			float used = cx - line_x0;
@@ -406,7 +400,7 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 				cx = line_x0;
 				cy += line_h;
 				prev_cp = 0;
-				// skip leading space that caused wrap
+
 				if (*p == ' ')
 				{
 					spel_canvas_font_utf8_next(&p);
@@ -423,7 +417,7 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 		{
 			cx = line_x0;
 			cy += line_h;
-			// re-measure alignment for new line if needed
+
 			if (needs_align)
 			{
 				float line_w = 0.0f;
@@ -433,12 +427,12 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 				{
 					uint32_t lcp = spel_canvas_font_utf8_next(&lp);
 					const spel_font_glyph* lg = spel_canvas_font_find_glyph(font, lcp);
+					float adv = lg ? lg->advance : (font->header.line_height * 0.5f);
 					line_w +=
-						(lg->advance + spel_canvas_font_kerning(font, lp_prev, lcp)) *
-						scale;
+						(adv + spel_canvas_font_kerning(font, lp_prev, lcp)) * scale;
 					lp_prev = lcp;
 				}
-				uint8_t halign = spel.gfx->canvas_ctx->text_align < SPEL_CANVAS_ALIGN_TOP;
+				uint8_t halign = spel.gfx->canvas_ctx->text_align;
 				if (halign == SPEL_CANVAS_ALIGN_CENTER)
 					cx = position.x - line_w * 0.5f;
 				else if (halign == SPEL_CANVAS_ALIGN_RIGHT)
@@ -450,10 +444,8 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 
 		const spel_font_glyph* g = spel_canvas_font_find_glyph(font, cp);
 
-		// apply kerning
 		cx += spel_canvas_font_kerning(font, prev_cp, cp) * scale;
 
-		// missing glyph -> advance by a sensible default (half an em) and skip
 		if (g == NULL)
 		{
 			cx += 0.5f * scale;
@@ -461,7 +453,6 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 			continue;
 		}
 
-		// skip whitespace quads (no visible glyph) but still advance
 		if (g->uv_w > 0.0f && g->uv_h > 0.0f)
 		{
 			spel_canvas_ensure_capacity(4, 6);
@@ -493,7 +484,6 @@ spel_vec2 spel_canvas_text_measure(const char* text)
 
 	float x = 0.0f;
 	float max_x = 0.0f;
-	float y = font->header.line_height * scale;
 	int lines = 1;
 
 	const char* p = text;
@@ -515,10 +505,8 @@ spel_vec2 spel_canvas_text_measure(const char* text)
 		}
 
 		const spel_font_glyph* g = spel_canvas_font_find_glyph(font, cp);
-		if (g)
-			x += (g->advance + spel_canvas_font_kerning(font, prev_cp, cp)) * scale;
-		else
-			x += 0.5f * scale;
+		float adv = g ? g->advance : (font->header.line_height * 0.5f);
+		x += (adv + spel_canvas_font_kerning(font, prev_cp, cp)) * scale;
 		prev_cp = cp;
 	}
 
@@ -526,7 +514,7 @@ spel_vec2 spel_canvas_text_measure(const char* text)
 	return (spel_vec2){max_x, lines * font->header.line_height * scale};
 }
 
-float spel_canvas_font_kerning(const spel_font font, uint32_t cp_a, uint32_t cp_b)
+float spel_canvas_font_kerning(const spel_font font, uint32_t cpA, uint32_t cpB)
 {
 	if (!font->kerning || font->header.kerning_count == 0)
 		return 0.0f;
@@ -536,13 +524,13 @@ float spel_canvas_font_kerning(const spel_font font, uint32_t cp_a, uint32_t cp_
 	{
 		int mid = (lo + hi) / 2;
 		spel_font_kerning* k = &font->kerning[mid];
-		if (k->codepoint_a < cp_a)
+		if (k->codepoint_a < cpA)
 			lo = mid + 1;
-		else if (k->codepoint_a > cp_a)
+		else if (k->codepoint_a > cpA)
 			hi = mid - 1;
-		else if (k->codepoint_b < cp_b)
+		else if (k->codepoint_b < cpB)
 			lo = mid + 1;
-		else if (k->codepoint_b > cp_b)
+		else if (k->codepoint_b > cpB)
 			hi = mid - 1;
 		else
 			return k->advance;
@@ -556,7 +544,6 @@ const spel_font_glyph* spel_canvas_font_find_glyph(const spel_font FONT,
 	if (codepoint < 128 && FONT->ascii_index[codepoint] >= 0)
 		return &FONT->glyphs[FONT->ascii_index[codepoint]];
 
-	// binary search
 	int lo = 0;
 	int hi = (int)FONT->header.glyph_count - 1;
 	while (lo <= hi)
@@ -620,4 +607,58 @@ uint32_t spel_canvas_font_utf8_next(const char** str)
 
 	*str += bytes;
 	return cp;
+}
+
+void spel_canvas_font_set(spel_font font)
+{
+	if (font == NULL)
+	{
+		spel.gfx->canvas_ctx->font = spel.gfx->canvas_ctx->geist;
+	}
+	spel.gfx->canvas_ctx->font = font;
+}
+
+void spel_canvas_text_align_set(spel_canvas_text_align align)
+{
+	spel.gfx->canvas_ctx->text_align = align;
+}
+
+void spel_canvas_font_size_set(float size)
+{
+	spel.gfx->canvas_ctx->font_size = size;
+}
+
+spel_font spel_canvas_font_sans_serif()
+{
+	return spel.gfx->canvas_ctx->geist;
+}
+
+spel_font spel_canvas_font_monospace()
+{
+	return spel.gfx->canvas_ctx->vga;
+}
+
+void spel_canvas_print_internal(spel_vec2 position, float maxWidth, const char* fmt,
+							   va_list args)
+{
+	static char buf[1024];
+	vsnprintf(buf, sizeof(buf), fmt, args);
+
+	spel_canvas_draw_text_internal(buf, position, maxWidth);
+}
+
+void spel_canvas_print(spel_vec2 position, const char* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	spel_canvas_print_internal(position, 0, fmt, argptr);
+	va_end(argptr);
+}
+
+void spel_canvas_print_wrapped(spel_vec2 position, float maxWidth, const char* fmt, ...)
+{
+	va_list argptr;
+	va_start(argptr, fmt);
+	spel_canvas_print_internal(position, maxWidth, fmt, argptr);
+	va_end(argptr);
 }

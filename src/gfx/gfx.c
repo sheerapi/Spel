@@ -4,7 +4,6 @@
 #include "core/macros.h"
 #include "core/types.h"
 #include "core/window.h"
-#include "dcimgui.h"
 #include "gfx/gfx_buffer.h"
 #include "gfx/gfx_cmdlist.h"
 #include "gfx/gfx_commands.h"
@@ -1136,7 +1135,6 @@ spel_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width,
 	cmd->height = height;
 }
 
-#ifdef DEBUG
 spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage stage)
 {
 	switch (stage)
@@ -1154,7 +1152,6 @@ spel_hidden extern const char* spel_gfx_shader_type_str(spel_gfx_shader_stage st
 		return "compute";
 	}
 }
-#endif
 
 spel_api spel_gfx_texture spel_gfx_texture_color_create(spel_gfx_context ctx,
 														spel_color color)

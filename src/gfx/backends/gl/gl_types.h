@@ -3,7 +3,6 @@
 #include "gfx/gfx_framebuffer.h"
 #include "gfx/gfx_types.h"
 #include "gl.h"
-#include "SDL3/SDL_video.h"
 
 typedef struct
 {
@@ -91,6 +90,8 @@ typedef struct
 	GLenum draw_buffers[SPEL_GFX_MAX_COLOR_ATTACHMENTS];
 	uint32_t draw_buffer_count;
 } spel_gfx_gl_framebuffer;
+
+typedef struct SDL_GLContextState* SDL_GLContext;
 
 typedef struct spel_gfx_context_gl
 {

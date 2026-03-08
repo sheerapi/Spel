@@ -5,7 +5,6 @@
 #include "input_keyboard.h"
 #include "input_mouse.h"
 #include "utils/math.h"
-#include <SDL3/SDL_events.h>
 #include <stdbool.h>
 
 #define SPEL_MAX_CONTROLLERS 16
@@ -16,6 +15,9 @@
 
 #define SPEL_KEY_WORD(k) ((k) >> 6)
 #define SPEL_KEY_MASK(k) (1ull << ((k) & 63))
+
+typedef struct SDL_Gamepad SDL_Gamepad;
+typedef union SDL_Event SDL_Event;
 
 typedef struct
 {

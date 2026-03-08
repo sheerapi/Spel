@@ -45,6 +45,16 @@ void spel_canvas_sampling_set(spel_gfx_sampler_filter filter);
 void spel_canvas_fill_mode_set(spel_canvas_fill_mode mode);
 void spel_canvas_line_width_set(float width);
 
+void spel_canvas_font_set(spel_font font);
+void spel_canvas_text_align_set(spel_canvas_text_align align);
+void spel_canvas_font_size_set(float size);
+
+// Geist
+spel_font spel_canvas_font_sans_serif();
+
+// IBM VGA 8x16
+spel_font spel_canvas_font_monospace();
+
 void spel_canvas_translate(spel_vec2 position);
 void spel_canvas_scale(spel_vec2 scale);
 void spel_canvas_rotate(float degrees);
@@ -59,6 +69,9 @@ void spel_canvas_draw_circle(spel_vec2 center, float radius);
 void spel_canvas_draw_line(spel_vec2 start, spel_vec2 end);
 void spel_canvas_draw_text(const char* text, spel_vec2 position);
 void spel_canvas_draw_text_wrapped(const char* text, spel_vec2 position, float maxWidth);
+
+void spel_canvas_print(spel_vec2 position, const char* fmt, ...);
+void spel_canvas_print_wrapped(spel_vec2 position, float maxWidth, const char* fmt, ...);
 
 spel_vec2 spel_canvas_text_measure(const char* text);
 

@@ -9,6 +9,7 @@
 #include "dcimgui_impl_sdl3.h"
 #include "gfx/gfx.h"
 #include "gfx/gfx_cmdlist.h"
+#include "gfx/gfx_internal.h"
 #include "gfx/gfx_pipeline.h"
 #include "gfx_internal_shaders.h"
 #include <stddef.h>
@@ -35,10 +36,11 @@ typedef struct spel_imgui_context_t
 } spel_imgui_context_t;
 
 spel_hidden void spel_imgui_resources_create(spel_imgui_context ctx);
-spel_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture);
+spel_hidden void spel_imgui_texture_update(spel_imgui_context ctx,
+										   ImTextureData* texture);
 spel_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* drawData);
 spel_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
-									   ImDrawData* drawData);
+										 ImDrawData* drawData);
 
 spel_hidden bool spel_imgui_event_callback(void* event, void* ctx);
 
@@ -105,7 +107,8 @@ spel_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 	ImGui_Render();
 	ImDrawData* draw_data = ImGui_GetDrawData();
 
-	if (draw_data == NULL || draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F)
+	if (draw_data == NULL || draw_data->DisplaySize.x <= 0.0F ||
+		draw_data->DisplaySize.y <= 0.0F)
 	{
 		return;
 	}
@@ -148,7 +151,8 @@ spel_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 		const ImDrawList* list = draw_data->CmdLists.Data[i];
 
 		spel_gfx_buffer_update(ctx->vbuffer, list->VtxBuffer.Data,
-							   list->VtxBuffer.Size * sizeof(ImDrawVert), vtx_offset_elements * sizeof(ImDrawVert));
+							   list->VtxBuffer.Size * sizeof(ImDrawVert),
+							   vtx_offset_elements * sizeof(ImDrawVert));
 
 		spel_gfx_buffer_update(ctx->ibuffer, list->IdxBuffer.Data,
 							   list->IdxBuffer.Size * sizeof(ImDrawIdx),
@@ -182,8 +186,8 @@ spel_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 					continue;
 				}
 
-				spel_gfx_cmd_scissor(cl, clip_min.x, clip_min.y,
-									 clip_max.x - clip_min.x, clip_max.y - clip_min.y);
+				spel_gfx_cmd_scissor(cl, clip_min.x, clip_min.y, clip_max.x - clip_min.x,
+									 clip_max.y - clip_min.y);
 
 				spel_gfx_cmd_bind_texture(
 					cl, 0, (spel_gfx_texture)((uintptr_t)ImDrawCmd_GetTexID(pcmd)));
@@ -209,19 +213,25 @@ spel_api void spel_imgui_render(spel_imgui_context ctx, spel_gfx_cmdlist cl)
 
 spel_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
 {
-	spel_gfx_shader_desc vtx_shader_desc;
-	vtx_shader_desc.shader_source = SPEL_GFX_SHADER_STATIC;
-	vtx_shader_desc.source = spel_internal_imgui_vert_spv;
-	vtx_shader_desc.source_size = spel_internal_imgui_vert_spv_len;
-	vtx_shader_desc.debug_name = "spel_internal_imgui_vert";
-
 	spel_gfx_shader_desc frag_shader_desc;
 	frag_shader_desc.shader_source = SPEL_GFX_SHADER_STATIC;
 	frag_shader_desc.source = spel_internal_imgui_frag_spv;
 	frag_shader_desc.source_size = spel_internal_imgui_frag_spv_len;
 	frag_shader_desc.debug_name = "spel_internal_imgui_frag";
 
-	ctx->vtx_shader = spel_gfx_shader_create(ctx->gfx, &vtx_shader_desc);
+	if (ctx->gfx->shaders[0] == NULL)
+	{
+		spel_gfx_shader_desc vertex_desc;
+		vertex_desc.shader_source = SPEL_GFX_SHADER_STATIC;
+		vertex_desc.debug_name = "spel_internal_2d_vertex";
+		vertex_desc.source = spel_internal_2d_vert_spv;
+		vertex_desc.source_size = spel_internal_2d_vert_spv_len;
+
+		ctx->gfx->shaders[0] = spel_gfx_shader_create(ctx->gfx, &vertex_desc);
+		ctx->gfx->shaders[0]->internal = true;
+	}
+
+	ctx->vtx_shader = ctx->gfx->shaders[0];
 	ctx->frag_shader = spel_gfx_shader_create(ctx->gfx, &frag_shader_desc);
 
 	spel_gfx_pipeline_desc pipeline_desc = spel_gfx_pipeline_default_2d(ctx->gfx);
@@ -234,8 +244,8 @@ spel_hidden void spel_imgui_resources_create(spel_imgui_context ctx)
 
 	ctx->pipeline = spel_gfx_pipeline_create(ctx->gfx, &pipeline_desc);
 
-	ctx->ubuffer = spel_gfx_uniform_buffer_create(ctx->pipeline, "ProjData");
-	ctx->matrix_handle = spel_gfx_uniform_get(ctx->pipeline, "ProjMtx");
+	ctx->ubuffer = spel_gfx_uniform_buffer_create(ctx->pipeline, "FrameData");
+	ctx->matrix_handle = spel_gfx_uniform_get(ctx->pipeline, "proj");
 
 	unsigned char* pixels;
 	int bpp;
@@ -328,10 +338,9 @@ spel_hidden void spel_imgui_buffers_check(spel_imgui_context ctx, ImDrawData* dr
 
 spel_hidden void spel_imgui_texture_update(spel_imgui_context ctx, ImTextureData* texture)
 {
-	spel_assert(texture->TexID != 0,
-			  "tried to update empty texture %p", texture->TexID);
+	spel_assert(texture->TexID != 0, "tried to update empty texture %p", texture->TexID);
 	spel_assert(texture->Format == ImTextureFormat_RGBA32, "invalid texture format %d",
-			  texture->Format);
+				texture->Format);
 
 	if (texture->Status == ImTextureStatus_WantCreate)
 	{
@@ -390,7 +399,7 @@ spel_vec4* ortho_proj(float L, float R, float T, float B)
 }
 
 spel_hidden void spel_imgui_state_update(spel_imgui_context ctx, spel_gfx_cmdlist cl,
-									   ImDrawData* drawData)
+										 ImDrawData* drawData)
 {
 	float L = drawData->DisplayPos.x;
 	float R = drawData->DisplayPos.x + drawData->DisplaySize.x;

@@ -427,7 +427,7 @@ spel_api int spel_quat_nearly_eq(spel_quat a, spel_quat b, float eps);
 
 #define spel_rect(x, y, w, h) ((spel_rect){(x), (y), (w), (h)})
 
-spel_api spel_rect spel_rect_make(int x, int y, int w, int h);
+spel_api spel_rect spel_rect_create(int x, int y, int w, int h);
 spel_api spel_rect spel_rect_from_points(int x0, int y0, int x1, int y1);
 
 spel_api int spel_rect_contains_point(spel_rect r, int x, int y);
@@ -438,7 +438,7 @@ spel_api spel_rect spel_rect_union(spel_rect a, spel_rect b);
 spel_api spel_rect spel_rect_expand(spel_rect r, int amount);
 spel_api spel_rect spel_rect_shrink(spel_rect r, int amount);
 spel_api spel_rect spel_rect_translate(spel_rect r, int dx, int dy);
-spel_api spel_rect spel_rect_centern(spel_rect inner, spel_rect outer);
+spel_api spel_rect spel_rect_center_inn(spel_rect inner, spel_rect outer);
 
 spel_api int spel_rect_right(spel_rect r);
 spel_api int spel_rect_bottom(spel_rect r);
@@ -447,7 +447,7 @@ spel_api spel_vec2 spel_rect_size(spel_rect r);
 
 spel_api int spel_rect_eq(spel_rect a, spel_rect b);
 
-spel_api spel_aabb spel_aabb_make(spel_vec3 min, spel_vec3 max);
+spel_api spel_aabb spel_aabb_create(spel_vec3 min, spel_vec3 max);
 spel_api spel_aabb spel_aabb_from_center(spel_vec3 center, spel_vec3 halfExtents);
 
 spel_api spel_vec3 spel_aabb_center(spel_aabb b);
@@ -456,13 +456,14 @@ spel_api spel_vec3 spel_aabb_size(spel_aabb b);
 
 spel_api int spel_aabb_contains_point(spel_aabb b, spel_vec3 p);
 spel_api int spel_aabb_intersects(spel_aabb a, spel_aabb b);
+spel_api int spel_aabb_intersects_circle(spel_aabb a, spel_circle circle);
 spel_api spel_aabb spel_aabb_union(spel_aabb a, spel_aabb b);
 spel_api spel_aabb spel_aabb_expand(spel_aabb b, spel_vec3 amount);
 spel_api spel_aabb spel_aabb_transform(spel_aabb b, spel_mat4 m);
 
 spel_api int spel_circle_contains_point(spel_circle c, spel_vec2 p);
-spel_api int spel_circlentersects_circle(spel_circle a, spel_circle b);
-spel_api int spel_circlentersects_rect(spel_circle c, spel_rect r);
+spel_api int spel_circle_intersects_circle(spel_circle a, spel_circle b);
+spel_api int spel_circle_intersects_rect(spel_circle c, spel_rect r);
 
 spel_api spel_vec3 spel_ray_at(spel_ray ray, float t);
 spel_api int spel_ray_intersects_aabb(spel_ray ray, spel_aabb box, float* outT);
@@ -472,7 +473,7 @@ spel_api int spel_ray_intersects_sphere(spel_ray ray, spel_vec3 center, float ra
 spel_api int spel_ray_intersects_triangle(spel_ray ray, spel_vec3 v0, spel_vec3 v1,
 										  spel_vec3 v2, float* outT);
 
-spel_api spel_plane spel_plane_make(spel_vec3 normal, spel_vec3 point);
+spel_api spel_plane spel_plane_create(spel_vec3 normal, spel_vec3 point);
 spel_api float spel_plane_dist_to_point(spel_plane p, spel_vec3 point);
 spel_api spel_vec3 spel_plane_project_point(spel_plane p, spel_vec3 point);
 spel_api int spel_plane_side(spel_plane p, spel_vec3 point);
@@ -543,7 +544,7 @@ typedef struct
 	uint64_t state;
 } spel_rng;
 
-spel_api spel_rng spel_rng_make(uint64_t seed);
+spel_api spel_rng spel_rng_create(uint64_t seed);
 spel_api uint32_t spel_rng_next(spel_rng* rng);
 spel_api float spel_rng_float(spel_rng* rng);
 spel_api float spel_rng_float_range(spel_rng* rng, float lo, float hi);

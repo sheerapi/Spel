@@ -303,7 +303,7 @@ spel_api void spel_gfx_cmd_clear(spel_gfx_cmdlist cl, spel_color color)
 		cl, sizeof(*cmd), _Alignof(spel_gfx_clear_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_CLEAR;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->color = color;
 }
 
@@ -315,7 +315,7 @@ spel_api void spel_gfx_cmd_bind_vertex(spel_gfx_cmdlist cl, uint32_t stream,
 		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_vertex_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_VERTEX;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->stream = stream;
 	cmd->buf = buf;
 	cmd->offset = offset;
@@ -329,7 +329,7 @@ spel_api void spel_gfx_cmd_bind_index(spel_gfx_cmdlist cl, spel_gfx_buffer buf,
 		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_index_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_INDEX;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->buf = buf;
 	cmd->offset = offset;
 	cmd->type = type;
@@ -343,7 +343,7 @@ spel_api void spel_gfx_cmd_bind_pipeline(spel_gfx_cmdlist cl, spel_gfx_pipeline 
 			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_pipeline_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_PIPELINE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->pipeline = pipeline;
 }
 
@@ -355,7 +355,7 @@ spel_api void spel_gfx_cmd_draw(spel_gfx_cmdlist cl, uint32_t vertexCount,
 		cl, sizeof(*cmd), _Alignof(spel_gfx_draw_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_DRAW;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->vertex_count = vertexCount;
 	cmd->first_vertex = firstVertex;
 }
@@ -369,7 +369,7 @@ spel_api void spel_gfx_cmd_draw_indexed(spel_gfx_cmdlist cl, uint32_t indexCount
 			cl, sizeof(*cmd), _Alignof(spel_gfx_draw_indexed_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_DRAW_INDEXED;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->index_count = indexCount;
 	cmd->first_index = firstIndex;
 	cmd->vertex_offset = vertexOffset;
@@ -722,7 +722,7 @@ spel_api void spel_gfx_cmd_bind_texture(spel_gfx_cmdlist cl, uint32_t slot,
 			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_texture_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_TEXTURE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->texture = texture;
 	cmd->slot = slot;
 }
@@ -736,7 +736,7 @@ spel_api void spel_gfx_cmd_bind_sampler(spel_gfx_cmdlist cl, uint32_t slot,
 			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_sampler_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_SAMPLER;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->sampler = sampler;
 	cmd->slot = slot;
 }
@@ -749,7 +749,7 @@ spel_api void spel_gfx_cmd_bind_image(spel_gfx_cmdlist cl, uint32_t slot,
 		cl, sizeof(*cmd), _Alignof(spel_gfx_bind_image_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_IMAGE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->texture = texture;
 	cmd->sampler = sampler;
 	cmd->slot = slot;
@@ -776,7 +776,7 @@ spel_api void spel_gfx_cmd_buffer_update(spel_gfx_cmdlist cl, spel_gfx_buffer bu
 			cl, cmd_size, _Alignof(spel_gfx_buffer_update_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BUFFER_UPDATE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->buf = buf;
 	cmd->offset = offset;
 	cmd->size = payload_size;
@@ -1114,7 +1114,7 @@ spel_api void spel_gfx_cmd_viewport(spel_gfx_cmdlist cl, int x, int y, int width
 		cl, sizeof(*cmd), _Alignof(spel_gfx_viewport_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_VIEWPORT;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->x = x;
 	cmd->y = y;
 	cmd->width = width;
@@ -1129,7 +1129,7 @@ spel_api void spel_gfx_cmd_scissor(spel_gfx_cmdlist cl, int x, int y, int width,
 		cl, sizeof(*cmd), _Alignof(spel_gfx_scissor_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_SCISSOR;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->x = x;
 	cmd->y = y;
 	cmd->width = width;
@@ -1354,13 +1354,19 @@ spel_api void spel_gfx_buffer_flush(spel_gfx_buffer buf, size_t offset, size_t s
 spel_api void spel_gfx_cmd_bind_shader_buffer(spel_gfx_cmdlist cl,
 											  spel_gfx_uniform_buffer buf)
 {
+	if (buf.buffer == NULL)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "cannot bind an invalid shader buffer");
+		return;
+	}
+
 	uint64_t start_offset = cl->offset;
 	spel_gfx_bind_shader_buffer_cmd* cmd =
 		(spel_gfx_bind_shader_buffer_cmd*)cl->ctx->vt->cmdlist_alloc(
 			cl, sizeof(*cmd), _Alignof(spel_gfx_bind_shader_buffer_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BIND_SHADER_BUFFER;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->buf = buf.buffer;
 	cmd->location = buf.location;
 }
@@ -1395,6 +1401,13 @@ spel_api char** spel_gfx_uniform_block_names(spel_gfx_pipeline pipeline, uint32_
 spel_api spel_gfx_uniform_buffer
 spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline, const char* blockName)
 {
+	if (pipeline == NULL || blockName == NULL)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "uniform buffer create requires valid pipeline and block name");
+		return (spel_gfx_uniform_buffer){0};
+	}
+
 	spel_gfx_shader_block* block = NULL;
 
 	for (size_t i = 0; i < pipeline->reflection.uniform_count; i++)
@@ -1402,15 +1415,35 @@ spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline, const char* blockName
 		if (strcmp(pipeline->reflection.uniforms[i].name, blockName) == 0)
 		{
 			block = &pipeline->reflection.uniforms[i];
+			break;
 		}
 	}
 
-	for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
+	if (block == NULL)
 	{
-		if (strcmp(pipeline->reflection.storage[i].name, blockName) == 0)
+		for (size_t i = 0; i < pipeline->reflection.storage_count; i++)
 		{
-			block = &pipeline->reflection.storage[i];
+			if (strcmp(pipeline->reflection.storage[i].name, blockName) == 0)
+			{
+				block = &pipeline->reflection.storage[i];
+				break;
+			}
 		}
+	}
+
+	if (block == NULL)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "uniform block %s not found in pipeline %X", blockName,
+				   pipeline->hash);
+		return (spel_gfx_uniform_buffer){0};
+	}
+
+	if (block->size == 0)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "uniform block %s has invalid size 0", blockName);
+		return (spel_gfx_uniform_buffer){0};
 	}
 
 	spel_gfx_buffer_desc buffer_desc;
@@ -1420,9 +1453,17 @@ spel_gfx_uniform_buffer_create(spel_gfx_pipeline pipeline, const char* blockName
 	buffer_desc.data = NULL;
 	buffer_desc.size = block->size;
 
+	spel_gfx_buffer buffer = spel_gfx_buffer_create(pipeline->ctx, &buffer_desc);
+	if (buffer == NULL)
+	{
+		spel_error(SPEL_ERR_OOM, "failed to create uniform buffer for block %s",
+				   blockName);
+		return (spel_gfx_uniform_buffer){0};
+	}
+
 	return (spel_gfx_uniform_buffer){
 		.location = block->location,
-		.buffer = spel_gfx_buffer_create(pipeline->ctx, &buffer_desc),
+		.buffer = buffer,
 		.size = block->size};
 }
 
@@ -1431,6 +1472,18 @@ spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl,
 										  spel_gfx_uniform handle, const void* data,
 										  size_t size)
 {
+	if (buf.buffer == NULL)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "cannot update an invalid uniform buffer");
+		return;
+	}
+
+	if (data == NULL && size != 0)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "uniform update received null data");
+		return;
+	}
+
 	uint64_t start_offset = cl->offset;
 	// Allocate inline storage for the payload to avoid dangling host pointers.
 	size_t payload_size = size;
@@ -1440,7 +1493,7 @@ spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl,
 			cl, cmd_size, _Alignof(spel_gfx_uniform_update_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->buffer = buf;
 	cmd->handle = handle;
 	cmd->size = payload_size;
@@ -1450,7 +1503,10 @@ spel_api void spel_gfx_cmd_uniform_update(spel_gfx_cmdlist cl,
 
 spel_api void spel_gfx_uniform_buffer_destroy(spel_gfx_uniform_buffer buf)
 {
-	spel_gfx_buffer_destroy(buf.buffer);
+	if (buf.buffer != NULL)
+	{
+		spel_gfx_buffer_destroy(buf.buffer);
+	}
 }
 
 spel_api spel_gfx_framebuffer
@@ -1487,7 +1543,7 @@ spel_api void spel_gfx_cmd_begin_pass(spel_gfx_cmdlist cl, spel_gfx_render_pass 
 			cl, sizeof(*cmd), _Alignof(spel_gfx_begin_render_pass_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_BEGIN_RENDER_PASS;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->pass = pass;
 }
 
@@ -1499,7 +1555,7 @@ spel_api void spel_gfx_cmd_end_pass(spel_gfx_cmdlist cl)
 			cl, sizeof(*cmd), _Alignof(spel_gfx_end_render_pass_cmd));
 
 	cmd->hdr.type = SPEL_GFX_CMD_END_RENDER_PASS;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 }
 
 spel_api spel_gfx_render_pass
@@ -1658,11 +1714,25 @@ spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 												const void* data, size_t size,
 												size_t offset)
 {
-	if (size > buf.size)
+	if (buf.buffer == NULL)
 	{
 		spel_error(SPEL_ERR_INVALID_ARGUMENT,
-				   "buffer overflow when updating uniform buffer, expected %d got %d",
-				   buf.size, size);
+				   "cannot update an invalid uniform block buffer");
+		return;
+	}
+
+	if (data == NULL && size != 0)
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "uniform block update received null data");
+		return;
+	}
+
+	if (offset > buf.size || size > (buf.size - offset))
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT,
+				   "buffer overflow when updating uniform buffer, expected %u got %zu at %zu",
+				   buf.size, size, offset);
 		return;
 	}
 
@@ -1681,7 +1751,7 @@ spel_api void spel_gfx_cmd_uniform_block_update(spel_gfx_cmdlist cl,
 	handle.count = 1;
 
 	cmd->hdr.type = SPEL_GFX_CMD_UNIFORM_UPDATE;
-	cmd->hdr.size = (uint16_t)(cl->offset - start_offset);
+	cmd->hdr.size = cl->offset - start_offset;
 	cmd->buffer = buf;
 	cmd->handle = handle;
 	cmd->size = payload_size;

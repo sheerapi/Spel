@@ -12,11 +12,7 @@ layout(location = 1) in vec4 v_color;
 layout(set = 1, binding = 0) uniform DrawData
 {
 	int u_mode;
-
-	float u_sdf_smoothing;
 	float u_sdf_threshold;
-
-	float _pad;
 };
 
 layout(set = 0, binding = 1) uniform sampler2D u_atlas;
@@ -25,8 +21,8 @@ layout(location = 0) out vec4 frag_color;
 
 float sdf_alpha(float dist)
 {
-	return smoothstep(u_sdf_threshold - u_sdf_smoothing,
-					  u_sdf_threshold + u_sdf_smoothing, dist);
+	float smoothing = fwidth(dist) * 0.5;
+	return smoothstep(u_sdf_threshold - smoothing, u_sdf_threshold + smoothing, dist);
 }
 
 float msdf_median(vec3 msd)

@@ -5,23 +5,64 @@
 #include "gfx/gfx_internal.h"
 #include "gfx_internal_shaders.h"
 #include "utils/internal/stb_image.h"
+#include <limits.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <string.h>
+
+static bool spel_font_can_read(size_t offset, size_t count, size_t total)
+{
+	return offset <= total && count <= (total - offset);
+}
+
+static int spel_font_mode(const spel_font font)
+{
+	switch (font->header.font_type)
+	{
+	case SPFN_TYPE_SDF:
+		return SPFN_TYPE_SDF;
+	case SPFN_TYPE_MSDF:
+		return SPFN_TYPE_MSDF;
+	case SPFN_TYPE_BITMAP:
+		return SPFN_TYPE_BITMAP;
+	case SPFN_TYPE_MTSDF:
+		return SPFN_TYPE_MTSDF;
+	default:
+		if (font->header.channels == 1)
+			return SPFN_TYPE_SDF;
+		if (font->header.channels == 3)
+			return SPFN_TYPE_MSDF;
+		if (font->header.channels == 4)
+			return SPFN_TYPE_MTSDF;
+		return SPFN_TYPE_BITMAP;
+	}
+}
 
 spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 									size_t dataSize)
 {
 	spel_font font = spel_memory_malloc(sizeof(*font), SPEL_MEM_TAG_GFX);
+	if (font == NULL)
+	{
+		spel_error(SPEL_ERR_OOM, "failed to allocate font");
+		return NULL;
+	}
+	memset(font, 0, sizeof(*font));
 	font->ctx = gfx;
 
-	if (dataSize < sizeof(spel_font_header))
+	if (data == NULL || dataSize < sizeof(spel_font_header))
 	{
 		spel_error(SPEL_ERR_INVALID_ARGUMENT, "i expected more data, got %d", dataSize);
-		spel_memory_free(font);
 		goto fail;
 	}
 
 	size_t offset = 0;
+
+	if (!spel_font_can_read(offset, sizeof(spel_font_header), dataSize))
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "font header is truncated");
+		goto fail;
+	}
 
 	memcpy(&font->header, data, sizeof(spel_font_header));
 	offset += sizeof(spel_font_header);
@@ -41,20 +82,62 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		goto fail;
 	}
 
-	font->glyphs = spel_memory_malloc(font->header.glyph_count * sizeof(spel_font_glyph),
-									  SPEL_MEM_TAG_GFX);
+	size_t glyph_bytes =
+		(size_t)font->header.glyph_count * sizeof(spel_font_glyph);
+	if (!spel_font_can_read(offset, glyph_bytes, dataSize))
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "font glyph table is truncated");
+		goto fail;
+	}
 
-	memcpy(font->glyphs, data + offset,
-		   font->header.glyph_count * sizeof(spel_font_glyph));
-	offset += font->header.glyph_count * sizeof(spel_font_glyph);
+	font->glyphs = spel_memory_malloc(glyph_bytes, SPEL_MEM_TAG_GFX);
+	if (font->glyphs == NULL)
+	{
+		spel_error(SPEL_ERR_OOM, "failed to allocate glyph table");
+		goto fail;
+	}
+
+	memcpy(font->glyphs, data + offset, glyph_bytes);
+	offset += glyph_bytes;
 
 	if (font->header.kerning_count != 0)
 	{
-		font->kerning = spel_memory_malloc(
-			font->header.kerning_count * sizeof(spel_font_kerning), SPEL_MEM_TAG_GFX);
-		memcpy(font->kerning, data + offset,
-			   font->header.kerning_count * sizeof(spel_font_kerning));
-		offset += font->header.kerning_count * sizeof(spel_font_kerning);
+		size_t kerning_bytes =
+			(size_t)font->header.kerning_count * sizeof(spel_font_kerning);
+		if (!spel_font_can_read(offset, kerning_bytes, dataSize))
+		{
+			spel_error(SPEL_ERR_INVALID_ARGUMENT, "font kerning table is truncated");
+			goto fail;
+		}
+
+		font->kerning = spel_memory_malloc(kerning_bytes, SPEL_MEM_TAG_GFX);
+		if (font->kerning == NULL)
+		{
+			spel_error(SPEL_ERR_OOM, "failed to allocate kerning table");
+			goto fail;
+		}
+
+		memcpy(font->kerning, data + offset, kerning_bytes);
+		offset += kerning_bytes;
+
+		for (size_t a = 1; a < font->header.kerning_count; a++)
+		{
+			spel_font_kerning key = font->kerning[a];
+			size_t b = a;
+			while (b > 0)
+			{
+				spel_font_kerning prev = font->kerning[b - 1];
+				bool out_of_order = prev.codepoint_a > key.codepoint_a ||
+									(prev.codepoint_a == key.codepoint_a &&
+									 prev.codepoint_b > key.codepoint_b);
+				if (!out_of_order)
+					break;
+
+				font->kerning[b] = prev;
+				b--;
+			}
+			font->kerning[b] = key;
+		}
 	}
 
 	spel_gfx_texture_load_desc desc = {
@@ -64,9 +147,23 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		.srgb = false,
 	};
 
+	if (!spel_font_can_read(offset, font->header.image_size, dataSize))
+	{
+		spel_error(SPEL_ERR_INVALID_ARGUMENT, "font atlas image is truncated");
+		goto fail;
+	}
+
 	if (font->header.font_type == SPFN_TYPE_BITMAP && font->header.channels == 4)
 	{
-		int w, h, comp;
+		if (font->header.image_size > INT_MAX)
+		{
+			spel_error(SPEL_ERR_INVALID_ARGUMENT, "font atlas is too large");
+			goto fail;
+		}
+
+		int w;
+		int h;
+		int comp;
 		stbi_uc* pixels = stbi_load_from_memory(
 			(uint8_t*)data + offset, (int)font->header.image_size, &w, &h, &comp, 4);
 		if (!pixels)
@@ -77,7 +174,7 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 		{
 			for (int i = 0; i < w * h; i++)
 			{
-				uint8_t* p = pixels + (i * 4);
+				uint8_t* p = pixels + ((ptrdiff_t)(i * 4));
 				if (p[3] == 0)
 				{
 
@@ -120,9 +217,13 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 	{
 		uint32_t cp = font->glyphs[i].codepoint;
 		if (cp < 128)
+		{
 			font->ascii_index[cp] = i;
+		}
 		else
+		{
 			ext_count++;
+		}
 	}
 
 	font->ext_count = ext_count;
@@ -131,6 +232,11 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 				  : NULL;
 	font->ext_indices =
 		ext_count ? spel_memory_malloc(ext_count * sizeof(int), SPEL_MEM_TAG_GFX) : NULL;
+	if (ext_count && (!font->ext_codepoints || !font->ext_indices))
+	{
+		spel_error(SPEL_ERR_OOM, "failed to allocate glyph extension index");
+		goto fail;
+	}
 
 	int j = 0;
 	for (int i = 0; i < font->header.glyph_count; i++)
@@ -162,6 +268,12 @@ spel_api spel_font spel_font_create(spel_gfx_context gfx, const uint8_t* data,
 	return font;
 
 fail:
+	if (font->atlas && font->atlas != spel_gfx_texture_checker_get(gfx))
+	{
+		spel_gfx_texture_destroy(font->atlas);
+	}
+	spel_memory_free(font->ext_codepoints);
+	spel_memory_free(font->ext_indices);
 	spel_memory_free(font->glyphs);
 	spel_memory_free(font->kerning);
 	spel_memory_free(font);
@@ -202,10 +314,11 @@ void spel_canvas_emit_glyph(spel_font font, const spel_font_glyph* g, float cx, 
 	float x0 = cx + (g->plane_x * scale);
 	float x1 = x0 + (g->plane_w * scale);
 
-	float y0, y1;
+	float y0;
+	float y1;
 	if (y_up)
 	{
-		y0 = cy - (g->plane_y + g->plane_h) * scale;
+		y0 = cy - ((g->plane_y + g->plane_h) * scale);
 		y1 = cy - (g->plane_y * scale);
 	}
 	else
@@ -273,72 +386,73 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 	float scale = spel.gfx->canvas_ctx->font_size;
 	float line_h = font->header.line_height * scale;
 	spel_color col = spel.gfx->canvas_ctx->color;
+	spel_canvas_context* ctx = spel.gfx->canvas_ctx;
 
-	float px_range = font->header.sdf_range > 0.0f ? font->header.sdf_range : 1.0f;
-	float range_screen =
-		px_range * (spel.gfx->canvas_ctx->font_size / font->header.em_size);
-	float smoothing = 0.75f / range_screen;
-	smoothing = spel_math_clamp(smoothing, 0.01f, 0.6f);
+	ctx->font_data.sdf_threshold = 0.5f;
+	ctx->font_data.mode = spel_font_mode(font);
 
-	spel.gfx->canvas_ctx->font_data.sdf_smoothing = smoothing;
-	spel.gfx->canvas_ctx->font_data.sdf_threshold = 0.5f;
-
-	spel.gfx->canvas_ctx->font_data.mode =
-		(font->header.font_type == SPFN_TYPE_BITMAP)
-			? SPFN_TYPE_BITMAP
-			: (font->header.channels == 3 ? SPFN_TYPE_MSDF : SPFN_TYPE_MTSDF);
-
-	if (spel_canvas_check_batch(font->atlas, SPEL_CANVAS_TEXT, spel.gfx->canvas_ctx))
+	if (spel.gfx->shaders[4] == NULL)
 	{
-		if (spel.gfx->canvas_ctx->default_shader)
+		spel_gfx_shader_desc fragment_desc;
+		fragment_desc.shader_source = SPEL_GFX_SHADER_STATIC;
+		fragment_desc.debug_name = "spel_internal_text_frag";
+		fragment_desc.source = spel_internal_text_frag_spv;
+		fragment_desc.source_size = spel_internal_text_frag_spv_len;
+
+		spel.gfx->shaders[4] = spel_gfx_shader_create(spel.gfx, &fragment_desc);
+		if (spel.gfx->shaders[4] != NULL)
 		{
-			if (spel.gfx->shaders[4] == NULL)
-			{
-				spel_gfx_shader_desc vertex_desc;
-				vertex_desc.shader_source = SPEL_GFX_SHADER_STATIC;
-				vertex_desc.debug_name = "spel_internal_text_frag";
-				vertex_desc.source = spel_internal_text_frag_spv;
-				vertex_desc.source_size = spel_internal_text_frag_spv_len;
-
-				spel.gfx->shaders[4] = spel_gfx_shader_create(spel.gfx, &vertex_desc);
-				spel.gfx->shaders[4]->internal = true;
-			}
-
-			spel_gfx_shader shader = spel.gfx->canvas_ctx->pipeline_desc.fragment_shader;
-
-			spel.gfx->canvas_ctx->pipeline_desc.fragment_shader = spel.gfx->shaders[4];
-			spel.gfx->canvas_ctx->pipeline =
-				spel_gfx_pipeline_create(spel.gfx, &spel.gfx->canvas_ctx->pipeline_desc);
-
-			spel.gfx->canvas_ctx->pipeline_desc.fragment_shader = shader;
-
-			if (spel.gfx->canvas_ctx->font_ubuffer.buffer == NULL)
-			{
-				spel.gfx->canvas_ctx->font_ubuffer = spel_gfx_uniform_buffer_create(
-					spel.gfx->canvas_ctx->pipeline, "DrawData");
-			}
+			spel.gfx->shaders[4]->internal = true;
 		}
+	}
 
-		spel_gfx_sampler_filter min = spel.gfx->canvas_ctx->sampler_desc.min;
-		spel.gfx->canvas_ctx->sampler_desc.min =
-			spel.gfx->canvas_ctx->font_data.mode == SPFN_TYPE_BITMAP
+	if (spel.gfx->shaders[4] == NULL)
+	{
+		spel_error(SPEL_ERR_SHADER_FAILED, "failed to create internal text shader");
+		return;
+	}
+
+	spel_gfx_shader previous_fragment = ctx->pipeline_desc.fragment_shader;
+	if (ctx->pipeline_desc.fragment_shader != spel.gfx->shaders[4])
+	{
+		ctx->pipeline_desc.fragment_shader = spel.gfx->shaders[4];
+		ctx->pipeline_dirty = true;
+	}
+
+	if (spel_canvas_check_batch(font->atlas, SPEL_CANVAS_TEXT, ctx))
+	{
+		spel_gfx_sampler_filter min = ctx->sampler_desc.min;
+		spel_gfx_sampler_filter mag = ctx->sampler_desc.mag;
+		ctx->sampler_desc.min =
+			ctx->font_data.mode == SPFN_TYPE_BITMAP
 				? SPEL_GFX_SAMPLER_FILTER_NEAREST
 				: SPEL_GFX_SAMPLER_FILTER_LINEAR;
 
-		spel.gfx->canvas_ctx->sampler_desc.mag =
-			spel.gfx->canvas_ctx->font_data.mode == SPFN_TYPE_BITMAP
+		ctx->sampler_desc.mag =
+			ctx->font_data.mode == SPFN_TYPE_BITMAP
 				? SPEL_GFX_SAMPLER_FILTER_NEAREST
 				: SPEL_GFX_SAMPLER_FILTER_LINEAR;
 
-		spel.gfx->canvas_ctx->sampler =
-			spel_gfx_sampler_get(spel.gfx, &spel.gfx->canvas_ctx->sampler_desc);
+		ctx->sampler = spel_gfx_sampler_get(spel.gfx, &ctx->sampler_desc);
 
-		spel.gfx->canvas_ctx->sampler_desc.min = min;
-		spel.gfx->canvas_ctx->sampler_desc.mag = min;
+		ctx->sampler_desc.min = min;
+		ctx->sampler_desc.mag = mag;
+	}
+
+	if (ctx->font_ubuffer.buffer == NULL)
+	{
+		ctx->font_ubuffer = spel_gfx_uniform_buffer_create(ctx->pipeline, "DrawData");
+		if (ctx->font_ubuffer.buffer == NULL)
+		{
+			spel_error(SPEL_ERR_INVALID_RESOURCE,
+					   "text draw skipped: failed to create DrawData buffer");
+			ctx->pipeline_desc.fragment_shader = previous_fragment;
+			return;
+		}
 	}
 
 	float align_offset_x = 0.0F;
-	bool needs_align = spel.gfx->canvas_ctx->text_align != SPEL_CANVAS_ALIGN_LEFT;
+	bool needs_align = ctx->text_align != SPEL_CANVAS_ALIGN_LEFT;
 
 	if (needs_align)
 	{
@@ -354,7 +468,7 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 			line_w += (adv + spel_canvas_font_kerning(font, prev, cp)) * scale;
 			prev = cp;
 		}
-		uint8_t halign = spel.gfx->canvas_ctx->text_align;
+		uint8_t halign = ctx->text_align;
 		if (halign == SPEL_CANVAS_ALIGN_CENTER)
 			align_offset_x = -line_w * 0.5f;
 		else if (halign == SPEL_CANVAS_ALIGN_RIGHT)
@@ -362,18 +476,52 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 	}
 
 	float align_offset_y = 0.0f;
-	if (spel.gfx->canvas_ctx->text_align >= SPEL_CANVAS_ALIGN_TOP)
+	if (ctx->text_align >= SPEL_CANVAS_ALIGN_TOP)
 	{
 		spel_vec2 total = spel_canvas_text_measure(text);
-		uint8_t valign = spel.gfx->canvas_ctx->text_align;
+		uint8_t valign = ctx->text_align;
 		if (valign == SPEL_CANVAS_ALIGN_MIDDLE)
 			align_offset_y = -total.y * 0.5f;
 		else if (valign == SPEL_CANVAS_ALIGN_BOTTOM)
 			align_offset_y = -total.y;
 	}
 
+	// Canvas coordinates are top-left origin (y goes down). For MSDF/SDF fonts the glyph
+	// plane is baseline-relative (y goes up), so convert the provided top-left to a
+	// baseline position. Some bitmap font sources (e.g. BMFont) provide top-relative
+	// plane_y, so keep those in top-origin space.
+	bool bitmap_top_origin = false;
+	if (font->header.font_type == SPFN_TYPE_BITMAP)
+	{
+		float min_plane_y = 0.0f;
+		bool have_plane_y = false;
+		for (int i = 0; i < font->header.glyph_count; i++)
+		{
+			const spel_font_glyph* g = &font->glyphs[i];
+			if (g->plane_h <= 0.0f)
+				continue;
+
+			if (!have_plane_y)
+			{
+				min_plane_y = g->plane_y;
+				have_plane_y = true;
+			}
+			else if (g->plane_y < min_plane_y)
+			{
+				min_plane_y = g->plane_y;
+			}
+
+			if (min_plane_y < 0.0f)
+				break;
+		}
+
+		bitmap_top_origin = have_plane_y && min_plane_y >= 0.0f;
+	}
+
+	float baseline_offset_y = bitmap_top_origin ? 0.0f : (font->header.ascender * scale);
+
 	float cx = position.x + align_offset_x;
-	float cy = position.y + align_offset_y;
+	float cy = position.y + align_offset_y + baseline_offset_y;
 	float line_x0 = cx;
 
 	const char* p = text;
@@ -432,7 +580,7 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 						(adv + spel_canvas_font_kerning(font, lp_prev, lcp)) * scale;
 					lp_prev = lcp;
 				}
-				uint8_t halign = spel.gfx->canvas_ctx->text_align;
+				uint8_t halign = ctx->text_align;
 				if (halign == SPEL_CANVAS_ALIGN_CENTER)
 					cx = position.x - line_w * 0.5f;
 				else if (halign == SPEL_CANVAS_ALIGN_RIGHT)
@@ -462,6 +610,8 @@ void spel_canvas_draw_text_internal(const char* text, spel_vec2 position, float 
 		cx += g->advance * scale;
 		prev_cp = cp;
 	}
+
+	ctx->pipeline_desc.fragment_shader = previous_fragment;
 }
 
 void spel_canvas_draw_text(const char* text, spel_vec2 position)
@@ -544,17 +694,30 @@ const spel_font_glyph* spel_canvas_font_find_glyph(const spel_font FONT,
 	if (codepoint < 128 && FONT->ascii_index[codepoint] >= 0)
 		return &FONT->glyphs[FONT->ascii_index[codepoint]];
 
-	int lo = 0;
-	int hi = (int)FONT->header.glyph_count - 1;
-	while (lo <= hi)
+	if (codepoint >= 128 && FONT->ext_count > 0 && FONT->ext_codepoints &&
+		FONT->ext_indices)
 	{
-		int mid = (lo + hi) / 2;
-		if (FONT->glyphs[mid].codepoint < codepoint)
-			lo = mid + 1;
-		else if (FONT->glyphs[mid].codepoint > codepoint)
-			hi = mid - 1;
-		else
-			return &FONT->glyphs[mid];
+		int lo = 0;
+		int hi = FONT->ext_count - 1;
+		while (lo <= hi)
+		{
+			int mid = (lo + hi) / 2;
+			uint32_t mid_cp = FONT->ext_codepoints[mid];
+			if (mid_cp < codepoint)
+				lo = mid + 1;
+			else if (mid_cp > codepoint)
+				hi = mid - 1;
+			else
+				return &FONT->glyphs[FONT->ext_indices[mid]];
+		}
+	}
+
+	for (int i = 0; i < FONT->header.glyph_count; i++)
+	{
+		if (FONT->glyphs[i].codepoint == codepoint)
+		{
+			return &FONT->glyphs[i];
+		}
 	}
 
 	return NULL;
@@ -614,6 +777,7 @@ void spel_canvas_font_set(spel_font font)
 	if (font == NULL)
 	{
 		spel.gfx->canvas_ctx->font = spel.gfx->canvas_ctx->geist;
+		return;
 	}
 	spel.gfx->canvas_ctx->font = font;
 }
@@ -639,7 +803,7 @@ spel_font spel_canvas_font_monospace()
 }
 
 void spel_canvas_print_internal(spel_vec2 position, float maxWidth, const char* fmt,
-							   va_list args)
+								va_list args)
 {
 	static char buf[1024];
 	vsnprintf(buf, sizeof(buf), fmt, args);

@@ -8,6 +8,10 @@
 // we really should move this to the canvas folder later
 
 // object creation
+
+// if for some reason you need to initialize the canvas api early
+spel_api void spel_canvas_init();
+
 spel_api spel_canvas spel_canvas_create(spel_gfx_context gfx, int width, int height,
 										uint8_t flags);
 spel_api void spel_canvas_destroy(spel_canvas canvas);

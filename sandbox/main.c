@@ -86,7 +86,8 @@ void spel_update(double dt)
 	float diff = ball.center.y - enemy_center;
 	float move = spel_math_clamp(diff, -200.f * dt, 200.f * dt);
 	paddle_enemy.y += move;
-	paddle_enemy.y = spel_math_clamp(paddle_enemy.y, 0, spel.window.height - paddle_enemy.height);
+	paddle_enemy.y =
+		spel_math_clamp(paddle_enemy.y, 0, spel.window.height - paddle_enemy.height);
 
 	if (ball.center.x < 0 && ball_reset_delay == -1.0F)
 	{
@@ -104,7 +105,6 @@ void spel_draw()
 {
 	spel_canvas_begin(NULL);
 	spel_canvas_font_size_set(96);
-	spel_canvas_font_set(spel_canvas_font_monospace());
 
 	// court line
 	// white but kinda transparent
@@ -124,10 +124,16 @@ void spel_draw()
 	spel_canvas_draw_circle(ball.center, ball.radius);
 
 	spel_canvas_text_align_set(SPEL_CANVAS_ALIGN_RIGHT);
-	spel_canvas_print(spel_vec2(spel.window.width / 2 - 25, 75), "%d", score_enemy);
+	spel_canvas_print(spel_vec2(spel.window.width / 2 - 25, 0), "%d", score_enemy);
 
 	spel_canvas_text_align_set(SPEL_CANVAS_ALIGN_LEFT);
-	spel_canvas_print(spel_vec2(spel.window.width / 2 + 25, 75), "%d", score_player);
+	spel_canvas_print(spel_vec2(spel.window.width / 2 + 25, 0), "%d", score_player);
+
+	spel_canvas_font_size_set(16);
+	spel_canvas_print(spel_vec2(100, 100), "%.2f", spel.time.time_scale);
+
+	spel_canvas_font_size_set(256);
+	spel_canvas_draw_text("H8G!$", spel_vec2(100, 300));
 
 	spel_canvas_end();
 }

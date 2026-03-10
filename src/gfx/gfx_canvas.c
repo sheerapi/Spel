@@ -369,9 +369,8 @@ spel_hidden bool spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_m
 
 		ctx->batch_texture = texture;
 		ctx->path_mode = false;
-		ctx->mode = mode;
 
-		if (ctx->pipeline_dirty)
+		if (ctx->pipeline_dirty || ctx->mode != mode)
 		{
 			ctx->pipeline = spel_gfx_pipeline_create(ctx->ctx, &ctx->pipeline_desc);
 			ctx->pipeline_dirty = false;
@@ -383,6 +382,7 @@ spel_hidden bool spel_canvas_check_batch(spel_gfx_texture texture, spel_canvas_m
 			ctx->sampler_dirty = false;
 		}
 
+		ctx->mode = mode;
 		return true;
 	}
 
@@ -437,6 +437,11 @@ void spel_canvas_fill_color_set(spel_color color)
 void spel_canvas_line_width_set(float width)
 {
 	spel.gfx->canvas_ctx->line_width = width;
+}
+
+void spel_canvas_fill_mode_set(spel_canvas_fill_mode mode)
+{
+	spel.gfx->canvas_ctx->fill_mode = mode;
 }
 
 void spel_canvas_translate(spel_vec2 position)
@@ -576,7 +581,8 @@ void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 		return;
 	}
 
-	int required = (spel.gfx->canvas_ctx->vert_count + vertsNeeded) * sizeof(spel_canvas_vertex);
+	int required =
+		(spel.gfx->canvas_ctx->vert_count + vertsNeeded) * sizeof(spel_canvas_vertex);
 
 	int new_cap = spel.gfx->canvas_ctx->vert_cap * 2;
 	while (new_cap < required)
@@ -593,7 +599,7 @@ void spel_canvas_ensure_capacity(int vertsNeeded, int indicesNeeded)
 	spel.gfx->canvas_ctx->vert_cap = new_cap;
 	spel.gfx->canvas_ctx->index_cap = (new_cap * 3) / 2;
 
-		spel_gfx_buffer_resize(spel.gfx->canvas_ctx->vbo, new_cap, true);
+	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->vbo, new_cap, true);
 	spel_gfx_buffer_resize(spel.gfx->canvas_ctx->ibo, (new_cap * 3) / 2, true);
 }
 
@@ -896,11 +902,37 @@ spel_hidden void spel_canvas_mode_flush(spel_canvas_mode mode, spel_canvas_conte
 		if (ctx->font_ubuffer.buffer == NULL)
 		{
 			ctx->font_ubuffer = spel_gfx_uniform_buffer_create(ctx->pipeline, "DrawData");
+			if (ctx->font_ubuffer.buffer == NULL)
+			{
+				spel_error(SPEL_ERR_INVALID_RESOURCE,
+						   "text draw skipped: DrawData block unavailable");
+				ctx->vert_count = 0;
+				ctx->index_count = 0;
+				break;
+			}
+		}
+
+		if (ctx->font_ubuffer.size < sizeof(ctx->font_data))
+		{
+			spel_error(SPEL_ERR_INVALID_RESOURCE,
+					   "text draw skipped: DrawData block too small (%u < %zu)",
+					   ctx->font_ubuffer.size, sizeof(ctx->font_data));
+			ctx->vert_count = 0;
+			ctx->index_count = 0;
+			break;
 		}
 		spel_gfx_cmd_uniform_block_update(ctx->command_list, ctx->font_ubuffer,
 										  &ctx->font_data, sizeof(ctx->font_data), 0);
 		spel_gfx_cmd_bind_shader_buffer(ctx->command_list, ctx->font_ubuffer);
 		break;
 	}
+	}
+}
+
+spel_api void spel_canvas_init()
+{
+	if (spel.gfx->canvas_ctx == NULL)
+	{
+		spel_canvas_ctx_create(spel.gfx);
 	}
 }

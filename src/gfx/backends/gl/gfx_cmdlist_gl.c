@@ -137,6 +137,17 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 	while (ptr < cl->buffer + cl->offset)
 	{
 		spel_gfx_cmd_header* hdr = (spel_gfx_cmd_header*)ptr;
+		uint64_t remaining = (uint64_t)((cl->buffer + cl->offset) - ptr);
+
+		if (hdr->size == 0 || hdr->size > remaining)
+		{
+			spel_error(SPEL_ERR_INVALID_STATE,
+					   "invalid command header: type %d size %llu",
+					   hdr->type, (unsigned long long)hdr->size);
+			break;
+		}
+
+		uint8_t* next = ptr + hdr->size;
 
 		switch (hdr->type)
 		{
@@ -190,7 +201,7 @@ void spel_gfx_cmdlist_submit_gl(spel_gfx_cmdlist cl)
 			break;
 		}
 
-		ptr += hdr->size;
+		ptr = next;
 	}
 
 	cl->offset = 0;

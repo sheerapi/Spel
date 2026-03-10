@@ -295,6 +295,14 @@ executable(
     link_args: link_args,
 )
 
+executable(
+    'spel-fontview',
+    sources: ['tools/fontview.cpp'],
+    dependencies: spel_dep,
+    link_args: link_args,
+    install: true
+)
+
 # installation
 install_subdir(
     'spel',

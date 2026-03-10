@@ -376,7 +376,8 @@ void spel_canvas_stroke_path(spel_canvas_paint* paint, float width)
 	int n = path->point_count;
 
 	spel_canvas_stroke_scratch_ensure(n);
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH,
+							spel.gfx->canvas_ctx);
 
 	spel_canvas_stroke_basic(path, w, color, spel.gfx->canvas_ctx->stroke_point_bases,
 							 spel.gfx->canvas_ctx->stroke_is_double);
@@ -427,8 +428,8 @@ void spel_canvas_fill_path_convex(spel_canvas_paint* paint)
 		return;
 	}
 
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture,
-							SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH,
+							spel.gfx->canvas_ctx);
 	spel_canvas_ensure_capacity(n, (n - 2) * 3);
 
 	int base = spel.gfx->canvas_ctx->vert_count;
@@ -515,7 +516,8 @@ void spel_canvas_fill_path_concave(spel_canvas_paint* paint)
 		area += spel_vec2_cross(a->position, b->position);
 	}
 
-	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH, spel.gfx->canvas_ctx);
+	spel_canvas_check_batch(spel.gfx->canvas_ctx->white_texture, SPEL_CANVAS_PATH,
+							spel.gfx->canvas_ctx);
 	spel_canvas_ensure_capacity(n, (n - 2) * 3);
 
 	int base = spel.gfx->canvas_ctx->vert_count;
@@ -1180,6 +1182,7 @@ spel_path_point* spel_canvas_path_point_get(uint32_t index)
 }
 void spel_canvas_path_dump()
 {
+#ifdef DEBUG
 	spel_canvas_path* path = &spel.gfx->canvas_ctx->current_path;
 
 	spel_debug("canvas_path_dump: %d commands, cursor (%.2f, %.2f)", path->cmd_count,
@@ -1213,10 +1216,14 @@ void spel_canvas_path_dump()
 		ptr += cmd->size;
 		i++;
 	}
+#else
+	spel_error(SPEL_ERR_INVALID_STATE, "spel_canvas_path_dump does not work on release");
+#endif
 }
 
 void spel_canvas_path_points_dump()
 {
+#ifdef DEBUG
 	spel_canvas_path* path = &spel.gfx->canvas_ctx->current_path;
 
 	spel_debug("canvas_path_points_dump: %d points", path->point_count);
@@ -1229,6 +1236,10 @@ void spel_canvas_path_points_dump()
 				   p->position.x, p->position.y, p->direction.x, p->direction.y, p->len,
 				   p->flags);
 	}
+#else
+	spel_error(SPEL_ERR_INVALID_STATE,
+			   "spel_canvas_path_points_dump does not work on release");
+#endif
 }
 
 spel_path_cmd* spel_canvas_path_alloc()

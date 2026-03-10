@@ -82,10 +82,7 @@ typedef struct
 {
 	int mode;
 
-	float sdf_smoothing;
 	float sdf_threshold;
-
-	float padding;
 } spel_canvas_font_data;
 
 // paths
